@@ -18,11 +18,11 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ## Установка для хостеров
 Если вы хотите автоматически развертывать VPN для своих клиентов и у вас есть авторизация в Телеграме. 
 ```bash
-bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAY.sh)" -- chatID tgTOREN
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAY.sh)" -- chatID tgTOKEN
 ```
-chatID - id вашего клиента
+chatID - id вашего клиента в ТГ
 
-tgTOREN - токен вашего бота
+tgTOKEN - токен вашего бота
 
 После настройки ядра скрипт автоматически пришлет готовые конфиги с инструкцией в ТГ.
 
