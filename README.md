@@ -20,8 +20,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ```bash
 bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAY.sh)" -- chatID tgTOKEN
 ```
-chatID — id вашего клиента в ТГ, tgTOKEN — токен вашего бота
-Просьба указывать автора и ссылку на эту страницу, как первоисточник.
+chatID — id вашего клиента в ТГ, tgTOKEN — токен вашего бота. Просьба указывать автора и ссылку на эту страницу в качестве первоисточника.
 
 
 После настройки ядра скрипт автоматически пришлет готовые конфиги с инструкцией в ТГ бот.
