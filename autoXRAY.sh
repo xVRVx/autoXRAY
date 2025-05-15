@@ -1,16 +1,12 @@
 #!/bin/bash
 
-userID=$1
-
-tgTOKEN=$2
-
 echo "Обновление и установка необходимых пакетов..."
 apt update && apt install sudo -y
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y jq
 
 echo "Настройка DNS..."
-echo -e "nameserver 8.8.8.8\nnameserver 8.8.4.4" | sudo tee /etc/resolv.conf > /dev/null
+echo -e "nameserver 8.8.4.4\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
 
 # Проверка и установка Xray
 if ! command -v xray &> /dev/null; then
@@ -197,6 +193,10 @@ link2="vless://${xray_uuid_vrv}@${ipserv}:8443?security=reality%26sni=${xray_des
 
 ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
 link3="ss://$ENCODED_STRING@${ipserv}:2040#VPN-ShadowS-2040"
+
+
+userID=$1
+tgTOKEN=$2
 
 if [ -n "$userID" ]; then
 # Формируем сообщение (в Markdown для красивого вида)
