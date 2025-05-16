@@ -218,11 +218,9 @@ message="<b>VPN конфиги:</b>
 
 - <b>Windows</b>: <a href='https://github.com/hiddify/hiddify-next/releases/latest/download/Hiddify-Windows-Setup-x64.exe'>Hiddify</a> или <a href='https://github.com/MatsuriDayo/nekoray/releases'>Nekoray</a>
 
-Платный VPN автора с выбором локаций:
-@SkyBridge_VPN_bot
-Здесь вы найдете более подробные инструкции по подключению, а также можете задонатить (купить любой тариф).
-
 Сайт с инструкциями: <a href='https://blog.skybridge.run/'>blog.skybridge.run</a>.
+
+<a href='https://pay.cryptocloud.plus/pos/Weu1Y0fOhLho0nte'>Поддержать автора</a>.
 "
 
 # Отправка сообщения в Telegram
@@ -248,9 +246,8 @@ echo -e "\033[32m$link3\033[0m
 - Android: Happ или v2rayTun или v2rayNG
 - Windows: Hiddify или Nekoray
 
-Платный VPN автора с выбором локаций:
-https://t.me/SkyBridge_VPN_bot
-Здесь вы найдете более подробные инструкции по подключению, а также можете задонатить (купить любой тариф).
-
 Сайт с инструкциями: blog.skybridge.run
+
+Поддержать автора: https://pay.cryptocloud.plus/pos/Weu1Y0fOhLho0nte
+
 "
