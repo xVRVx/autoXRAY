@@ -38,8 +38,6 @@ chatID — id вашего клиента в ТГ, tgTOKEN — токен ваш
 
 Здесь вы найдете более подробные инструкции по подключению. 
 
-**[поддержать автора](https://pay.cryptocloud.plus/pos/Weu1Y0fOhLho0nte)**.
-
 
 ## Пояснение и рекомендации
 
@@ -67,3 +65,5 @@ chatID — id вашего клиента в ТГ, tgTOKEN — токен ваш
 В идеале, надо настроить ваше клиентское приложение, чтобы оно отправляло российский трафик напрямую, минуя vpn сервер. Также можно: перенаправлять ру трафик в [Cloudflare WARP](https://marzban-docs.sm1ky.com/tutorials/cloudflare-warp/), создать второй ру сервер и перенаправлять его туда.
 
 Если вы хотите погрузиться в дело конфигурации xray есть отличный [туториал](https://xtls.github.io/ru/config/outbounds/vless.html).
+
+**[Поддержать автора](https://pay.cryptocloud.plus/pos/Weu1Y0fOhLho0nte)**
