@@ -22,7 +22,7 @@ SCRIPT_DIR=/usr/local/etc/xray
 
 # Генерируем переменные
 xray_uuid_vrv=$(xray uuid)
-domains=(teamdocs.su wikiportal.su docscenter.su store.steampowered.com steamcommunity.com www.bing.com github.com tradingview.com)
+domains=(www.theregister.com www.20minutes.fr www.dealabs.com www.manomano.fr www.caradisiac.com www.techadvisor.com www.computerworld.com teamdocs.su wikiportal.su docscenter.su www.bing.com github.com tradingview.com)
 xray_dest_vrv=${domains[$RANDOM % ${#domains[@]}]}
 xray_dest_vrv222=${domains[$RANDOM % ${#domains[@]}]}
 
