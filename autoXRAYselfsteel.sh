@@ -82,37 +82,57 @@ sudo mkdir -p "$WEB_PATH"
 #sudo chown -R $USER:$USER "$WEB_PATH"
 #sudo chmod -R 755 "$WEB_PATH"
 
-echo "✅ Создаём index.html в $WEB_PATH"
+# Arrays with random options
+TITLES=("FileShare" "CloudBox" "DataVault" "SecureShare" "EasyFiles" "QuickAccess" "VaultZone" "SkyDrive" "SafeData" "FlexShare"
+        "DropZone" "SecureStorage" "FastFiles" "SharePoint" "MegaVault" "Boxify" "DataBank" "DriveSecure" "FileStream" "AccessHub")
 
-cat > "$WEB_PATH/index.html" <<'EOF'
+HEADERS=("Welcome to FileShare" "Login to Your CloudBox" "Enter Your Secure Vault" "Access Your DataVault" "Sign in to EasyFiles"
+         "Connect to QuickAccess" "Welcome to VaultZone" "Login to SkyDrive" "Enter Your SafeData" "Sign in to FlexShare"
+         "Access Your DropZone" "Welcome to SecureStorage" "Login to FastFiles" "Enter Your SharePoint" "Welcome to MegaVault"
+         "Sign in to Boxify" "Access Your DataBank" "Welcome to DriveSecure" "Login to FileStream" "Connect to AccessHub")
+
+BUTTON_COLORS=("bg-blue-600" "bg-green-600" "bg-red-600" "bg-yellow-600" "bg-purple-600" "bg-pink-600" "bg-indigo-600"
+               "bg-teal-600" "bg-orange-600" "bg-cyan-600" "bg-lime-600" "bg-amber-600" "bg-fuchsia-600" "bg-violet-600"
+               "bg-rose-600" "bg-emerald-600" "bg-sky-600" "bg-gray-600" "bg-zinc-600" "bg-stone-600")
+
+# Random selection
+TITLE=${TITLES[$RANDOM % ${#TITLES[@]}]}
+HEADER=${HEADERS[$RANDOM % ${#HEADERS[@]}]}
+BUTTON_COLOR=${BUTTON_COLORS[$RANDOM % ${#BUTTON_COLORS[@]}]}
+
+echo "✅ Creating index.html at $WEB_PATH"
+
+# Generate HTML content
+cat > "$WEB_PATH/index.html" <<EOF
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FileShare Login</title>
+    <title>$TITLE</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="flex items-center justify-center min-h-screen bg-gray-100">
     <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-md">
-        <h2 class="text-2xl font-bold text-center text-gray-700">Добро пожаловать в FileShare</h2>
+        <h2 class="text-2xl font-bold text-center text-gray-700">$HEADER</h2>
         <form action="#" method="POST" class="space-y-4">
             <div>
-                <label for="login" class="block text-sm font-medium text-gray-600">Логин</label>
+                <label for="login" class="block text-sm font-medium text-gray-600">Username</label>
                 <input type="text" id="login" name="login" class="w-full p-2 mt-1 border rounded-lg focus:ring focus:ring-blue-200" />
             </div>
             <div>
-                <label for="password" class="block text-sm font-medium text-gray-600">Пароль</label>
+                <label for="password" class="block text-sm font-medium text-gray-600">Password</label>
                 <input type="password" id="password" name="password" class="w-full p-2 mt-1 border rounded-lg focus:ring focus:ring-blue-200" />
             </div>
-            <button type="submit" class="w-full px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring focus:ring-blue-200">
-                Войти
+            <button type="submit" class="w-full px-4 py-2 text-white $BUTTON_COLOR rounded-lg hover:opacity-90 focus:ring focus:ring-blue-200">
+                Sign In
             </button>
         </form>
     </div>
 </body>
 </html>
 EOF
+
 
 
 # Проверка и установка Xray
