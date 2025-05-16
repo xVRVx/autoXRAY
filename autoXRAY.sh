@@ -186,7 +186,7 @@ sudo systemctl restart xray
 
 echo "Готово!
 "
-# Формирование ссылок
+# Формирование ссылок для ТГ
 link1="vless://${xray_uuid_vrv}@${ipserv}:443?security=reality%26sni=${xray_dest_vrv}%26fp=chrome%26pbk=${xray_publicKey_vrv}%26sid=${xray_shortIds_vrv}%26type=tcp%26flow=xtls-rprx-vision%26encryption=none#VPN-vless-443"
 
 link2="vless://${xray_uuid_vrv}@${ipserv}:8443?security=reality%26sni=${xray_dest_vrv222}%26fp=chrome%26pbk=${xray_publicKey_vrv}%26sid=${xray_shortIds_vrv}%26type=tcp%26flow=xtls-rprx-vision%26encryption=none#VPN-vless-8443"
@@ -212,7 +212,7 @@ message="<b>VPN конфиги:</b>
 
 Клиентские приложения для работы VPN (куда нужно вставить конфиг):
 
-- <b>iOS</b>: <a href='https://apps.apple.com/us/app/happ-proxy-utility/id6504287215?l=ru'>Happ</a> или <a href='https://apps.apple.com/us/app/v2raytun/id6476628951?l=ru'>v2rayTun</a>
+- <b>iOS</b>: <a href='https://apps.apple.com/us/app/happ-proxy-utility/id6504287215?l=ru'>Happ</a> или <a href='https://apps.apple.com/us/app/v2raytun/id6476628951?l=ru'>v2rayTun</a> или FoXray
 
 - <b>Android</b>: <a href='https://play.google.com/store/apps/details?id=com.happproxy'>Happ</a> или <a href='https://play.google.com/store/apps/details?id=com.v2raytun.android'>v2rayTun</a> или <a href='https://play.google.com/store/apps/details?id=com.v2ray.ang'>v2rayNG</a>
 
@@ -230,6 +230,14 @@ curl -s -X POST "https://api.telegram.org/bot$tgTOKEN/sendMessage" \
     -d parse_mode="HTML" \
     -d disable_web_page_preview=true
 fi	
+
+# Формирование ссылок для вывода
+link1="vless://${xray_uuid_vrv}@${ipserv}:443?security=reality&sni=${xray_dest_vrv}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-443"
+
+link2="vless://${xray_uuid_vrv}@${ipserv}:8443?security=reality&sni=${xray_dest_vrv222}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-8443"
+
+ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
+link3="ss://$ENCODED_STRING@${ipserv}:2040#VPN-ShadowS-2040"
 	
 echo -e "
 
@@ -242,7 +250,7 @@ echo -e "\033[32m$link2\033[0m
 echo -e "\033[32m$link3\033[0m
 
 Скопируйте конфиг в специализированное приложение:
-- iOS: Happ или v2rayTun
+- iOS: Happ или v2rayTun или FoXray
 - Android: Happ или v2rayTun или v2rayNG
 - Windows: Hiddify или Nekoray
 
