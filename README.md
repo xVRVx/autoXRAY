@@ -29,7 +29,7 @@ chatID — id вашего клиента в ТГ, tgTOKEN — токен ваш
 ## Настройка VPN
 **Скопируйте конфиг в специализированное приложение:**
 
-- iOS: Happ или v2rayTun
+- iOS: Happ или v2rayTun или FoXray
 - Android: Happ или v2rayTun или v2rayNG
 - Windows: Hiddify или Nekoray
 
