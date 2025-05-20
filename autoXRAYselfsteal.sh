@@ -19,8 +19,8 @@ fi
 
 echo "Обновление и установка необходимых пакетов..."
 apt update && apt install sudo -y
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y jq
+#sudo apt update && sudo apt upgrade -y
+sudo apt update && sudo apt install -y jq
 
 
 echo "Настройка DNS..."
