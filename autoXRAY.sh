@@ -215,7 +215,7 @@ message="<b>VPN конфиги:</b>
 
 Сайт с инструкциями: <a href='https://blog.skybridge.run/'>blog.skybridge.run</a>.
 
-<a href='https://pay.cryptocloud.plus/pos/Weu1Y0fOhLho0nte'>Поддержать автора</a>.
+<a href='https://github.com/xVRVx/autoXRAY'>Поддержать автора</a>.
 "
 
 # Отправка сообщения в Telegram
@@ -251,6 +251,6 @@ echo -e "\033[32m$link3\033[0m
 
 Сайт с инструкциями: blog.skybridge.run
 
-Поддержать автора: https://pay.cryptocloud.plus/pos/Weu1Y0fOhLho0nte
+Поддержать автора: https://github.com/xVRVx/autoXRAY
 
 "
