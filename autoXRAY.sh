@@ -2,8 +2,8 @@
 
 echo "Обновление и установка необходимых пакетов..."
 apt update && apt install sudo -y
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y jq
+#sudo apt update && sudo apt upgrade -y
+sudo apt update && sudo apt install -y jq
 
 echo "Настройка DNS..."
 echo -e "nameserver 8.8.4.4\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
