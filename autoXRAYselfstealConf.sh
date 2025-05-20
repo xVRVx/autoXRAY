@@ -16,11 +16,24 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     exit 1
 fi
 
-
 echo "Обновление и установка необходимых пакетов..."
 apt update && apt install sudo -y
 #sudo apt update && sudo apt upgrade -y
 sudo apt update && sudo apt install -y jq
+
+
+
+echo "Меняем пароль для root"
+pasw_root=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 25)
+echo "root:$pasw_root" | sudo chpasswd
+
+echo "Меняем порт ssh"
+grep -q '^Port ' /etc/ssh/sshd_config && \
+  sudo sed -i 's/^Port .*/Port 468/' /etc/ssh/sshd_config || \
+  echo 'Port 468' | sudo tee -a /etc/ssh/sshd_config
+
+sudo systemctl restart ssh
+
 
 
 echo "Настройка DNS..."
@@ -157,16 +170,16 @@ xray_shortIds_vrv=$(openssl rand -hex 8)
 
 xray_sspasw_vrv=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
+path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
+
 ipserv=$(hostname -I | awk '{print $1}')
 
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN
+export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH
 
-# Создаем JSON конфигурацию на основе шаблона
-#cat << 'EOF' | envsubst > output.json
-# Создаем JSON конфигурацию на основе шаблона и сохраняем в папку скрипта
+# Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
   "dns": {
@@ -176,19 +189,49 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     ]
   },
   "log": {
-    "access": "/var/lib/marzban/access.log",
-    "error": "/var/lib/marzban/error.log",
     "loglevel": "none",
     "dnsLog": false
   },
   "routing": {
+	"domainStrategy": "IPIfNonMatch",
     "rules": [
       {
         "ip": [
-          "geoip:private"
+          "geoip:private",
+          "geoip:ru"
+		  
         ],
         "outboundTag": "BLOCK",
         "type": "field"
+      },
+      {
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "BLOCK"
+      },
+      {
+        "domain": [
+          "geosite:category-ads"
+        ],
+        "outboundTag": "BLOCK"
+      },
+	  {
+        "domain": [
+			"geosite:private",
+			"geosite:apple",
+			"geosite:apple-pki",
+			"geosite:huawei",
+			"geosite:xiaomi",
+			"geosite:category-android-app-download",
+			"geosite:f-droid",
+			"geosite:twitch",
+			"geosite:yandex",
+			"geosite:vk",
+			"geosite:mailru",
+			"geosite:category-gov-ru"
+        ],
+        "outboundTag": "BLOCK"
       }
     ]
   },
@@ -232,61 +275,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "quic"
         ]
       }
-    },
-	{
-      "tag": "Vless8443self",
-      "listen": "0.0.0.0",
-      "port": 8443,
-      "protocol": "vless",
-      "settings": {
-        "clients": [
-          {
-            "flow": "xtls-rprx-vision",
-            "id": "${xray_uuid_vrv}"
-          }
-        ],
-        "decryption": "none"
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "show": false,
-          "dest": "3333",
-          "xver": 0,
-          "serverNames": [
-            "$DOMAIN"
-          ],
-          "privateKey": "${xray_privateKey_vrv}",
-          "publicKey": "${xray_publicKey_vrv}",
-          "shortIds": [
-            "${xray_shortIds_vrv}"
-          ]
-        }
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ]
-      }
-    },	
-    {
-      "tag": "ShadowsocksTCP",
-      "listen": "0.0.0.0",
-      "port": 2040,
-      "protocol": "shadowsocks",
-      "settings": {
-        "clients": [
-          {
-            "password": "${xray_sspasw_vrv}",
-            "method": "chacha20-ietf-poly1305"
-          }
-        ],
-        "network": "tcp,udp"
-      }
     }
   ],
   "outbounds": [
@@ -303,6 +291,129 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 
 EOF
 
+# Создаем JSON конфигурацию клиента
+cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
+{
+  "log": {
+      "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+      "8.8.4.4",
+      "8.8.8.8"
+    ]
+  },
+  "routing": {
+      "domainStrategy": "IPIfNonMatch",
+      "rules": [
+		{
+			"domain": [
+			  "geosite:category-ads-all"
+			],
+			"outboundTag": "block"
+		},	  
+		{
+			"protocol": [
+			  "bittorrent"
+			],
+			"outboundTag": "direct"
+		},	  
+          {
+              "domain": [
+                  "geosite:private",
+                  "geosite:apple",
+                  "geosite:apple-pki",
+                  "geosite:huawei",
+                  "geosite:xiaomi",
+                  "geosite:category-android-app-download",
+                  "geosite:f-droid",
+                  "geosite:twitch",
+                  "geosite:yandex",
+                  "geosite:vk",
+                  "geosite:category-gov-ru"
+              ],
+              "outboundTag": "direct"
+          },
+          {
+              "ip": [
+                  "geoip:ru",
+                  "geoip:private"
+              ],
+              "outboundTag": "direct"
+          },
+		{
+			"type": "field",
+              "ip": [
+                  "geoip:!ru"
+              ],
+			"outboundTag": "proxy"
+		}
+      ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809
+    }
+  ],
+  "outbounds": [
+	{
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "$DOMAIN", 
+            "port": 443,
+            "users": [
+              {
+                "id": "${xray_uuid_vrv}",
+                "flow": "xtls-rprx-vision",
+                "encryption": "none",
+                "level": 0
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "tcpSettings": {
+          "acceptProxyProtocol": false
+        },
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "$DOMAIN",
+          "publicKey": "${xray_publicKey_vrv}",
+          "shortId": "${xray_shortIds_vrv}"
+        }
+      }
+    },  
+  
+      {
+          "tag": "direct",
+          "protocol": "freedom"
+      },
+      {
+          "tag": "block",
+          "protocol": "blackhole"
+      }
+  ]
+}
+
+EOF
+
 # Перезапуск Xray
 echo "Перезапуск Xray..."
 sudo systemctl restart xray
@@ -310,32 +421,31 @@ sudo systemctl restart xray
 echo "Готово!
 "
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-443-self"
+subPageLink="https://$DOMAIN/$path_subpage.html"
 
-link3="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-8443-self"
-
-ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
-link4="ss://$ENCODED_STRING@${ipserv}:2040#VPN-ShadowS-2040"
-
-
+# Формирование ссылок
+link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-tcp-443-self"
 	
+echo "
+Новый пароль root: $pasw_root
+Новый порт для ssh: 468"
+
 echo -e "
-
-Ваши VPN конфиги. Первый - самый надежный, остальные резервные!
-
-\033[32m$link1\033[0m
-"
-echo -e "\033[32m$link3\033[0m
-"
-echo -e "\033[32m$link4\033[0m
-
-Скопируйте конфиг в специализированное приложение:
-- iOS: Happ или v2rayTun или FoXray
+Скопируйте ссылку в специализированное приложение:
+- iOS: Happ или v2rayTun или v2rayN
 - Android: Happ или v2rayTun или v2rayNG
-- Windows: Hiddify или Nekoray
+- Windows: v2rayN или Happ(alpha)
 
-Сайт с инструкциями: blog.skybridge.run
+Сайт с инструкциями: blog.skybridge.run"
+
+echo -e "
+Для проверки работоспобоности:
+$link1
+
+Ваша страничка подписки:
+\033[32m$subPageLink\033[0m
+
+Открыт socks5 на порту 10808 и http на 10809, настройте ваш клиент!
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
-
 "
