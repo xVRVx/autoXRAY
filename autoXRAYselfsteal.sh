@@ -135,13 +135,9 @@ EOF
 
 
 
-# Проверка и установка Xray
-if ! command -v xray &> /dev/null; then
-  echo "Xray не установлен, установка..."
-  bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
-else
-  echo "Xray уже установлен."
-fi
+# Установка Xray
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+
 
 # Определяем директорию скрипта
 #SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
