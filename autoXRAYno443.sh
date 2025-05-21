@@ -8,7 +8,6 @@ echo "port1: $port1"
 echo "port2: $port2"
 echo "port3: $port3"
 
-
 echo "Обновление и установка необходимых пакетов..."
 apt update && apt install sudo -y
 #sudo apt update && sudo apt upgrade -y
