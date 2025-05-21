@@ -22,23 +22,6 @@ apt update && apt install sudo -y
 sudo apt update && sudo apt install -y jq
 
 
-
-echo "Меняем пароль для root"
-pasw_root=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 25)
-echo "root:$pasw_root" | sudo chpasswd
-
-echo "Меняем порт ssh"
-
-port=$((RANDOM % 501 + 500))
-
-grep -q '^Port ' /etc/ssh/sshd_config && \
-  sudo sed -i "s/^Port .*/Port $port/" /etc/ssh/sshd_config || \
-  echo "Port $port" | sudo tee -a /etc/ssh/sshd_config
-
-sudo systemctl restart ssh
-
-
-
 echo "Настройка DNS..."
 echo -e "nameserver 8.8.4.4\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
 
@@ -429,10 +412,6 @@ subPageLink="https://$DOMAIN/$path_subpage.html"
 # Формирование ссылок
 link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-tcp-443-self"
 	
-echo "
-Новый пароль root: $pasw_root
-Новый порт для ssh: $port"
-
 echo -e "
 Скопируйте ссылку в специализированное приложение:
 - iOS: Happ или v2rayTun или v2rayN
