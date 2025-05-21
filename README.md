@@ -50,6 +50,11 @@ chatID — id вашего клиента в ТГ, tgTOKEN — токен ваш
 
 При каждом запуске autoXRAY генерирует новые UUID, ключи и пароли для защиты пользователей, а также выбирает случайные SNI из списка для маскировки.
 
+**Обновить ядро xray**
+```bash
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+```
+
 ## Выбор сервера (подбирал промо тарифы)
 
 - [AEZA](https://aeza.net/?ref=671750) - у них иногда есть promo vps в Швеции за 1.1 евро (оплата криптовалютой).
