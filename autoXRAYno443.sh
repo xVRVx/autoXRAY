@@ -1,5 +1,18 @@
 #!/bin/bash
 
+port1=${1:-4443}
+port2=${2:-8443}
+port3=${3:-2040}
+
+echo "port1: $port1"
+echo "port2: $port2"
+echo "port3: $port3"
+
+if [ -n "$userID" ]; then
+
+fi	
+
+
 echo "Обновление и установка необходимых пакетов..."
 apt update && apt install sudo -y
 #sudo apt update && sudo apt upgrade -y
@@ -34,7 +47,7 @@ ipserv=$(hostname -I | awk '{print $1}')
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv
+export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv port1 port2 port3
 
 # Создаем JSON конфигурацию на основе шаблона
 #cat << 'EOF' | envsubst > output.json
@@ -48,8 +61,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     ]
   },
   "log": {
-    "access": "/var/lib/marzban/access.log",
-    "error": "/var/lib/marzban/error.log",
     "loglevel": "none",
     "dnsLog": false
   },
@@ -66,9 +77,49 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   },
   "inbounds": [
     {
-      "tag": "Vless8443",
+      "tag": "VTR$port1",
       "listen": "0.0.0.0",
-      "port": 8443,
+      "port": $port1,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "flow": "xtls-rprx-vision",
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "dest": "${xray_dest_vrv}:443",
+          "xver": 0,
+          "serverNames": [
+            "${xray_dest_vrv}"
+          ],
+          "privateKey": "${xray_privateKey_vrv}",
+          "publicKey": "${xray_publicKey_vrv}",
+          "shortIds": [
+            "${xray_shortIds_vrv}"
+          ]
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    },
+    {
+      "tag": "VTR$port2",
+      "listen": "0.0.0.0",
+      "port": $port2,
       "protocol": "vless",
       "settings": {
         "clients": [
@@ -106,9 +157,9 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       }
     },
     {
-      "tag": "ShadowsocksTCP",
+      "tag": "SS$port3",
       "listen": "0.0.0.0",
-      "port": 2040,
+      "port": $port3,
       "protocol": "shadowsocks",
       "settings": {
         "clients": [
@@ -141,54 +192,20 @@ sudo systemctl restart xray
 
 echo "Готово!
 "
-# Формирование ссылок для ТГ
-link2="vless://${xray_uuid_vrv}@${ipserv}:8443?security=reality%26sni=${xray_dest_vrv222}%26fp=chrome%26pbk=${xray_publicKey_vrv}%26sid=${xray_shortIds_vrv}%26type=tcp%26flow=xtls-rprx-vision%26encryption=none#VPN-vless-8443"
-
-ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
-link3="ss://$ENCODED_STRING@${ipserv}:2040#VPN-ShadowS-2040"
-
-
-userID=$1
-tgTOKEN=$2
-
-if [ -n "$userID" ]; then
-# Формируем сообщение (в Markdown для красивого вида)
-message="<b>VPN конфиги:</b>
- 
-1) <code>$link2</code>
- 
-2) <code>$link3</code>
-
-Клиентские приложения для работы VPN (куда нужно вставить конфиг):
-
-- <b>iOS</b>: <a href='https://apps.apple.com/us/app/happ-proxy-utility/id6504287215?l=ru'>Happ</a> или <a href='https://apps.apple.com/us/app/v2raytun/id6476628951?l=ru'>v2rayTun</a> или FoXray
-
-- <b>Android</b>: <a href='https://play.google.com/store/apps/details?id=com.happproxy'>Happ</a> или <a href='https://play.google.com/store/apps/details?id=com.v2raytun.android'>v2rayTun</a> или <a href='https://play.google.com/store/apps/details?id=com.v2ray.ang'>v2rayNG</a>
-
-- <b>Windows</b>: <a href='https://github.com/hiddify/hiddify-next/releases/latest/download/Hiddify-Windows-Setup-x64.exe'>Hiddify</a> или <a href='https://github.com/MatsuriDayo/nekoray/releases'>Nekoray</a>
-
-Сайт с инструкциями: <a href='https://blog.skybridge.run/'>blog.skybridge.run</a>.
-
-<a href='https://github.com/xVRVx/autoXRAY'>Поддержать автора</a>.
-"
-
-# Отправка сообщения в Telegram
-curl -s -X POST "https://api.telegram.org/bot$tgTOKEN/sendMessage" \
-    -d chat_id="$userID" \
-    -d text="$message" \
-    -d parse_mode="HTML" \
-    -d disable_web_page_preview=true
-fi	
 
 # Формирование ссылок для вывода
-link2="vless://${xray_uuid_vrv}@${ipserv}:8443?security=reality&sni=${xray_dest_vrv222}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-8443"
+link1="vless://${xray_uuid_vrv}@${ipserv}:$port1?security=reality&sni=${xray_dest_vrv}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-$port1"
+
+link2="vless://${xray_uuid_vrv}@${ipserv}:$port2?security=reality&sni=${xray_dest_vrv222}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-$port2"
 
 ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
-link3="ss://$ENCODED_STRING@${ipserv}:2040#VPN-ShadowS-2040"
+link3="ss://$ENCODED_STRING@${ipserv}:$port3#VPN-ShadowS-$port3"
 	
 echo -e "
 
-Ваши VPN конфиги.
+Ваши VPN конфиги. Первый - самый надежный, остальные резервные!
+
+\033[32m$link1\033[0m
 "
 echo -e "\033[32m$link2\033[0m
 "
