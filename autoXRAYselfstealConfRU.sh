@@ -411,7 +411,7 @@ echo "Готово!
 subPageLink="https://$DOMAIN/$path_subpage.html"
 
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-tcp-443-self"
+link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#useConfig"
 	
 echo -e "
 Скопируйте ссылку в специализированное приложение:
@@ -428,7 +428,7 @@ $link1
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
 
-Открыт socks5 на порту 10808 и http на 10809, настройте ваш клиент!
+Открыт socks5 на порту 10808 и http на 10809, для настройки v2rayN!
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 "
