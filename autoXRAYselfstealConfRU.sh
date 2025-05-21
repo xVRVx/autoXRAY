@@ -10,7 +10,8 @@ fi
 echo "Обновление и установка необходимых пакетов..."
 apt update && apt install sudo -y
 #sudo apt update && sudo apt upgrade -y
-sudo apt update && sudo apt install jq && sudo apt install dnsutils -y
+sudo apt update && sudo apt install -y jq dnsutils
+
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
