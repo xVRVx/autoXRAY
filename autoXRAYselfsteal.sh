@@ -7,6 +7,11 @@ if [ -z "$DOMAIN" ]; then
     exit 1
 fi
 
+echo "Обновление и установка необходимых пакетов..."
+apt update && apt install sudo -y
+#sudo apt update && sudo apt upgrade -y
+sudo apt update && sudo apt install -y jq && sudo apt install dnsutils
+
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
 
@@ -17,10 +22,7 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
 fi
 
 
-echo "Обновление и установка необходимых пакетов..."
-apt update && apt install sudo -y
-#sudo apt update && sudo apt upgrade -y
-sudo apt update && sudo apt install -y jq
+
 
 
 echo "Настройка DNS..."
