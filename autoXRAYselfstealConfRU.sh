@@ -28,9 +28,12 @@ pasw_root=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 25)
 echo "root:$pasw_root" | sudo chpasswd
 
 echo "Меняем порт ssh"
+
+port=$((RANDOM % 501 + 500))
+
 grep -q '^Port ' /etc/ssh/sshd_config && \
-  sudo sed -i 's/^Port .*/Port 468/' /etc/ssh/sshd_config || \
-  echo 'Port 468' | sudo tee -a /etc/ssh/sshd_config
+  sudo sed -i "s/^Port .*/Port $port/" /etc/ssh/sshd_config || \
+  echo "Port $port" | sudo tee -a /etc/ssh/sshd_config
 
 sudo systemctl restart ssh
 
@@ -428,7 +431,7 @@ link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chro
 	
 echo "
 Новый пароль root: $pasw_root
-Новый порт для ssh: 468"
+Новый порт для ssh: $port"
 
 echo -e "
 Скопируйте ссылку в специализированное приложение:
