@@ -178,111 +178,92 @@ export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_pub
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
-  "dns": {
-    "servers": [
-      "8.8.4.4",
-      "8.8.8.8"
-    ]
-  },
-  "log": {
-    "loglevel": "none",
-    "dnsLog": false
-  },
-  "routing": {
-	"domainStrategy": "IPIfNonMatch",
-    "rules": [
-      {
-        "ip": [
-          "geoip:private",
-          "geoip:ru"
-		  
-        ],
-        "outboundTag": "BLOCK",
-        "type": "field"
-      },
-      {
-        "protocol": [
-          "bittorrent"
-        ],
-        "outboundTag": "BLOCK"
-      },
-      {
-        "domain": [
-          "geosite:category-ads"
-        ],
-        "outboundTag": "BLOCK"
-      },
-	  {
-        "domain": [
-			"geosite:private",
-			"geosite:apple",
-			"geosite:apple-pki",
-			"geosite:huawei",
-			"geosite:xiaomi",
-			"geosite:category-android-app-download",
-			"geosite:f-droid",
-			"geosite:twitch",
-			"geosite:yandex",
-			"geosite:vk",
-			"geosite:mailru",
-			"geosite:category-gov-ru"
-        ],
-        "outboundTag": "BLOCK"
-      }
-    ]
-  },
-  "inbounds": [
-    {
-      "tag": "VtcpRself",
-      "listen": "0.0.0.0",
-      "port": 443,
-      "protocol": "vless",
-      "settings": {
-        "clients": [
-          {
-            "flow": "xtls-rprx-vision",
-            "id": "${xray_uuid_vrv}"
-          }
-        ],
-        "decryption": "none"
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "show": false,
-          "dest": "3333",
-          "xver": 0,
-          "serverNames": [
-            "$DOMAIN"
-          ],
-          "privateKey": "${xray_privateKey_vrv}",
-          "publicKey": "${xray_publicKey_vrv}",
-          "shortIds": [
-            "${xray_shortIds_vrv}"
-          ]
-        }
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
+    "dns": {
+        "servers": [
+            "https+local://8.8.4.4/dns-query",
+            "localhost"
         ]
-      }
-    }
-  ],
-  "outbounds": [
-    {
-      "protocol": "freedom",
-      "tag": "DIRECT"
     },
-    {
-      "protocol": "blackhole",
-      "tag": "BLOCK"
-    }
-  ]
+    "log": {
+        "loglevel": "none",
+        "dnsLog": false
+    },
+    "routing": {
+        "domainStrategy": "IPIfNonMatch",
+        "rules": [
+            {
+                "ip": [
+                    "geoip:private",
+                    "geoip:ru"
+                ],
+                "outboundTag": "block"
+            },
+            {
+                "protocol": [
+                    "bittorrent"
+                ],
+                "outboundTag": "block"
+            },
+            {
+                "domain": [
+                    "geosite:category-ads"
+                ],
+                "outboundTag": "block"
+            }
+        ]
+    },
+    "inbounds": [
+        {
+            "tag": "VtcpRself",
+            "listen": "0.0.0.0",
+            "port": 443,
+            "protocol": "vless",
+            "settings": {
+                "clients": [
+                    {
+                        "flow": "xtls-rprx-vision",
+                        "id": "${xray_uuid_vrv}"
+                    }
+                ],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "reality",
+                "realitySettings": {
+                    "show": false,
+                    "dest": "3333",
+                    "xver": 0,
+                    "serverNames": [
+                        "$DOMAIN"
+                    ],
+                    "privateKey": "${xray_privateKey_vrv}",
+                    "publicKey": "${xray_publicKey_vrv}",
+                    "shortIds": [
+                        "${xray_shortIds_vrv}"
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "tag": "direct"
+        },
+        {
+            "protocol": "blackhole",
+            "tag": "block"
+        }
+    ]
 }
 
 EOF
@@ -290,140 +271,139 @@ EOF
 # Создаем JSON конфигурацию клиента
 cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
 {
-  "log": {
-      "loglevel": "warning"
-  },
-  "dns": {
-    "servers": [
-      "8.8.4.4",
-      "8.8.8.8"
-    ]
-  },
-  "routing": {
-      "domainStrategy": "IPIfNonMatch",
-      "rules": [
-		{
-			"domain": [
-			  "geosite:category-ads-all"
-			],
-			"outboundTag": "block"
-		},	  
-		{
-			"protocol": [
-			  "bittorrent"
-			],
-			"outboundTag": "direct"
-		},	  
-          {
-              "domain": [
-                  "geosite:private",
-                  "geosite:apple",
-                  "geosite:apple-pki",
-                  "geosite:huawei",
-                  "geosite:xiaomi",
-                  "geosite:category-android-app-download",
-                  "geosite:f-droid",
-                  "geosite:twitch",
-                  "geosite:yandex",
-                  "geosite:vk",
-                  "geosite:category-gov-ru"
-              ],
-              "outboundTag": "direct"
-          },
-          {
-              "ip": [
-                  "geoip:ru",
-                  "geoip:private"
-              ],
-              "outboundTag": "direct"
-          },
-		{
-			"type": "field",
-              "ip": [
-                  "geoip:!ru"
-              ],
-			"outboundTag": "proxy"
-		}
-      ]
-  },
-  "inbounds": [
-    {
-      "tag": "socks-in",
-      "protocol": "socks",
-      "listen": "127.0.0.1",
-      "port": 10808,
-      "settings": {
-        "udp": true
-      }
+    "log": {
+        "loglevel": "warning"
     },
-	{
-      "tag": "socks-sb",
-      "protocol": "socks",
-      "listen": "127.0.0.1",
-      "port": 2080,
-      "settings": {
-        "udp": true
-      }
-    },
-{
-      "tag": "socks-v2rayN",
-      "protocol": "socks",
-      "listen": "127.0.0.1",
-      "port": 1080,
-      "settings": {
-        "udp": true
-      }
-    },
-    {
-      "tag": "http-in",
-      "protocol": "http",
-      "listen": "127.0.0.1",
-      "port": 10809
-    }
-  ],
-  "outbounds": [
-	{
-      "tag": "proxy",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "$DOMAIN", 
-            "port": 443,
-            "users": [
-              {
-                "id": "${xray_uuid_vrv}",
-                "flow": "xtls-rprx-vision",
-                "encryption": "none",
-                "level": 0
-              }
-            ]
-          }
+    "dns": {
+        "servers": [
+            "8.8.4.4",
+            "8.8.8.8"
         ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "tcpSettings": {
-          "acceptProxyProtocol": false
+    },
+    "routing": {
+        "domainStrategy": "IPIfNonMatch",
+        "rules": [
+            {
+                "domain": [
+                    "geosite:category-ads-all"
+                ],
+                "outboundTag": "block"
+            },
+            {
+                "protocol": [
+                    "bittorrent"
+                ],
+                "outboundTag": "direct"
+            },
+            {
+                "domain": [
+                    "geosite:private",
+                    "geosite:apple",
+                    "geosite:apple-pki",
+                    "geosite:huawei",
+                    "geosite:xiaomi",
+                    "geosite:category-android-app-download",
+                    "geosite:f-droid",
+                    "geosite:twitch",
+                    "geosite:yandex",
+                    "geosite:vk",
+                    "geosite:category-gov-ru"
+                ],
+                "outboundTag": "direct"
+            },
+            {
+                "ip": [
+                    "geoip:ru",
+                    "geoip:private"
+                ],
+                "outboundTag": "direct"
+            },
+            {
+                "type": "field",
+                "ip": [
+                    "geoip:!ru"
+                ],
+                "outboundTag": "proxy"
+            }
+        ]
+    },
+    "inbounds": [
+        {
+            "tag": "socks-in",
+            "protocol": "socks",
+            "listen": "127.0.0.1",
+            "port": 10808,
+            "settings": {
+                "udp": true
+            }
         },
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "$DOMAIN",
-          "publicKey": "${xray_publicKey_vrv}",
-          "shortId": "${xray_shortIds_vrv}"
+        {
+            "tag": "socks-sb",
+            "protocol": "socks",
+            "listen": "127.0.0.1",
+            "port": 2080,
+            "settings": {
+                "udp": true
+            }
+        },
+        {
+            "tag": "socks-v2rayN",
+            "protocol": "socks",
+            "listen": "127.0.0.1",
+            "port": 1080,
+            "settings": {
+                "udp": true
+            }
+        },
+        {
+            "tag": "http-in",
+            "protocol": "http",
+            "listen": "127.0.0.1",
+            "port": 10809
         }
-      }
-    },  
-  
-      {
-          "tag": "direct",
-          "protocol": "freedom"
-      },
-      {
-          "tag": "block",
-          "protocol": "blackhole"
-      }
-  ]
+    ],
+    "outbounds": [
+        {
+            "tag": "proxy",
+            "protocol": "vless",
+            "settings": {
+                "vnext": [
+                    {
+                        "address": "$DOMAIN",
+                        "port": 443,
+                        "users": [
+                            {
+                                "id": "${xray_uuid_vrv}",
+                                "flow": "xtls-rprx-vision",
+                                "encryption": "none",
+                                "level": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "tcpSettings": {
+                    "acceptProxyProtocol": false
+                },
+                "security": "reality",
+                "realitySettings": {
+                    "serverName": "$DOMAIN",
+                    "publicKey": "${xray_publicKey_vrv}",
+                    "shortId": "${xray_shortIds_vrv}"
+                }
+            }
+        },
+        {
+            "tag": "direct",
+            "protocol": "freedom"
+        },
+        {
+            "tag": "block",
+            "protocol": "blackhole"
+        }
+    ]
 }
 
 EOF
