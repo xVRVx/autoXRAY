@@ -34,7 +34,7 @@ chatID — id вашего клиента в ТГ, tgTOKEN — токен ваш
 - Windows: Hiddify или Nekoray
 
 
-Сайт с инструкциями:  [blog.skybridge.run](https://blog.skybridge.run)
+Сайт с более подробными инструкциями:  [blog.skybridge.run](https://blog.skybridge.run)
 
 Здесь вы найдете более подробные инструкции по подключению. 
 
