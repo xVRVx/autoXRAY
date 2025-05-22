@@ -356,6 +356,24 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
         "udp": true
       }
     },
+	{
+      "tag": "socks-sb",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 2080,
+      "settings": {
+        "udp": true
+      }
+    },
+{
+      "tag": "socks-v2rayN",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 1080,
+      "settings": {
+        "udp": true
+      }
+    },
     {
       "tag": "http-in",
       "protocol": "http",
@@ -426,7 +444,7 @@ echo -e "
 Скопируйте ссылку в специализированное приложение:
 - iOS: Happ или v2rayTun или v2rayN
 - Android: Happ или v2rayTun или v2rayNG
-- Windows: v2rayN или Happ(alpha)
+- Windows: v2rayN или Happ(alpha) или само ядро Xray
 
 Сайт с инструкциями: blog.skybridge.run"
 
@@ -437,7 +455,8 @@ $link1
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
 
-Открыт socks5 на порту 10808 и http на 10809, для настройки v2rayN!
+Открыт локальный socks5 на порту 10808, 1080, 2080 и http на 10809, для настройки windows приложений!
+Для приложения ядра - в браузере надо скачать расширение по типу FoxyProxy!
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 "
