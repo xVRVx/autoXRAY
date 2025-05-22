@@ -94,11 +94,18 @@ HEADERS=("Welcome to FileShare" "Login to Your CloudBox" "Enter Your Secure Vaul
 BUTTON_COLORS=("bg-blue-600" "bg-green-600" "bg-red-600" "bg-yellow-600" "bg-purple-600" "bg-pink-600" "bg-indigo-600"
                "bg-teal-600" "bg-orange-600" "bg-cyan-600" "bg-lime-600" "bg-amber-600" "bg-fuchsia-600" "bg-violet-600"
                "bg-rose-600" "bg-emerald-600" "bg-sky-600" "bg-gray-600" "bg-zinc-600" "bg-stone-600")
+			   
+BUTTON_TEXTS=("Sign In" "Log In" "Login" "Access Account" "Enter Account"
+              "Sign In to Continue" "Sign In to Dashboard" "Log In to Your Account" "Continue to Account" "Access Your Dashboard"
+              "Let’s Go" "Welcome Back!" "Get Started" "Join Us Again" "Back Again? Sign In"
+              "Secure Sign In" "Protected Login" "Sign In Securely"
+              "Enter" "Go")
 
 # Random selection
 TITLE=${TITLES[$RANDOM % ${#TITLES[@]}]}
 HEADER=${HEADERS[$RANDOM % ${#HEADERS[@]}]}
 BUTTON_COLOR=${BUTTON_COLORS[$RANDOM % ${#BUTTON_COLORS[@]}]}
+BUTTON_TEXT=${BUTTON_TEXTS[$RANDOM % ${#BUTTON_TEXTS[@]}]}
 
 echo "✅ Creating index.html at $WEB_PATH"
 
@@ -111,6 +118,8 @@ cat > "$WEB_PATH/index.html" <<EOF
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>$TITLE</title>
     <script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+	<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js" integrity="sha256-9zljDKpE/mQxmaR4V2cGVaQ7arF3CcXxarvgr7Sj8Uc=" crossorigin="anonymous"></script>
 </head>
 <body class="flex items-center justify-center min-h-screen bg-gray-100">
     <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-md">
@@ -125,7 +134,7 @@ cat > "$WEB_PATH/index.html" <<EOF
                 <input type="password" id="password" name="password" class="w-full p-2 mt-1 border rounded-lg focus:ring focus:ring-blue-200" />
             </div>
             <button type="submit" class="w-full px-4 py-2 text-white $BUTTON_COLOR rounded-lg hover:opacity-90 focus:ring focus:ring-blue-200">
-                Sign In
+                $BUTTON_TEXT
             </button>
         </form>
     </div>
