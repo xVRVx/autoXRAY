@@ -23,9 +23,6 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
 fi
 
 
-
-
-
 echo "Настройка DNS..."
 echo -e "nameserver 8.8.4.4\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
 
@@ -97,11 +94,18 @@ HEADERS=("Welcome to FileShare" "Login to Your CloudBox" "Enter Your Secure Vaul
 BUTTON_COLORS=("bg-blue-600" "bg-green-600" "bg-red-600" "bg-yellow-600" "bg-purple-600" "bg-pink-600" "bg-indigo-600"
                "bg-teal-600" "bg-orange-600" "bg-cyan-600" "bg-lime-600" "bg-amber-600" "bg-fuchsia-600" "bg-violet-600"
                "bg-rose-600" "bg-emerald-600" "bg-sky-600" "bg-gray-600" "bg-zinc-600" "bg-stone-600")
+			   
+BUTTON_TEXTS=("Sign In" "Log In" "Login" "Access Account" "Enter Account"
+              "Sign In to Continue" "Sign In to Dashboard" "Log In to Your Account" "Continue to Account" "Access Your Dashboard"
+              "Let’s Go" "Welcome Back!" "Get Started" "Join Us Again" "Back Again? Sign In"
+              "Secure Sign In" "Protected Login" "Sign In Securely"
+              "Enter" "Go")
 
 # Random selection
 TITLE=${TITLES[$RANDOM % ${#TITLES[@]}]}
 HEADER=${HEADERS[$RANDOM % ${#HEADERS[@]}]}
 BUTTON_COLOR=${BUTTON_COLORS[$RANDOM % ${#BUTTON_COLORS[@]}]}
+BUTTON_TEXT=${BUTTON_TEXTS[$RANDOM % ${#BUTTON_TEXTS[@]}]}
 
 echo "✅ Creating index.html at $WEB_PATH"
 
@@ -114,6 +118,8 @@ cat > "$WEB_PATH/index.html" <<EOF
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>$TITLE</title>
     <script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+	<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js" integrity="sha256-9zljDKpE/mQxmaR4V2cGVaQ7arF3CcXxarvgr7Sj8Uc=" crossorigin="anonymous"></script>
 </head>
 <body class="flex items-center justify-center min-h-screen bg-gray-100">
     <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-md">
@@ -128,7 +134,7 @@ cat > "$WEB_PATH/index.html" <<EOF
                 <input type="password" id="password" name="password" class="w-full p-2 mt-1 border rounded-lg focus:ring focus:ring-blue-200" />
             </div>
             <button type="submit" class="w-full px-4 py-2 text-white $BUTTON_COLOR rounded-lg hover:opacity-90 focus:ring focus:ring-blue-200">
-                Sign In
+                $BUTTON_TEXT
             </button>
         </form>
     </div>
@@ -160,39 +166,49 @@ xray_shortIds_vrv=$(openssl rand -hex 8)
 
 xray_sspasw_vrv=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
+path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
+
 ipserv=$(hostname -I | awk '{print $1}')
 
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN
+export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH
 
-# Создаем JSON конфигурацию на основе шаблона
-#cat << 'EOF' | envsubst > output.json
-# Создаем JSON конфигурацию на основе шаблона и сохраняем в папку скрипта
+# Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
     "dns": {
         "servers": [
             "https+local://8.8.4.4/dns-query",
-            "https+local://8.8.8.8/dns-query",
             "localhost"
         ]
     },
     "log": {
-        "access": "/var/lib/marzban/access.log",
-        "error": "/var/lib/marzban/error.log",
         "loglevel": "none",
         "dnsLog": false
     },
     "routing": {
+        "domainStrategy": "IPIfNonMatch",
         "rules": [
             {
                 "ip": [
-                    "geoip:private"
+                    "geoip:private",
+                    "geoip:cn"
                 ],
-                "outboundTag": "BLOCK",
-                "type": "field"
+                "outboundTag": "block"
+            },
+            {
+                "protocol": [
+                    "bittorrent"
+                ],
+                "outboundTag": "block"
+            },
+            {
+                "domain": [
+                    "geosite:category-ads"
+                ],
+                "outboundTag": "block"
             }
         ]
     },
@@ -236,71 +252,171 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                     "quic"
                 ]
             }
-        },
-        {
-            "tag": "Vless8443self",
-            "listen": "0.0.0.0",
-            "port": 8443,
-            "protocol": "vless",
-            "settings": {
-                "clients": [
-                    {
-                        "flow": "xtls-rprx-vision",
-                        "id": "${xray_uuid_vrv}"
-                    }
-                ],
-                "decryption": "none"
-            },
-            "streamSettings": {
-                "network": "tcp",
-                "security": "reality",
-                "realitySettings": {
-                    "show": false,
-                    "dest": "3333",
-                    "xver": 0,
-                    "serverNames": [
-                        "$DOMAIN"
-                    ],
-                    "privateKey": "${xray_privateKey_vrv}",
-                    "publicKey": "${xray_publicKey_vrv}",
-                    "shortIds": [
-                        "${xray_shortIds_vrv}"
-                    ]
-                }
-            },
-            "sniffing": {
-                "enabled": true,
-                "destOverride": [
-                    "http",
-                    "tls",
-                    "quic"
-                ]
-            }
-        },
-        {
-            "tag": "ShadowsocksTCP",
-            "listen": "0.0.0.0",
-            "port": 2040,
-            "protocol": "shadowsocks",
-            "settings": {
-                "clients": [
-                    {
-                        "password": "${xray_sspasw_vrv}",
-                        "method": "chacha20-ietf-poly1305"
-                    }
-                ],
-                "network": "tcp,udp"
-            }
         }
     ],
     "outbounds": [
         {
             "protocol": "freedom",
-            "tag": "DIRECT"
+            "tag": "direct"
         },
         {
             "protocol": "blackhole",
-            "tag": "BLOCK"
+            "tag": "block"
+        }
+    ]
+}
+
+EOF
+
+# Создаем JSON конфигурацию клиента
+cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
+{
+    "log": {
+        "loglevel": "warning"
+    },
+    "dns": {
+        "servers": [
+            {
+                "address": "8.8.8.8",
+                "domains": [
+                    "geosite:geolocation-!cn"
+                ]
+            },
+            {
+                "address": "223.5.5.5",
+                "domains": [
+                    "geosite:cn"
+                ],
+                "expectIPs": [
+                    "geoip:cn"
+                ]
+            },
+            {
+                "address": "114.114.114.114",
+                "domains": [
+                    "geosite:cn"
+                ]
+            },
+            "localhost"
+        ]
+    },
+    "routing": {
+        "domainStrategy": "IPIfNonMatch",
+        "rules": [
+            {
+                "domain": [
+                    "geosite:category-ads-all"
+                ],
+                "outboundTag": "block"
+            },
+            {
+                "protocol": [
+                    "bittorrent"
+                ],
+                "outboundTag": "direct"
+            },
+            {
+                "ip": [
+                    "geoip:cn"
+                ],
+                "outboundTag": "direct"
+            },
+            {
+                "domain": [
+                    "geosite:geolocation-!cn"
+                ],
+                "outboundTag": "proxy"
+            },
+            {
+                "ip": [
+                    "223.5.5.5"
+                ],
+                "outboundTag": "direct"
+            },
+            {
+                "ip": [
+                    "geoip:cn",
+                    "geoip:private"
+                ],
+                "outboundTag": "direct"
+            }
+        ]
+    },
+    "inbounds": [
+        {
+            "tag": "socks-in",
+            "protocol": "socks",
+            "listen": "127.0.0.1",
+            "port": 10808,
+            "settings": {
+                "udp": true
+            }
+        },
+        {
+            "tag": "socks-sb",
+            "protocol": "socks",
+            "listen": "127.0.0.1",
+            "port": 2080,
+            "settings": {
+                "udp": true
+            }
+        },
+        {
+            "tag": "socks-v2rayN",
+            "protocol": "socks",
+            "listen": "127.0.0.1",
+            "port": 1080,
+            "settings": {
+                "udp": true
+            }
+        },
+        {
+            "tag": "http-in",
+            "protocol": "http",
+            "listen": "127.0.0.1",
+            "port": 10809
+        }
+    ],
+    "outbounds": [
+        {
+            "tag": "proxy",
+            "protocol": "vless",
+            "settings": {
+                "vnext": [
+                    {
+                        "address": "$DOMAIN",
+                        "port": 443,
+                        "users": [
+                            {
+                                "id": "${xray_uuid_vrv}",
+                                "flow": "xtls-rprx-vision",
+                                "encryption": "none",
+                                "level": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "tcpSettings": {
+                    "acceptProxyProtocol": false
+                },
+                "security": "reality",
+                "realitySettings": {
+                    "serverName": "$DOMAIN",
+                    "publicKey": "${xray_publicKey_vrv}",
+                    "shortId": "${xray_shortIds_vrv}"
+                }
+            }
+        },
+        {
+            "tag": "direct",
+            "protocol": "freedom"
+        },
+        {
+            "tag": "block",
+            "protocol": "blackhole"
         }
     ]
 }
@@ -314,32 +430,27 @@ sudo systemctl restart xray
 echo "Готово!
 "
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-443-self"
+subPageLink="https://$DOMAIN/$path_subpage.html"
 
-link3="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-8443-self"
-
-ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
-link4="ss://$ENCODED_STRING@${ipserv}:2040#VPN-ShadowS-2040"
-
-
+# Формирование ссылок
+link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#useConfig"
 	
 echo -e "
-
-Ваши VPN конфиги. Первый - самый надежный, остальные резервные!
-
-\033[32m$link1\033[0m
-"
-echo -e "\033[32m$link3\033[0m
-"
-echo -e "\033[32m$link4\033[0m
-
-Скопируйте конфиг в специализированное приложение:
-- iOS: Happ или v2rayTun или FoXray
+Скопируйте ссылку в специализированное приложение:
+- iOS: Happ или v2rayTun или v2rayN
 - Android: Happ или v2rayTun или v2rayNG
-- Windows: Hiddify или Nekoray
+- Windows: v2rayN или Happ(alpha) или само ядро Xray
 
-Сайт с инструкциями: blog.skybridge.run
+Сайт с инструкциями: blog.skybridge.run"
+
+echo -e "
+Для проверки работоспобоности:
+$link1
+
+Ваша страничка подписки:
+\033[32m$subPageLink\033[0m
+
+Открыт локальный socks5 на порту 10808, 1080, 2080 и http на 10809.
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
-
 "

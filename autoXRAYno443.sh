@@ -50,10 +50,11 @@ export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_pub
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
   "dns": {
-    "servers": [
-      "8.8.4.4",
-      "8.8.8.8"
-    ]
+	"servers": [
+		"https+local://8.8.4.4/dns-query",
+		"https+local://8.8.8.8/dns-query",
+		"localhost"
+	]
   },
   "log": {
     "loglevel": "none",

@@ -41,136 +41,137 @@ export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_pub
 # Создаем JSON конфигурацию на основе шаблона и сохраняем в папку скрипта
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
-  "dns": {
-    "servers": [
-      "8.8.4.4",
-      "8.8.8.8"
-    ]
-  },
-  "log": {
-    "access": "/var/lib/marzban/access.log",
-    "error": "/var/lib/marzban/error.log",
-    "loglevel": "none",
-    "dnsLog": false
-  },
-  "routing": {
-    "rules": [
-      {
-        "ip": [
-          "geoip:private"
-        ],
-        "outboundTag": "BLOCK",
-        "type": "field"
-      }
-    ]
-  },
-  "inbounds": [
-    {
-      "tag": "VLESStcpREALITY",
-      "listen": "0.0.0.0",
-      "port": 443,
-      "protocol": "vless",
-      "settings": {
-        "clients": [
-          {
-            "flow": "xtls-rprx-vision",
-            "id": "${xray_uuid_vrv}"
-          }
-        ],
-        "decryption": "none"
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "show": false,
-          "dest": "${xray_dest_vrv}:443",
-          "xver": 0,
-          "serverNames": [
-            "${xray_dest_vrv}"
-          ],
-          "privateKey": "${xray_privateKey_vrv}",
-          "publicKey": "${xray_publicKey_vrv}",
-          "shortIds": [
-            "${xray_shortIds_vrv}"
-          ]
-        }
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
+    "dns": {
+        "servers": [
+            "https+local://8.8.4.4/dns-query",
+            "https+local://8.8.8.8/dns-query",
+            "localhost"
         ]
-      }
     },
-    {
-      "tag": "Vless8443",
-      "listen": "0.0.0.0",
-      "port": 8443,
-      "protocol": "vless",
-      "settings": {
-        "clients": [
-          {
-            "flow": "xtls-rprx-vision",
-            "id": "${xray_uuid_vrv}"
-          }
-        ],
-        "decryption": "none"
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "show": false,
-          "dest": "${xray_dest_vrv222}:443",
-          "xver": 0,
-          "serverNames": [
-            "${xray_dest_vrv222}"
-          ],
-          "privateKey": "${xray_privateKey_vrv}",
-          "publicKey": "${xray_publicKey_vrv}",
-          "shortIds": [
-            "${xray_shortIds_vrv}"
-          ]
-        }
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
+    "log": {
+        "access": "/var/lib/marzban/access.log",
+        "error": "/var/lib/marzban/error.log",
+        "loglevel": "none",
+        "dnsLog": false
+    },
+    "routing": {
+        "rules": [
+            {
+                "ip": [
+                    "geoip:private"
+                ],
+                "outboundTag": "BLOCK",
+                "type": "field"
+            }
         ]
-      }
     },
-    {
-      "tag": "ShadowsocksTCP",
-      "listen": "0.0.0.0",
-      "port": 2040,
-      "protocol": "shadowsocks",
-      "settings": {
-        "clients": [
-          {
-            "password": "${xray_sspasw_vrv}",
-            "method": "chacha20-ietf-poly1305"
-          }
-        ],
-        "network": "tcp,udp"
-      }
-    }
-  ],
-  "outbounds": [
-    {
-      "protocol": "freedom",
-      "tag": "DIRECT"
-    },
-    {
-      "protocol": "blackhole",
-      "tag": "BLOCK"
-    }
-  ]
+    "inbounds": [
+        {
+            "tag": "VLESStcpREALITY",
+            "listen": "0.0.0.0",
+            "port": 443,
+            "protocol": "vless",
+            "settings": {
+                "clients": [
+                    {
+                        "flow": "xtls-rprx-vision",
+                        "id": "${xray_uuid_vrv}"
+                    }
+                ],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "reality",
+                "realitySettings": {
+                    "show": false,
+                    "dest": "${xray_dest_vrv}:443",
+                    "xver": 0,
+                    "serverNames": [
+                        "${xray_dest_vrv}"
+                    ],
+                    "privateKey": "${xray_privateKey_vrv}",
+                    "publicKey": "${xray_publicKey_vrv}",
+                    "shortIds": [
+                        "${xray_shortIds_vrv}"
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "tag": "Vless8443",
+            "listen": "0.0.0.0",
+            "port": 8443,
+            "protocol": "vless",
+            "settings": {
+                "clients": [
+                    {
+                        "flow": "xtls-rprx-vision",
+                        "id": "${xray_uuid_vrv}"
+                    }
+                ],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "reality",
+                "realitySettings": {
+                    "show": false,
+                    "dest": "${xray_dest_vrv222}:443",
+                    "xver": 0,
+                    "serverNames": [
+                        "${xray_dest_vrv222}"
+                    ],
+                    "privateKey": "${xray_privateKey_vrv}",
+                    "publicKey": "${xray_publicKey_vrv}",
+                    "shortIds": [
+                        "${xray_shortIds_vrv}"
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "tag": "ShadowsocksTCP",
+            "listen": "0.0.0.0",
+            "port": 2040,
+            "protocol": "shadowsocks",
+            "settings": {
+                "clients": [
+                    {
+                        "password": "${xray_sspasw_vrv}",
+                        "method": "chacha20-ietf-poly1305"
+                    }
+                ],
+                "network": "tcp,udp"
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "tag": "DIRECT"
+        },
+        {
+            "protocol": "blackhole",
+            "tag": "BLOCK"
+        }
+    ]
 }
 
 EOF
