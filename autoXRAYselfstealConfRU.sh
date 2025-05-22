@@ -456,9 +456,6 @@ $link1
 \033[32m$subPageLink\033[0m
 
 Открыт локальный socks5 на порту 10808, 1080, 2080 и http на 10809, для настройки windows приложений!
-Для приложения ядра:
-- запуск из консоли C:\Xray-windows-64\xray.exe -c C:\Xray-windows-64\config.json
-- в браузере надо скачать расширение по типу FoxyProxy!
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 "
