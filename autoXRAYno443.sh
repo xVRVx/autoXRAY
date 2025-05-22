@@ -66,7 +66,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "ip": [
           "geoip:private"
         ],
-        "outboundTag": "BLOCK",
+        "outboundTag": "block",
         "type": "field"
       }
     ]
@@ -171,11 +171,11 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   "outbounds": [
     {
       "protocol": "freedom",
-      "tag": "DIRECT"
+      "tag": "direct"
     },
     {
       "protocol": "blackhole",
-      "tag": "BLOCK"
+      "tag": "block"
     }
   ]
 }

@@ -181,6 +181,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "dns": {
         "servers": [
             "https+local://8.8.4.4/dns-query",
+            "https+local://8.8.8.8/dns-query",
             "localhost"
         ]
     },
