@@ -49,8 +49,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ]
     },
     "log": {
-        "access": "/var/lib/marzban/access.log",
-        "error": "/var/lib/marzban/error.log",
         "loglevel": "none",
         "dnsLog": false
     },
