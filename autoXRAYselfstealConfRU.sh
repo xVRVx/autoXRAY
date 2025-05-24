@@ -441,16 +441,14 @@ subPageLink="https://$DOMAIN/$path_subpage.html"
 link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#useConfig"
 	
 echo -e "
-Скопируйте ссылку в специализированное приложение:
+Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2rayTun или v2rayN
 - Android: Happ или v2rayTun или v2rayNG
-- Windows: v2rayN или Happ(alpha) или само ядро Xray
+- Windows: winLoadXRAY или v2rayN или Happ(alpha) или само ядро Xray
 
 Сайт с инструкциями: blog.skybridge.run"
 
 echo -e "
-Для проверки работоспобоности:
-$link1
 
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
