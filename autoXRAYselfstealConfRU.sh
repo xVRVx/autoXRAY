@@ -278,7 +278,9 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
     "dns": {
         "servers": [
             "8.8.4.4",
-            "8.8.8.8"
+            "8.8.8.8",
+            "1.1.1.1",
+            "localhost"
         ]
     },
     "routing": {
@@ -286,7 +288,8 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
         "rules": [
             {
                 "domain": [
-                    "geosite:category-ads-all"
+                    "geosite:category-ads-all",
+                    "geosite:win-spy"
                 ],
                 "outboundTag": "block"
             },
@@ -308,14 +311,21 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
                     "geosite:twitch",
                     "geosite:yandex",
                     "geosite:vk",
-                    "geosite:category-gov-ru"
+                    "geosite:microsoft",
+                    "geosite:win-update",
+                    "geosite:win-extra",
+                    "geosite:google-play",
+                    "geosite:steam",
+                    "geosite:category-ru"
                 ],
                 "outboundTag": "direct"
             },
             {
                 "ip": [
+                    "geoip:private",
                     "geoip:ru",
-                    "geoip:private"
+                    "geoip:by",
+                    "geoip:kz"
                 ],
                 "outboundTag": "direct"
             },
@@ -323,6 +333,15 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
                 "type": "field",
                 "ip": [
                     "geoip:!ru"
+                ],
+                "outboundTag": "proxy"
+            },
+            {
+                "domain": [
+                    "geosite:discord",
+                    "geosite:youtube",
+                    "geosite:tiktok",
+                    "geosite:signal"
                 ],
                 "outboundTag": "proxy"
             }

@@ -49,28 +49,35 @@ export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_pub
 # Создаем JSON конфигурацию на основе шаблона и сохраняем в папку скрипта
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
-  "dns": {
-	"servers": [
-		"https+local://8.8.4.4/dns-query",
-		"https+local://8.8.8.8/dns-query",
-		"localhost"
-	]
-  },
-  "log": {
-    "loglevel": "none",
-    "dnsLog": false
-  },
-  "routing": {
-    "rules": [
-      {
-        "ip": [
-          "geoip:private"
-        ],
-        "outboundTag": "block",
-        "type": "field"
-      }
-    ]
-  },
+    "dns": {
+        "servers": [
+            "https+local://8.8.4.4/dns-query",
+            "https+local://8.8.8.8/dns-query",
+            "localhost"
+        ]
+    },
+    "log": {
+        "loglevel": "none",
+        "dnsLog": false
+    },
+    "routing": {
+        "rules": [
+            {
+                "domain": [
+                    "geosite:category-ads",
+                    "geosite:win-spy"
+                ],
+                "outboundTag": "block"
+            },
+            {
+                "ip": [
+                    "geoip:private"
+                ],
+                "outboundTag": "block",
+                "type": "field"
+            }
+        ]
+    },
   "inbounds": [
     {
       "tag": "VTR$port1",

@@ -55,6 +55,13 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "routing": {
         "rules": [
             {
+                "domain": [
+                    "geosite:category-ads",
+                    "geosite:win-spy"
+                ],
+                "outboundTag": "block"
+            },
+            {
                 "ip": [
                     "geoip:private"
                 ],

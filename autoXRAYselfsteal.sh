@@ -180,13 +180,18 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ]
     },
     "log": {
-        "access": "/var/lib/marzban/access.log",
-        "error": "/var/lib/marzban/error.log",
         "loglevel": "none",
         "dnsLog": false
     },
     "routing": {
         "rules": [
+            {
+                "domain": [
+                    "geosite:category-ads",
+                    "geosite:win-spy"
+                ],
+                "outboundTag": "block"
+            },
             {
                 "ip": [
                     "geoip:private"

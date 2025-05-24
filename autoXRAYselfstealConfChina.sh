@@ -306,19 +306,14 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
         "rules": [
             {
                 "domain": [
-                    "geosite:category-ads-all"
+                    "geosite:category-ads-all",
+                    "geosite:win-spy"
                 ],
                 "outboundTag": "block"
             },
             {
                 "protocol": [
                     "bittorrent"
-                ],
-                "outboundTag": "direct"
-            },
-            {
-                "ip": [
-                    "geoip:cn"
                 ],
                 "outboundTag": "direct"
             },
