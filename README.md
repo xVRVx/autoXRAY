@@ -86,7 +86,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 2. ДНС-хостинг.
 3. Debian 12 (на других не тестировалось).
 
-**Домен и бесплатный днс-хостинг можно получить** в [senko.digital](https://senko.digital/?ref=47670) за крипту или [cloudns](https://www.cloudns.net/aff/id/120920/) или [регру](https://www.reg.ru/) за рубли.
+**Домен и бесплатный днс-хостинг можно получить** в [senko.digital](https://senko.digital/?ref=47670) за крипту или [cloudns](https://www.cloudns.net/aff/id/1919804/) или [регру](https://www.reg.ru/) за рубли.
 
 Необходимо настроить A-запись вашего домена на IP-адрес вашего сервера, чтобы можно было выпустить SSL-сертификат. Помните, что DNS-записи обновляются не сразу: иногда это занимает 15 минут, иногда — час и более. Проверить можно тут - [xseo.in/dns](https://xseo.in/dns).
 
