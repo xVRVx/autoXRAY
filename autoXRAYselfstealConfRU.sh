@@ -444,7 +444,7 @@ echo -e "
 Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2rayTun или v2rayN
 - Android: Happ или v2rayTun или v2rayNG
-- Windows: winLoadXRAY или v2rayN или Happ(alpha) или само ядро Xray
+- Windows: Happ(alpha) или winLoadXRAY или v2rayN или само ядро Xray
 
 Сайт с инструкциями: blog.skybridge.run"
 
