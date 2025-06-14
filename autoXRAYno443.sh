@@ -98,7 +98,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "dest": "${xray_dest_vrv}:443",
+          "target": "${xray_dest_vrv}:443",
           "xver": 0,
           "serverNames": [
             "${xray_dest_vrv}"
@@ -138,7 +138,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "dest": "${xray_dest_vrv222}:443",
+          "target": "${xray_dest_vrv222}:443",
           "xver": 0,
           "serverNames": [
             "${xray_dest_vrv222}"

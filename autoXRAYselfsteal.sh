@@ -221,7 +221,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                 "security": "reality",
                 "realitySettings": {
                     "show": false,
-                    "dest": "3333",
+                    "target": "3333",
                     "xver": 0,
                     "serverNames": [
                         "$DOMAIN"
@@ -261,7 +261,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                 "security": "reality",
                 "realitySettings": {
                     "show": false,
-                    "dest": "3333",
+                    "target": "3333",
                     "xver": 0,
                     "serverNames": [
                         "$DOMAIN"
