@@ -56,8 +56,9 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 ## Выбор сервера (подбирал промо тарифы)
 
 - [AEZA](https://aeza.net/?ref=671750) - у них иногда есть promo vps в Швеции за 1.1 евро (оплата криптовалютой).
+- [senko.digital](https://senko.digital/?ref=47670) - от 1 евро, есть днс-хостинг и домены для selfsteel.
+- [QWINS](https://my.qwins.co/?from=1827) - от 2 евро, есть пополнение в рублях.
 - [XorekCloud](https://xorek.cloud/?from=28522) - тут есть новый промо тариф, за 150 руб./мес.
-- [senko.digital](https://senko.digital/?ref=47670) - от 1 евро, есть днс-хостинг и домены
 
 
 ## Смена паролей и сайта маскировки
@@ -86,7 +87,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 2. ДНС-хостинг.
 3. Debian 12 (на других не тестировалось).
 
-**Домен и бесплатный днс-хостинг можно получить** в [senko.digital](https://senko.digital/?ref=47670) за крипту или [cloudns](https://www.cloudns.net/aff/id/1919804/) или [регру](https://www.reg.ru/) за рубли.
+**Домен и бесплатный днс-хостинг можно получить** в [senko.digital](https://senko.digital/?ref=47670) за крипту.
 
 Необходимо настроить A-запись вашего домена на IP-адрес вашего сервера, чтобы можно было выпустить SSL-сертификат. Помните, что DNS-записи обновляются не сразу: иногда это занимает 15 минут, иногда — час и более. Проверить можно тут - [xseo.in/dns](https://xseo.in/dns).
 
