@@ -31,7 +31,7 @@ chatID — id вашего клиента в ТГ, tgTOKEN — токен ваш
 
 - iOS: Happ или v2rayTun или FoXray
 - Android: Happ или v2rayTun или v2rayNG
-- Windows: Hiddify или Nekoray
+- Windows: Happ, Hiddify, Nekoray или v2rayN
 
 
 Сайт с более подробными инструкциями:  [blog.skybridge.run](https://blog.skybridge.run)
