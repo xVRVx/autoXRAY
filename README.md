@@ -103,6 +103,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ```
 
 ### Конфигурация с клиентским конфигом для РФ (рекомендуется)
+Автоматически перенаправляет весь ру трафик напрямую - лучшее решение.
 ```bash
 bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselfstealConfRU.sh)" -- вашДОМЕН.com
 ```
