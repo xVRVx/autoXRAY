@@ -63,7 +63,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 ## Смена паролей и сайта маскировки
 
-Запустите скрипт заново - он сформирует новые конфигурации VPN для chatGPT и других нужных сайтов.
+Запустите скрипт заново - он сформирует новые конфигурации VPN для YouTube, chatGPT и других нужных сайтов.
 
 ## Повышенная маскировка
 
@@ -102,6 +102,18 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselfsteal.sh)" -- вашДОМЕН.com
 ```
 
+### Конфигурация с клиентским конфигом для РФ (рекомендуется)
+```bash
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselfstealConfRU.sh)" -- вашДОМЕН.com
+```
+Минусы: меньше приложений поддерживают данную функцию.
 
+### Конфигурация с клиентским конфигом для Китая
+```bash
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselfstealConfChina.sh)" -- вашДОМЕН.com
+```
+Разработан по китайским мануалам.
 
-**[Поддержать автора](https://pay.cryptocloud.plus/pos/Weu1Y0fOhLho0nte)**
+Скрипты будут дорабатываться до актуального состояния.
+
+**[Поддержать автора.](https://pay.cryptocloud.plus/pos/Weu1Y0fOhLho0nte)**
