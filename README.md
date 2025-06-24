@@ -114,6 +114,14 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ```
 Разработан по китайским мануалам.
 
+### Если у вас занят 443 порт
+
+Сделал выбор до 3 портов, два будут vless и третий ss:
+```bash
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYno443.sh)" -- 456 321 2000
+```
+
+
 Скрипты будут дорабатываться до актуального состояния.
 
 **[Поддержать автора.](https://pay.cryptocloud.plus/pos/Weu1Y0fOhLho0nte)**
