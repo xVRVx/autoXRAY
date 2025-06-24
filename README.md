@@ -109,7 +109,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ```
 Минусы: меньше приложений поддерживают данную функцию.
 
-### Конфигурация с клиентским конфигом для Китая
+### Конфигурация с клиентским конфигом VPN для Китая
 ```bash
 bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselfstealConfChina.sh)" -- вашДОМЕН.com
 ```
