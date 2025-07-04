@@ -94,7 +94,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "decryption": "none"
       },
       "streamSettings": {
-        "network": "tcp",
+        "network": "raw",
         "security": "reality",
         "realitySettings": {
           "show": false,
@@ -107,7 +107,17 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "publicKey": "${xray_publicKey_vrv}",
           "shortIds": [
             "${xray_shortIds_vrv}"
-          ]
+          ],
+		"limitFallbackUpload": {
+		"afterBytes": 0,
+		"bytesPerSec": 65536,
+		"burstBytesPerSec": 0
+		},
+		"limitFallbackDownload": {
+		"afterBytes": 5242880,
+		"bytesPerSec": 262144,
+		"burstBytesPerSec": 2097152
+		}
         }
       },
       "sniffing": {
@@ -134,7 +144,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "decryption": "none"
       },
       "streamSettings": {
-        "network": "tcp",
+        "network": "raw",
         "security": "reality",
         "realitySettings": {
           "show": false,
@@ -147,7 +157,17 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "publicKey": "${xray_publicKey_vrv}",
           "shortIds": [
             "${xray_shortIds_vrv}"
-          ]
+          ],
+			"limitFallbackUpload": {
+			"afterBytes": 0,
+			"bytesPerSec": 65536,
+			"burstBytesPerSec": 0
+			},
+			"limitFallbackDownload": {
+			"afterBytes": 5242880,
+			"bytesPerSec": 262144,
+			"burstBytesPerSec": 2097152
+			}
         }
       },
       "sniffing": {
