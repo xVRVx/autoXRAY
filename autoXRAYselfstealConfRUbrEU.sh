@@ -376,7 +376,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                 "network": "$TYPE",
                 "security": "$SECURITY",
                 "realitySettings": {
-                    "serverName": "$addressVL",
+                    "serverName": "$SNI",
                     "publicKey": "$PBK",
                     "shortId": "$SID"
                 }
