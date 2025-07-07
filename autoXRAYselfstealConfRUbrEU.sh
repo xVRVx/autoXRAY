@@ -4,8 +4,13 @@ DOMAIN=$1
 
 vless_url=$2
 
-if [ -z "$DOMAIN" -a -z "$vless_url" ]; then
-    echo "❌ Оба параметра не заданы."
+if [ -z "$DOMAIN" ]; then
+    echo "❌ Ошибка: домен не задан."
+    exit 1
+fi
+
+if [ -z "$vless_url" ]; then
+    echo "❌ Ошибка: конфиг vless не задан."
     exit 1
 fi
 
@@ -42,7 +47,7 @@ echo "✅ Записываем конфигурацию в $CONFIG_PATH для �
 
 sudo bash -c "cat > $CONFIG_PATH" <<EOF
 server {
-    listen 3333 proxy_protocol;
+    listen 3333 ssl http2;
     server_name $DOMAIN;
 
     ##Отключить чтобы получить заглушку nginx!
@@ -50,13 +55,10 @@ server {
     root /var/www/$DOMAIN;
     index index.php index.html;
 
-    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem; # managed by Certbot
-    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem; # managed by Certbot
-    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
 	
-    real_ip_header proxy_protocol;
-    set_real_ip_from 127.0.0.1;
+	ssl_session_tickets off;
 
     location ~ /\.ht {
         deny all;
