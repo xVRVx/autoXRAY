@@ -124,6 +124,22 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ```
 
 
+## Настраиваем мост ru -> eu
+Многие столкнулись с блокировками хостинг-сетей по TLS (особенно при использовании мобильного интернета). Существует решение — построение моста между серверами в разных локациях. Для этого необходимо:
+
+1) На заблокированный чистый VPS ставим стандартный selfsteel скрипт и копируем первый конфиг (на 443 порту):
+```bash
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselfsteal.sh)" -- поддомен1.вашДОМЕН.com
+```
+2) На ru VPS ставим новый скрипт (здесь нам понадобится vless конфиг):
+```bash
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselfstealConfRUbrEU.sh)" -- поддомен2.вашДОМЕН.com "vless://вашКонфиг"
+```
+Установится прокси мост между серверами, итоговая цепочка: конфиг клиента -> ru VPS -> eu VPS -> зарубежный сайт
+
+
+
+
 Скрипты будут дорабатываться до актуального состояния.
 
 **[Поддержать автора.](https://pay.cryptocloud.plus/pos/Weu1Y0fOhLho0nte)**
