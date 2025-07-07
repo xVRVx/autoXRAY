@@ -27,15 +27,15 @@ fi
 
 
 echo "Настройка DNS..."
-echo -e "nameserver 8.8.4.4\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+echo -e "nameserver 8.8.4.4\nnameserver 8.8.8.8\nnameserver 1.1.1.1" | sudo tee /etc/resolv.conf > /dev/null
 
 sudo apt install nginx -y
 
 sudo systemctl enable --now nginx
 
-sudo apt install certbot python3-certbot-nginx -y
+sudo apt install certbot -y
 
-sudo certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email mail@$DOMAIN
+sudo certbot certonly --webroot -w /var/www/html -d $DOMAIN -m mail@$DOMAIN --agree-tos --non-interactive
 
 CONFIG_PATH="/etc/nginx/sites-available/default"
 
@@ -43,7 +43,7 @@ echo "✅ Записываем конфигурацию в $CONFIG_PATH для �
 
 sudo bash -c "cat > $CONFIG_PATH" <<EOF
 server {
-    listen 3333 ssl;
+    listen 3333 ssl http2 proxy_protocol;
     server_name $DOMAIN;
 
     ##Отключить чтобы получить заглушку nginx!
@@ -51,10 +51,10 @@ server {
     root /var/www/$DOMAIN;
     index index.php index.html;
 
-    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem; # managed by Certbot
-    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem; # managed by Certbot
-    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+	
+	ssl_session_tickets off;
 
     location ~ /\.ht {
         deny all;
@@ -223,7 +223,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                 "realitySettings": {
                     "show": false,
                     "target": "3333",
-                    "xver": 0,
+                    "xver": 1,
+					"SpiderX": "/",
                     "serverNames": [
                         "$DOMAIN"
                     ],
@@ -362,7 +363,7 @@ echo -e "\033[32m$link4\033[0m
 Скопируйте конфиг в специализированное приложение:
 - iOS: Happ или v2rayTun или FoXray
 - Android: Happ или v2rayTun или v2rayNG
-- Windows: Hiddify или Nekoray
+- Windows: Happ & winLoadXRAY & Hiddify & Nekoray
 
 Сайт с инструкциями: blog.skybridge.run
 

@@ -14,7 +14,7 @@ apt update && apt install sudo -y
 sudo apt update && sudo apt install -y jq
 
 echo "Настройка DNS..."
-echo -e "nameserver 8.8.4.4\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+echo -e "nameserver 8.8.4.4\nnameserver 8.8.8.8\nnameserver 1.1.1.1" | sudo tee /etc/resolv.conf > /dev/null
 
 # Установка Xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -53,6 +53,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "servers": [
             "https+local://8.8.4.4/dns-query",
             "https+local://8.8.8.8/dns-query",
+            "https+local://1.1.1.1/dns-query",
             "localhost"
         ]
     },
@@ -100,6 +101,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "show": false,
           "target": "${xray_dest_vrv}:443",
           "xver": 0,
+		  "SpiderX": "/",
           "serverNames": [
             "${xray_dest_vrv}"
           ],
@@ -150,6 +152,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "show": false,
           "target": "${xray_dest_vrv222}:443",
           "xver": 0,
+		  "SpiderX": "/",
           "serverNames": [
             "${xray_dest_vrv222}"
           ],
@@ -192,6 +195,14 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           }
         ],
         "network": "tcp,udp"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
       }
     }
   ],
@@ -237,7 +248,7 @@ echo -e "\033[32m$link3\033[0m
 Скопируйте конфиг в специализированное приложение:
 - iOS: Happ или v2rayTun или FoXray
 - Android: Happ или v2rayTun или v2rayNG
-- Windows: Hiddify или Nekoray
+- Windows: Happ & winLoadXRAY & Hiddify & Nekoray
 
 Сайт с инструкциями: blog.skybridge.run
 

@@ -50,8 +50,6 @@ server {
     listen 3333 ssl http2 proxy_protocol;
     server_name $DOMAIN;
 
-    ##Отключить чтобы получить заглушку nginx!
-    #
     root /var/www/$DOMAIN;
     index index.php index.html;
 
@@ -59,9 +57,6 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
 	
 	ssl_session_tickets off;
-	
-    real_ip_header proxy_protocol;
-    set_real_ip_from 127.0.0.1;
 
     location ~ /\.ht {
         deny all;
