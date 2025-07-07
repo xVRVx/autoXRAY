@@ -14,6 +14,49 @@ if [ -z "$vless_url" ]; then
     exit 1
 fi
 
+# Функция URL-декодинга
+urldecode() {
+    printf '%b' "${1//%/\\x}"
+}
+url_body="${vless_url#vless://}"
+
+node_name_enc="${url_body##*#}"
+node_name="$(urldecode "$node_name_enc")"
+
+url_body="${url_body%%#*}"
+
+uuid="${url_body%@*}"
+host_port_query="${url_body#*@}"
+
+address="${host_port_query%%:*}"
+rest="${host_port_query#*:}"
+port="${rest%%\?*}"
+
+query_string="${rest#*\?}"
+
+# Разбор параметров в ассоциативный массив
+declare -A params
+IFS='&' read -ra pairs <<< "$query_string"
+for pair in "${pairs[@]}"; do
+    key="${pair%%=*}"
+    value="${pair#*=}"
+    params["$key"]="$(urldecode "$value")"
+done
+
+
+# Вывод:
+echo "== Основное =="
+echo "UUID: $uuid"
+echo "Address: $address"
+echo "Port: $port"
+echo "Node Name: $node_name"
+
+echo ""
+echo "== Параметры =="
+for key in "${!params[@]}"; do
+    echo "$key: ${params[$key]}"
+done
+
 echo "Обновление и установка необходимых пакетов..."
 apt update && apt install sudo -y
 #sudo apt update && sudo apt upgrade -y
