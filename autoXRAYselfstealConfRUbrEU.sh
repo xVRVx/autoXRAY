@@ -14,6 +14,12 @@ if [ -z "$vless_url" ]; then
     exit 1
 fi
 
+if [[ "$vless_url" != vless://* ]]; then
+    echo "❌ Ошибка: Неверный формат vless-ссылки."
+    exit 1
+fi
+
+
 # Функция URL-декодинга
 urldecode() {
     printf '%b' "${1//%/\\x}"
@@ -21,18 +27,18 @@ urldecode() {
 url_body="${vless_url#vless://}"
 
 node_name_enc="${url_body##*#}"
-node_name="$(urldecode "$node_name_enc")"
+node_nameVL="$(urldecode "$node_name_enc")"
 
 url_body="${url_body%%#*}"
 
-uuid="${url_body%@*}"
+uuidVL="${url_body%@*}"
 host_port_query="${url_body#*@}"
 
-address="${host_port_query%%:*}"
-rest="${host_port_query#*:}"
-port="${rest%%\?*}"
+addressVL="${host_port_query%%:*}"
+restVL="${host_port_query#*:}"
+portVL="${restVL%%\?*}"
 
-query_string="${rest#*\?}"
+query_string="${restVL#*\?}"
 
 # Разбор параметров в ассоциативный массив
 declare -A params
@@ -46,16 +52,24 @@ done
 
 # Вывод:
 echo "== Основное =="
-echo "UUID: $uuid"
-echo "Address: $address"
-echo "Port: $port"
-echo "Node Name: $node_name"
+echo "UUID: $uuidVL"
+echo "Address: $addressVL"
+echo "Port: $portVL"
+echo "Node Name: $node_nameVL"
 
 echo ""
 echo "== Параметры =="
-for key in "${!params[@]}"; do
-    echo "$key: ${params[$key]}"
-done
+TYPE="${params[type]}"; echo "TYPE=$TYPE"
+FP="${params[fp]}"; echo "FP=$FP"
+SNI="${params[sni]}"; echo "SNI=$SNI"
+SPX="${params[spx]}"; echo "SPX=$SPX"
+PBK="${params[pbk]}"; echo "PBK=$PBK"
+SECURITY="${params[security]}"; echo "SECURITY=$SECURITY"
+FLOW="${params[flow]}"; echo "FLOW=$FLOW"
+SID="${params[sid]}"; echo "SID=$SID"
+
+
+
 
 echo "Обновление и установка необходимых пакетов..."
 apt update && apt install sudo -y
@@ -221,7 +235,7 @@ ipserv=$(hostname -I | awk '{print $1}')
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH
+export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH TYPE FP SNI SPX PBK SECURITY FLOW SID uuidVL addressVL portVL
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
@@ -316,6 +330,35 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         }
     ],
     "outbounds": [
+        {
+            "tag": "proxy",
+            "protocol": "vless",
+            "settings": {
+                "vnext": [
+                    {
+                        "address": "$addressVL",
+                        "port": $portVL,
+                        "users": [
+                            {
+                                "id": "$uuidVL",
+                                "flow": "$FLOW",
+                                "encryption": "none",
+                                "level": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "$TYPE",
+                "security": "$SECURITY",
+                "realitySettings": {
+                    "serverName": "$addressVL",
+                    "publicKey": "$PBK",
+                    "shortId": "$SID"
+                }
+            }
+        },
         {
             "protocol": "freedom",
             "tag": "direct"
