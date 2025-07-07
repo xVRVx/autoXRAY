@@ -421,9 +421,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
             },
             "streamSettings": {
                 "network": "raw",
-                "tcpSettings": {
-                    "acceptProxyProtocol": false
-                },
                 "security": "reality",
                 "realitySettings": {
                     "serverName": "$DOMAIN",
