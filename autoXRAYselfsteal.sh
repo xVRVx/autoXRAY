@@ -274,7 +274,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                 "realitySettings": {
                     "show": false,
                     "target": "3333",
-                    "xver": 0,
+                    "xver": 1,
                     "serverNames": [
                         "$DOMAIN"
                     ],
@@ -317,7 +317,15 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                     }
                 ],
                 "network": "tcp,udp"
-            }
+            },
+			"sniffing": {
+			"enabled": true,
+			"destOverride": [
+			  "http",
+			  "tls",
+			  "quic"
+			]
+			}
         }
     ],
     "outbounds": [
