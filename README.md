@@ -59,6 +59,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 - [senko.digital](https://senko.digital/?ref=47670) - от 1.5€, есть днс-хостинг и домены для selfsteel.
 - [QWINS](https://my.qwins.co/?from=1827) - от 2$, есть оплата рублями.
 - [XorekCloud](https://xorek.cloud/?from=28522) - тут есть новый промо тариф, за 150 руб./мес.
+- [rocketcloud](https://rocketcloud.ru/?affiliate_uuid=e9ad7432-7898-4de2-8606-38eb90e0c1a6) - ру сервера от 100 рублей, для моста ru-eu.
 
 
 ## Смена паролей и сайта маскировки
