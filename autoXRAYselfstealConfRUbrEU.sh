@@ -273,7 +273,30 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                     "geosite:category-ads"
                 ],
                 "outboundTag": "block"
-            }
+            },
+			{
+				"domain": [
+                    "geosite:apple",
+                    "geosite:apple-pki",
+                    "geosite:huawei",
+                    "geosite:xiaomi",
+                    "geosite:category-android-app-download",
+                    "geosite:f-droid",
+                    "geosite:yandex",
+                    "geosite:vk",
+                    "geosite:microsoft",
+                    "geosite:win-update",
+                    "geosite:win-extra",
+                    "geosite:google-play",
+                    "geosite:steam",
+                    "geosite:category-ru"
+                ],
+				"outboundTag": "direct"
+			},
+			{
+				"inboundTag": ["VtcpRself"],
+				"outboundTag": "proxy"
+			}
         ]
     },
     "inbounds": [
@@ -359,10 +382,13 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                 }
             }
         },
-        {
-            "protocol": "freedom",
-            "tag": "direct"
-        },
+		{
+		  "protocol": "freedom",
+		  "tag": "direct",
+		  "settings": {
+			"domainStrategy": "ForceIPv4"
+		  }
+		},
         {
             "protocol": "blackhole",
             "tag": "block"
@@ -411,7 +437,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
                     "geosite:xiaomi",
                     "geosite:category-android-app-download",
                     "geosite:f-droid",
-                    "geosite:twitch",
                     "geosite:yandex",
                     "geosite:vk",
                     "geosite:microsoft",

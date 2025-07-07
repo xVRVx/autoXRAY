@@ -209,7 +209,10 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   "outbounds": [
     {
       "protocol": "freedom",
-      "tag": "direct"
+      "tag": "direct",
+      "settings": {
+        "domainStrategy": "ForceIPv4"
+      }
     },
     {
       "protocol": "blackhole",

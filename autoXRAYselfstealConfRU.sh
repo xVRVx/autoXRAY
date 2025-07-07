@@ -268,10 +268,13 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         }
     ],
     "outbounds": [
-        {
-            "protocol": "freedom",
-            "tag": "direct"
-        },
+		{
+		  "protocol": "freedom",
+		  "tag": "direct",
+		  "settings": {
+			"domainStrategy": "ForceIPv4"
+		  }
+		},
         {
             "protocol": "blackhole",
             "tag": "block"
@@ -320,7 +323,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
                     "geosite:xiaomi",
                     "geosite:category-android-app-download",
                     "geosite:f-droid",
-                    "geosite:twitch",
                     "geosite:yandex",
                     "geosite:vk",
                     "geosite:microsoft",
