@@ -23,12 +23,6 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
 fi
 
 
-
-
-
-echo "Настройка DNS..."
-echo -e "nameserver 8.8.4.4\nnameserver 8.8.8.8\nnameserver 1.1.1.1" | sudo tee /etc/resolv.conf > /dev/null
-
 sudo apt install nginx -y
 
 sudo systemctl enable --now nginx

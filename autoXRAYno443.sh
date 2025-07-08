@@ -13,9 +13,6 @@ apt update && apt install sudo -y
 #sudo apt update && sudo apt upgrade -y
 sudo apt update && sudo apt install -y jq
 
-echo "Настройка DNS..."
-echo -e "nameserver 8.8.4.4\nnameserver 8.8.8.8\nnameserver 1.1.1.1" | sudo tee /etc/resolv.conf > /dev/null
-
 # Установка Xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
