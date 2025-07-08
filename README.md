@@ -137,8 +137,17 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ```
 Установится прокси мост между серверами, итоговая цепочка: конфиг клиента -> ru VPS -> eu VPS -> зарубежный сайт
 
+**Если вы хотите пускать ютуб через ру впс (у вас он без ТСПУ или вы поставили  и настроили zapret)**
 
-
+Тогда в конфиге ру впс, который лежит /usr/local/etc/xray/config.json надо добавить в строке 38:
+```bash
+"geosite:youtube",
+"youtube.com",
+"googlevideo.com",
+"ytimg.com",
+"ggpht.com",
+```
+и перезапустить ядро: sudo systemctl restart xray
 
 Скрипты будут дорабатываться до актуального состояния.
 
