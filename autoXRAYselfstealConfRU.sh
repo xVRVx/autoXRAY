@@ -206,7 +206,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             {
                 "domain": [
                     "geosite:category-ads",
-                    "geosite:category-ru",
+                    "geosite:category-ru"
                 ],
                 "outboundTag": "block"
             }
