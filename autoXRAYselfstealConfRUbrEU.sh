@@ -254,8 +254,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "rules": [
             {
                 "ip": [
-                    "geoip:private",
-                    "geoip:ru"
+                    "geoip:private"
                 ],
                 "outboundTag": "block"
             },
@@ -574,6 +573,9 @@ echo -e "
 
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
+
+Ваш конфиг для роутера:
+$link1
 
 Открыт локальный socks5 на порту 10808, 1080, 2080 и http на 10809.
 
