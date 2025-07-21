@@ -37,7 +37,7 @@ echo "✅ Записываем конфигурацию в $CONFIG_PATH для �
 
 sudo bash -c "cat > $CONFIG_PATH" <<EOF
 server {
-    listen 3333 ssl http2 proxy_protocol;
+    listen 127.0.0.1:3333 ssl http2 proxy_protocol;
     server_name $DOMAIN;
 
     ##Отключить чтобы получить заглушку nginx!
