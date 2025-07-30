@@ -192,8 +192,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "rules": [
             {
                 "ip": [
-                    "geoip:private",
-                    "geoip:ru"
+                    "geoip:private"
                 ],
                 "outboundTag": "block"
             },
@@ -334,10 +333,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
             },
             {
                 "ip": [
-                    "geoip:private",
-                    "geoip:ru",
-                    "geoip:by",
-                    "geoip:kz"
+                    "geoip:private"
                 ],
                 "outboundTag": "direct"
             },

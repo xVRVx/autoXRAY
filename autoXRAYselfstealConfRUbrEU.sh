@@ -446,10 +446,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
             },
             {
                 "ip": [
-                    "geoip:private",
-                    "geoip:ru",
-                    "geoip:by",
-                    "geoip:kz"
+                    "geoip:private"
                 ],
                 "outboundTag": "direct"
             },
