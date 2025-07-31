@@ -218,6 +218,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "port": 443,
             "protocol": "vless",
             "settings": {
+				"flow": "xtls-rprx-vision",
                 "clients": [
                     {
                         "flow": "xtls-rprx-vision",
@@ -243,14 +244,14 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                         "${xray_shortIds_vrv}"
                     ],
 					"limitFallbackUpload": {
-					"afterBytes": 0,
-					"bytesPerSec": 65536,
-					"burstBytesPerSec": 0
+						"afterBytes": 0,
+						"bytesPerSec": 65536,
+						"burstBytesPerSec": 0
 					},
 					"limitFallbackDownload": {
-					"afterBytes": 5242880,
-					"bytesPerSec": 262144,
-					"burstBytesPerSec": 2097152
+						"afterBytes": 5242880,
+						"bytesPerSec": 262144,
+						"burstBytesPerSec": 2097152
 					}
                 }
             },
