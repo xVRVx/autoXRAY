@@ -85,7 +85,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 **Требования:**
 1. Свой домен, не в СНГ зонах.
 2. ДНС-хостинг.
-3. Debian 12 (на других не тестировалось).
+3. Debian 12 / Ubuntu 24 (на других не тестировалось).
 
 **Домен и бесплатный днс-хостинг можно получить** в [senko.digital](https://senko.digital/?ref=47670) за крипту.
 
