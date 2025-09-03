@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Обновление и установка необходимых пакетов..."
-apt update && apt install -y jq curl
+apt update && apt install -y jq
 
 # Установка Xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install

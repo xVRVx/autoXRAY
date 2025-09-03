@@ -72,7 +72,7 @@ SID="${params[sid]}"; echo "SID=$SID"
 
 
 echo "Обновление и установка необходимых пакетов..."
-apt update && apt install -y jq curl dnsutils
+apt update && apt install -y jq dnsutils
 
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
