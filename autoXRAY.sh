@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Обновление и установка необходимых пакетов..."
-apt update && apt install -y jq
+apt update && apt install -y jq curl
 
 # Установка Xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -275,9 +275,11 @@ echo -e "
 
 Ваши VPN конфиги. Первый - самый надежный, остальные резервные!
 
-\033[32m$link1\033[0m\n
-\033[32m$link2\033[0m\n
-\033[32m$link3\033[0m\n
+\033[32m$link1\033[0m
+
+\033[32m$link2\033[0m
+
+\033[32m$link3\033[0m
 
 Скопируйте конфиг в специализированное приложение:
 - iOS: Happ или v2rayTun или FoXray

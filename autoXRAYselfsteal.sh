@@ -8,9 +8,7 @@ if [ -z "$DOMAIN" ]; then
 fi
 
 echo "Обновление и установка необходимых пакетов..."
-apt update && apt install sudo -y
-#sudo apt update && sudo apt upgrade -y
-sudo apt update && sudo apt install -y jq dnsutils
+apt update && apt install -y jq curl dnsutils
 
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
@@ -23,19 +21,19 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
 fi
 
 
-sudo apt install nginx -y
+apt install nginx -y
 
-sudo systemctl enable --now nginx
+systemctl enable --now nginx
 
-sudo apt install certbot -y
+apt install certbot -y
 
-sudo certbot certonly --webroot -w /var/www/html -d $DOMAIN -m mail@$DOMAIN --agree-tos --non-interactive
+certbot certonly --webroot -w /var/www/html -d $DOMAIN -m mail@$DOMAIN --agree-tos --non-interactive
 
 CONFIG_PATH="/etc/nginx/sites-available/default"
 
 echo "✅ Записываем конфигурацию в $CONFIG_PATH для домена $DOMAIN"
 
-sudo bash -c "cat > $CONFIG_PATH" <<EOF
+bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     listen 127.0.0.1:3333 ssl http2 proxy_protocol;
     server_name $DOMAIN;
@@ -44,11 +42,16 @@ server {
     #
     root /var/www/$DOMAIN;
     index index.php index.html;
+	
+	ssl_protocols TLSv1.2 TLSv1.3;
+	ssl_ciphers HIGH:!aNULL:!MD5;
+	ssl_prefer_server_ciphers on;
+
+    ssl_session_tickets off;
 
     ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
-	
-	ssl_session_tickets off;
+
 
     location ~ /\.ht {
         deny all;
@@ -56,13 +59,9 @@ server {
 }
 
 server {
-    if (\$host = $DOMAIN) {
-        return 301 https://\$host\$request_uri;
-    } # managed by Certbot
-
     listen 80;
     server_name $DOMAIN;
-    return 404; # managed by Certbot
+    return 301 https://\$host\$request_uri;
 }
 EOF
 
@@ -73,11 +72,11 @@ systemctl restart nginx
 
 # Создание директории
 WEB_PATH="/var/www/$DOMAIN"
-sudo mkdir -p "$WEB_PATH"
+mkdir -p "$WEB_PATH"
 
 # Установка прав
-#sudo chown -R $USER:$USER "$WEB_PATH"
-#sudo chmod -R 755 "$WEB_PATH"
+#chown -R $USER:$USER "$WEB_PATH"
+#chmod -R 755 "$WEB_PATH"
 
 # Arrays with random options
 TITLES=("FileShare" "CloudBox" "DataVault" "SecureShare" "EasyFiles" "QuickAccess" "VaultZone" "SkyDrive" "SafeData" "FlexShare"
@@ -147,8 +146,8 @@ xray_dest_vrv=${domains[$RANDOM % ${#domains[@]}]}
 xray_dest_vrv222=${domains[$RANDOM % ${#domains[@]}]}
 
 key_output=$(xray x25519)
-xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/Private key/ {print $2}')
-xray_publicKey_vrv=$(echo "$key_output" | awk -F': ' '/Public key/ {print $2}')
+xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/PrivateKey/ {print $2}')
+xray_publicKey_vrv=$(echo "$key_output" | awk -F': ' '/Password/ {print $2}')
 
 xray_shortIds_vrv=$(openssl rand -hex 8)
 
@@ -343,7 +342,7 @@ EOF
 
 # Перезапуск Xray
 echo "Перезапуск Xray..."
-sudo systemctl restart xray
+systemctl restart xray
 
 echo "Готово!
 "
@@ -362,17 +361,15 @@ echo -e "
 Ваши VPN конфиги. Первый - самый надежный, остальные резервные!
 
 \033[32m$link1\033[0m
-"
-echo -e "\033[32m$link3\033[0m
-"
-echo -e "\033[32m$link4\033[0m
+
+\033[32m$link3\033[0m
+
+\033[32m$link4\033[0m
 
 Скопируйте конфиг в специализированное приложение:
 - iOS: Happ или v2rayTun или FoXray
 - Android: Happ или v2rayTun или v2rayNG
 - Windows: Happ & winLoadXRAY & Hiddify & Nekoray
-
-Сайт с инструкциями: blog.skybridge.run
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 
