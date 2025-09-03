@@ -1,9 +1,7 @@
 #!/bin/bash
 
 echo "Обновление и установка необходимых пакетов..."
-apt update && apt install sudo -y
-#sudo apt update && sudo apt upgrade -y
-sudo apt update && sudo apt install -y jq
+apt update && apt install -y jq
 
 # Установка Xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -19,8 +17,8 @@ xray_dest_vrv=${domains[$RANDOM % ${#domains[@]}]}
 xray_dest_vrv222=${domains[$RANDOM % ${#domains[@]}]}
 
 key_output=$(xray x25519)
-xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/Private key/ {print $2}')
-xray_publicKey_vrv=$(echo "$key_output" | awk -F': ' '/Public key/ {print $2}')
+xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/PrivateKey/ {print $2}')
+xray_publicKey_vrv=$(echo "$key_output" | awk -F': ' '/Password/ {print $2}')
 
 xray_shortIds_vrv=$(openssl rand -hex 8)
 
@@ -216,7 +214,7 @@ EOF
 
 # Перезапуск Xray
 echo "Перезапуск Xray..."
-sudo systemctl restart xray
+systemctl restart xray
 
 echo "Готово!
 "
@@ -277,18 +275,14 @@ echo -e "
 
 Ваши VPN конфиги. Первый - самый надежный, остальные резервные!
 
-\033[32m$link1\033[0m
-"
-echo -e "\033[32m$link2\033[0m
-"
-echo -e "\033[32m$link3\033[0m
+\033[32m$link1\033[0m\n
+\033[32m$link2\033[0m\n
+\033[32m$link3\033[0m\n
 
 Скопируйте конфиг в специализированное приложение:
 - iOS: Happ или v2rayTun или FoXray
 - Android: Happ или v2rayTun или v2rayNG
 - Windows: Happ & winLoadXRAY & Hiddify & Nekoray
-
-Сайт с инструкциями: blog.skybridge.run
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 
