@@ -223,9 +223,7 @@ EOF
 # Перезапуск Xray
 echo "Перезапуск Xray..."
 systemctl restart xray
-
-echo "Готово!
-"
+echo -e "Готово!\n"
 
 # Формирование ссылок для вывода
 link1="vless://${xray_uuid_vrv}@${ipserv}:$port1?security=reality&sni=${xray_dest_vrv}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-$port1"

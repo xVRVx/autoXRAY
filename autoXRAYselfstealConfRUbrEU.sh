@@ -549,9 +549,8 @@ EOF
 # Перезапуск Xray
 echo "Перезапуск Xray..."
 systemctl restart xray
+echo -e "Готово!\n"
 
-echo "Готово!
-"
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.html"
 
