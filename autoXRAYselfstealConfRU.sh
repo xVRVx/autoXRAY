@@ -156,8 +156,8 @@ xray_dest_vrv=${domains[$RANDOM % ${#domains[@]}]}
 xray_dest_vrv222=${domains[$RANDOM % ${#domains[@]}]}
 
 key_output=$(xray x25519)
-xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/Private key/ {print $2}')
-xray_publicKey_vrv=$(echo "$key_output" | awk -F': ' '/Public key/ {print $2}')
+xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/PrivateKey/ {print $2}')
+xray_publicKey_vrv=$(echo "$key_output" | awk -F': ' '/Password/ {print $2}')
 
 xray_shortIds_vrv=$(openssl rand -hex 8)
 
@@ -461,6 +461,9 @@ echo -e "
 
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
+
+Ваш конфиг для роутера:
+$link1
 
 Открыт локальный socks5 на порту 10808, 1080, 2080 и http на 10809.
 
