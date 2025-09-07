@@ -102,6 +102,7 @@ server {
     listen 127.0.0.1:3333 ssl http2 proxy_protocol;
     server_name $DOMAIN;
 
+    ##Отключить чтобы получить заглушку nginx!
     root /var/www/$DOMAIN;
     index index.php index.html;
 	
@@ -109,11 +110,13 @@ server {
 	ssl_ciphers HIGH:!aNULL:!MD5;
 	ssl_prefer_server_ciphers on;
 
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:MozSSL:10m;
     ssl_session_tickets off;
 
     ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
-	
+
 
     location ~ /\.ht {
         deny all;
@@ -123,7 +126,14 @@ server {
 server {
     listen 80;
     server_name $DOMAIN;
-    return 301 https://\$host\$request_uri;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+		return 301 https://\$host\$request_uri;
+    }
 }
 EOF
 
