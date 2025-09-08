@@ -212,7 +212,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             {
                 "domain": [
                     "geosite:category-ads",
-                    "geosite:category-ru"
+                    "geosite:win-spy",
+					"geosite:private"
                 ],
                 "outboundTag": "block"
             }
