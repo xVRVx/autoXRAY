@@ -283,6 +283,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             },
 			{
 				"domain": [
+					"testipv6.net",
                     "geosite:apple",
                     "geosite:apple-pki",
                     "geosite:huawei",
