@@ -54,9 +54,9 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 ## Выбор сервера (подбирал промо тарифы)
 
-- [WAICORE](https://waicore.com/?from=3063) - от 2€ промо, есть оплата рублями.
-- [notbad](https://my.notbad.cloud/?from=188) - от 3$, есть оплата рублями, хороший курс и канал.
 - [senko.digital](https://senko.digital/?ref=47670) - от 1.5€, есть днс-хостинг и домены для selfsteel.
+- [notbad](https://notbad.cloud/?from=188) - от 3$, есть оплата рублями, хороший курс и канал.
+- [WAICORE](https://waicore.com/?from=3063) - от 2€ промо, есть оплата рублями.
 - [XorekCloud](https://xorek.cloud/?from=28522) - тут есть новый промо тариф, за 150 руб./мес.
 - [rocketcloud](https://rocketcloud.ru/?affiliate_uuid=e9ad7432-7898-4de2-8606-38eb90e0c1a6) - ру сервера от 100 рублей, для моста ru-eu.
 
