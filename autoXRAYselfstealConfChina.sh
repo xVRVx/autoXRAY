@@ -27,7 +27,7 @@ systemctl enable --now nginx
 
 apt install certbot -y
 
-certbot certonly --webroot -w /var/www/html -d $DOMAIN -m mail@$DOMAIN --agree-tos --non-interactive
+certbot certonly --webroot -w /var/www/html -d $DOMAIN -m mail@$DOMAIN --agree-tos --non-interactive --deploy-hook "systemctl reload nginx"
 
 CONFIG_PATH="/etc/nginx/sites-available/default"
 
