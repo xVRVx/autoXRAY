@@ -29,4 +29,15 @@ chatID — id вашего клиента в ТГ, tgTOKEN — токен ваш
 Сделал выбор до 3 портов, два будут vless и третий ss:
 ```bash
 bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYno443.sh)" -- 456 321 2000
+
 ```
+
+
+**Разработан скрипт автоматизации для получения selfsteal** - вставьте ваш домен!
+```bash
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselfsteal.sh)" -- вашДОМЕН.com
+```
+**Вы получите:**
+1. основной [VLESS RAW REALITY](https://gozargah.github.io/marzban/ru/docs/xray-inbounds) xtls-rprx-vision на 443 порту с рандомным сайтом маскировки.
+2. вспомогательный vless на 8443 порту.
+3. вспомогательный Shadowsocks на 2040 порту.
