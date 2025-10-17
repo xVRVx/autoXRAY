@@ -101,6 +101,9 @@ bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     listen 127.0.0.1:3333 ssl http2 proxy_protocol;
     server_name $DOMAIN;
+	
+	set_real_ip_from 127.0.0.1;
+	real_ip_header proxy_protocol;
 
     ##Отключить чтобы получить заглушку nginx!
     root /var/www/$DOMAIN;
