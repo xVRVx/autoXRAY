@@ -28,6 +28,10 @@ key_output=$(xray x25519)
 xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/PrivateKey/ {print $2}')
 xray_publicKey_vrv=$(echo "$key_output" | awk -F': ' '/Password/ {print $2}')
 
+key_mldsa65=$(xray mldsa65)
+seed_mldsa65=$(echo "$key_mldsa65" | awk -F': ' '/Seed/ {print $2}')
+verify_mldsa65=$(echo "$key_mldsa65" | awk -F': ' '/Verify/ {print $2}')
+
 xray_shortIds_vrv=$(openssl rand -hex 8)
 
 xray_sspasw_vrv=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
@@ -154,7 +158,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "${xray_dest_vrv222}"
           ],
           "privateKey": "${xray_privateKey_vrv}",
-          "publicKey": "${xray_publicKey_vrv}",
           "shortIds": [
             "${xray_shortIds_vrv}"
           ],
@@ -226,9 +229,9 @@ systemctl restart xray
 echo -e "Готово!\n"
 
 # Формирование ссылок для вывода
-link1="vless://${xray_uuid_vrv}@${ipserv}:$port1?security=reality&sni=${xray_dest_vrv}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-$port1"
+link1="vless://${xray_uuid_vrv}@${ipserv}:$port1?security=reality&sni=${xray_dest_vrv}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=raw&flow=xtls-rprx-vision&encryption=none&spx=%2F#VPN-vless-$port1"
 
-link2="vless://${xray_uuid_vrv}@${ipserv}:$port2?security=reality&sni=${xray_dest_vrv222}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-$port2"
+link2="vless://${xray_uuid_vrv}@${ipserv}:$port2?security=reality&sni=${xray_dest_vrv222}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=raw&flow=xtls-rprx-vision&encryption=none&spx=%2F#VPN-vless-$port2"
 
 ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
 link3="ss://$ENCODED_STRING@${ipserv}:$port3#VPN-ShadowS-$port3"
@@ -244,9 +247,9 @@ echo -e "
 \033[32m$link3\033[0m
 
 Скопируйте конфиг в специализированное приложение:
-- iOS: Happ или v2rayTun или FoXray
-- Android: Happ или v2rayTun или v2rayNG
-- Windows: Happ & winLoadXRAY & Hiddify & Nekoray
+- iOS: Happ или v2RayTun или FoXray
+- Android: Happ или v2RayTun или v2rayNG
+- Windows: Happ & v2RayTun & winLoadXRAY & Throne
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 

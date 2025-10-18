@@ -160,6 +160,10 @@ key_output=$(xray x25519)
 xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/PrivateKey/ {print $2}')
 xray_publicKey_vrv=$(echo "$key_output" | awk -F': ' '/Password/ {print $2}')
 
+key_mldsa65=$(xray mldsa65)
+seed_mldsa65=$(echo "$key_mldsa65" | awk -F': ' '/Seed/ {print $2}')
+verify_mldsa65=$(echo "$key_mldsa65" | awk -F': ' '/Verify/ {print $2}')
+
 xray_shortIds_vrv=$(openssl rand -hex 8)
 
 xray_sspasw_vrv=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
@@ -234,7 +238,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                         "$DOMAIN"
                     ],
                     "privateKey": "${xray_privateKey_vrv}",
-                    "publicKey": "${xray_publicKey_vrv}",
                     "shortIds": [
                         "${xray_shortIds_vrv}"
                     ],
@@ -285,7 +288,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                         "$DOMAIN"
                     ],
                     "privateKey": "${xray_privateKey_vrv}",
-                    "publicKey": "${xray_publicKey_vrv}",
                     "shortIds": [
                         "${xray_shortIds_vrv}"
                     ],
@@ -357,9 +359,9 @@ systemctl restart xray
 echo -e "Готово!\n"
 
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-443-self"
+link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=raw&flow=xtls-rprx-vision&encryption=none&spx=%2F#VPN-vless-443-self"
 
-link3="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#VPN-vless-8443-self"
+link3="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=raw&flow=xtls-rprx-vision&encryption=none&spx=%2F#VPN-vless-8443-self"
 
 ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
 link4="ss://$ENCODED_STRING@${ipserv}:2040#VPN-ShadowS-2040"
@@ -377,9 +379,9 @@ echo -e "
 \033[32m$link4\033[0m
 
 Скопируйте конфиг в специализированное приложение:
-- iOS: Happ или v2rayTun или FoXray
-- Android: Happ или v2rayTun или v2rayNG
-- Windows: Happ & winLoadXRAY & Hiddify & Nekoray
+- iOS: Happ или v2RayTun или FoXray
+- Android: Happ или v2RayTun или v2rayNG
+- Windows: Happ & v2RayTun & winLoadXRAY & Throne
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 

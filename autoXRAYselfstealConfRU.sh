@@ -169,6 +169,10 @@ key_output=$(xray x25519)
 xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/PrivateKey/ {print $2}')
 xray_publicKey_vrv=$(echo "$key_output" | awk -F': ' '/Password/ {print $2}')
 
+key_mldsa65=$(xray mldsa65)
+seed_mldsa65=$(echo "$key_mldsa65" | awk -F': ' '/Seed/ {print $2}')
+verify_mldsa65=$(echo "$key_mldsa65" | awk -F': ' '/Verify/ {print $2}')
+
 xray_shortIds_vrv=$(openssl rand -hex 8)
 
 xray_sspasw_vrv=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
@@ -250,7 +254,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                         "$DOMAIN"
                     ],
                     "privateKey": "${xray_privateKey_vrv}",
-                    "publicKey": "${xray_publicKey_vrv}",
                     "shortIds": [
                         "${xray_shortIds_vrv}"
                     ],
@@ -429,9 +432,12 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
                 },
                 "security": "reality",
                 "realitySettings": {
+					"fingerprint": "chrome",
                     "serverName": "$DOMAIN",
-                    "publicKey": "${xray_publicKey_vrv}",
-                    "shortId": "${xray_shortIds_vrv}"
+                    "password": "${xray_publicKey_vrv}",
+                    "shortId": "${xray_shortIds_vrv}",
+					"spiderX": "/"
+					
                 }
             }
         },
@@ -457,13 +463,14 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.html"
 
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none#useConfig"
+link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=raw&flow=xtls-rprx-vision&encryption=none&spx=%2F#vlessAX"
 	
 echo -e "
 Скопируйте подписку в специализированное приложение:
-- iOS: Happ или v2rayTun или v2rayN
-- Android: Happ или v2rayTun или v2rayNG
-- Windows: Happ(alpha) или winLoadXRAY или v2rayN или само ядро Xray
+- iOS: Happ или v2RayTun или v2rayN
+- Android: Happ или v2RayTun или v2rayNG
+- Windows: конфиги winLoadXRAY или v2rayN или ядро Xray
+	для vless Happ(alpha) или  v2RayTun или Throne
 
 
 Ваша страничка подписки:
