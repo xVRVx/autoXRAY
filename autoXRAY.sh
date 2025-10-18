@@ -266,9 +266,9 @@ curl -s -X POST "https://api.telegram.org/bot$tgTOKEN/sendMessage" \
 fi	
 
 # Формирование ссылок для вывода
-link1="vless://${xray_uuid_vrv}@${ipserv}:443?security=reality&sni=${xray_dest_vrv}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=raw&flow=xtls-rprx-vision&encryption=none&spx=%2F#VPN-vless-443"
+link1="vless://${xray_uuid_vrv}@${ipserv}:443?security=reality&sni=${xray_dest_vrv}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none&spx=%2F#VPN-vless-443"
 
-link2="vless://${xray_uuid_vrv}@${ipserv}:8443?security=reality&sni=${xray_dest_vrv222}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=raw&flow=xtls-rprx-vision&encryption=none&spx=%2F#VPN-vless-8443"
+link2="vless://${xray_uuid_vrv}@${ipserv}:8443?security=reality&sni=${xray_dest_vrv222}&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none&spx=%2F#VPN-vless-8443"
 
 ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
 link3="ss://$ENCODED_STRING@${ipserv}:2040#VPN-ShadowS-2040"

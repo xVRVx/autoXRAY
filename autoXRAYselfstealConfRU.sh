@@ -463,7 +463,7 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.html"
 
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=raw&flow=xtls-rprx-vision&encryption=none&spx=%2F#vlessAX"
+link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none&spx=%2F#vlessAX"
 	
 echo -e "
 Скопируйте подписку в специализированное приложение:
