@@ -332,7 +332,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
         "rules": [
             {
                 "domain": [
-                    "geosite:category-ads-all",
+                    "geosite:category-ads",
                     "geosite:win-spy"
                 ],
                 "outboundTag": "block"
