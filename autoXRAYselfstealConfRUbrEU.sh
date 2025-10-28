@@ -79,9 +79,15 @@ LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
 
 if [ "$LOCAL_IP" != "$DNS_IP" ]; then
-    echo "❌ Ошибка: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).
-	Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP"
-    exit 1
+    echo "❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP)."
+    echo "Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP"
+    
+    read -p "Продолжить на ваш страх и риск? (y/N): " choice
+    if [[ ! "$choice" =~ ^[Yy]$ ]]; then
+        echo "Выполнение скрипта прервано."
+        exit 1
+    fi
+    echo "Продолжение выполнения скрипта..."
 fi
 
 
