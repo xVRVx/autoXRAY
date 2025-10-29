@@ -256,107 +256,106 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "protocol": "vless",
       "settings": {
         "clients": [
-          "clients": [
-            {
-              "flow": "xtls-rprx-vision",
-              "id": "${xray_uuid_vrv}"
-            }
+          {
+            "flow": "xtls-rprx-vision",
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "raw",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "xver": 1,
+          "target": "3333",
+          "shortIds": [
+            "${xray_shortIds_vrv}"
           ],
-          "decryption": "none"
-        },
-        "sniffing": {
-          "enabled": true,
-          "destOverride": [
-            "http",
-            "tls",
-            "quic"
-          ]
-        },
-        "streamSettings": {
-          "network": "raw",
-          "security": "reality",
-          "realitySettings": {
-            "show": false,
-            "xver": 1,
-            "target": "3333",
-            "shortIds": [
-              "${xray_shortIds_vrv}"
-            ],
-            "privateKey": "${xray_privateKey_vrv}",
-            "serverNames": [
-              "$DOMAIN"
-            ],
-            "limitFallbackUpload": {
-              "afterBytes": 0,
-              "bytesPerSec": 65536,
-              "burstBytesPerSec": 0
-            },
-            "limitFallbackDownload": {
-              "afterBytes": 5242880,
-              "bytesPerSec": 262144,
-              "burstBytesPerSec": 2097152
-            }
+          "privateKey": "${xray_privateKey_vrv}",
+          "serverNames": [
+            "$DOMAIN"
+          ],
+          "limitFallbackUpload": {
+            "afterBytes": 0,
+            "bytesPerSec": 65536,
+            "burstBytesPerSec": 0
+          },
+          "limitFallbackDownload": {
+            "afterBytes": 5242880,
+            "bytesPerSec": 262144,
+            "burstBytesPerSec": 2097152
           }
         }
-      },
-      {
-        "tag": "ShadowsocksTCP",
-        "port": 2040,
-        "listen": "0.0.0.0",
-        "protocol": "shadowsocks",
-        "settings": {
-          "clients": [
-            {
-              "password": "${xray_sspasw_vrv}",
-              "method": "chacha20-ietf-poly1305"
-            }
-          ]
-        },
-        "sniffing": {
-          "enabled": true,
-          "destOverride": [
-            "http",
-            "tls",
-            "quic"
-          ]
-        },
-        "streamSettings": {
-          "network": "raw"
-        }
       }
-    ],
-    "outbounds": [
-      {
-        "tag": "direct",
-        "protocol": "freedom",
-        "settings": {
-          "domainStrategy": "ForceIPv4"
-        }
+    },
+    {
+      "tag": "ShadowsocksTCP",
+      "port": 2040,
+      "listen": "0.0.0.0",
+      "protocol": "shadowsocks",
+      "settings": {
+        "clients": [
+          {
+            "password": "${xray_sspasw_vrv}",
+            "method": "chacha20-ietf-poly1305"
+          }
+        ]
       },
-      {
-        "tag": "block",
-        "protocol": "blackhole"
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "raw"
       }
-    ],
-    "routing": {
-      "rules": [
-        {
-          "domain": [
-            "geosite:category-ads",
-            "geosite:win-spy",
-            "geosite:private"
-          ],
-          "outboundTag": "block"
-        },
-        {
-          "ip": [
-            "geoip:private"
-          ],
-          "outboundTag": "block"
-        }
-      ]
     }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "ForceIPv4"
+      }
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy",
+          "geosite:private"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "block"
+      }
+    ]
   }
+}
 
 EOF
 
