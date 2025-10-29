@@ -41,13 +41,9 @@ echo "✅ Записываем конфигурацию в $CONFIG_PATH для �
 
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
-    listen 127.0.0.1:3333 ssl http2 proxy_protocol;
     server_name $DOMAIN;
-	
-	set_real_ip_from 127.0.0.1;
-	real_ip_header proxy_protocol;
+	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
 
-    ##Отключить чтобы получить заглушку nginx!
     root /var/www/$DOMAIN;
     index index.php index.html;
 	
@@ -236,7 +232,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "realitySettings": {
           "show": false,
           "xver": 1,
-          "target": "3333",
+          "target": "/dev/shm/nginx.sock",
           "spiderX": "/",
           "shortIds": [
             "${xray_shortIds_vrv}"

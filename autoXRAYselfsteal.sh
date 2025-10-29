@@ -43,11 +43,7 @@ bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
 	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
-	
-	set_real_ip_from 127.0.0.1;
-	real_ip_header proxy_protocol;
 
-    ##Отключить чтобы получить заглушку nginx!
     root /var/www/$DOMAIN;
     index index.php index.html;
 	
@@ -59,8 +55,8 @@ server {
     ssl_session_cache shared:MozSSL:10m;
     ssl_session_tickets off;
 
-    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+    ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
+    ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
 
 
     location ~ /\.ht {
@@ -277,7 +273,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "realitySettings": {
           "show": false,
           "xver": 1,
-          "target": "3333",
+          "target": "/dev/shm/nginx.sock",
+          "spiderX": "/",
           "shortIds": [
             "${xray_shortIds_vrv}"
           ],
