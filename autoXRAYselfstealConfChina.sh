@@ -201,7 +201,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "https+local://8.8.8.8/dns-query",
       "https+local://1.1.1.1/dns-query",
       "localhost"
-    ]
+    ],
+    "queryStrategy": "UseIPv4"
   },
   "inbounds": [
     {
