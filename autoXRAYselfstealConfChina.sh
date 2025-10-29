@@ -55,8 +55,8 @@ server {
     ssl_session_cache shared:MozSSL:10m;
     ssl_session_tickets off;
 
-    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+    ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
+    ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
 
 
     location ~ /\.ht {
