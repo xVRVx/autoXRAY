@@ -48,79 +48,27 @@ export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_pub
 # Создаем JSON конфигурацию на основе шаблона и сохраняем в папку скрипта
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
-    "dns": {
-        "servers": [
-            "https+local://8.8.4.4/dns-query",
-            "https+local://8.8.8.8/dns-query",
-            "https+local://1.1.1.1/dns-query",
-            "localhost"
-        ]
-    },
-    "log": {
-        "loglevel": "none",
-        "dnsLog": false
-    },
-    "routing": {
-        "rules": [
-            {
-                "domain": [
-                    "geosite:category-ads",
-                    "geosite:win-spy"
-                ],
-                "outboundTag": "block"
-            },
-            {
-                "ip": [
-                    "geoip:private"
-                ],
-                "outboundTag": "block",
-                "type": "field"
-            }
-        ]
-    },
+  "log": {
+    "dnsLog": false,
+    "loglevel": "none"
+  },
+  "dns": {
+    "servers": [
+      "https+local://8.8.4.4/dns-query",
+      "https+local://8.8.8.8/dns-query",
+      "https+local://1.1.1.1/dns-query",
+      "localhost"
+    ]
+  },
   "inbounds": [
     {
       "tag": "VTR$port1",
+      "port": "${port1}",
       "listen": "0.0.0.0",
-      "port": $port1,
       "protocol": "vless",
       "settings": {
-	    "flow": "xtls-rprx-vision",
-        "clients": [
-          {
-            "flow": "xtls-rprx-vision",
-            "id": "${xray_uuid_vrv}"
-          }
-        ],
+        "clients": [],
         "decryption": "none"
-      },
-      "streamSettings": {
-        "network": "raw",
-        "security": "reality",
-        "realitySettings": {
-          "show": false,
-          "target": "${xray_dest_vrv}:443",
-          "xver": 0,
-		  "SpiderX": "/",
-          "serverNames": [
-            "${xray_dest_vrv}"
-          ],
-          "privateKey": "${xray_privateKey_vrv}",
-          "publicKey": "${xray_publicKey_vrv}",
-          "shortIds": [
-            "${xray_shortIds_vrv}"
-          ],
-		"limitFallbackUpload": {
-			"afterBytes": 0,
-			"bytesPerSec": 65536,
-			"burstBytesPerSec": 0
-		},
-		"limitFallbackDownload": {
-			"afterBytes": 5242880,
-			"bytesPerSec": 262144,
-			"burstBytesPerSec": 2097152
-		}
-        }
       },
       "sniffing": {
         "enabled": true,
@@ -129,72 +77,87 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "tls",
           "quic"
         ]
+      },
+      "streamSettings": {
+        "network": "raw",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "xver": 0,
+          "target": "${xray_dest_vrv}:443",
+          "spiderX": "/",
+          "shortIds": [
+            "${xray_shortIds_vrv}"
+          ],
+          "privateKey": "${xray_privateKey_vrv}",
+          "serverNames": [
+            "${xray_dest_vrv}"
+          ],
+          "limitFallbackUpload": {
+            "afterBytes": 0,
+            "bytesPerSec": 65536,
+            "burstBytesPerSec": 0
+          },
+          "limitFallbackDownload": {
+            "afterBytes": 5242880,
+            "bytesPerSec": 262144,
+            "burstBytesPerSec": 2097152
+          }
+        }
       }
     },
     {
       "tag": "VTR$port2",
+      "port": "${port2}",
       "listen": "0.0.0.0",
-      "port": $port2,
       "protocol": "vless",
       "settings": {
-	    "flow": "xtls-rprx-vision",
-        "clients": [
-          {
-            "flow": "xtls-rprx-vision",
-            "id": "${xray_uuid_vrv}"
-          }
-        ],
+        "clients": [],
         "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
       },
       "streamSettings": {
         "network": "raw",
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "target": "${xray_dest_vrv222}:443",
           "xver": 0,
-		  "SpiderX": "/",
-          "serverNames": [
-            "${xray_dest_vrv222}"
-          ],
-          "privateKey": "${xray_privateKey_vrv}",
+          "target": "${xray_dest_vrv222}:443",
+          "spiderX": "/",
           "shortIds": [
             "${xray_shortIds_vrv}"
           ],
-			"limitFallbackUpload": {
-				"afterBytes": 0,
-				"bytesPerSec": 65536,
-				"burstBytesPerSec": 0
-			},
-			"limitFallbackDownload": {
-				"afterBytes": 5242880,
-				"bytesPerSec": 262144,
-				"burstBytesPerSec": 2097152
-			}
+          "privateKey": "${xray_privateKey_vrv}",
+          "serverNames": [
+            "${xray_dest_vrv222}"
+          ],
+          "limitFallbackUpload": {
+            "afterBytes": 0,
+            "bytesPerSec": 65536,
+            "burstBytesPerSec": 0
+          },
+          "limitFallbackDownload": {
+            "afterBytes": 5242880,
+            "bytesPerSec": 262144,
+            "burstBytesPerSec": 2097152
+          }
         }
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ]
       }
     },
     {
       "tag": "SS$port3",
+      "port": "${port3}",
       "listen": "0.0.0.0",
-      "port": $port3,
       "protocol": "shadowsocks",
       "settings": {
-        "clients": [
-          {
-            "password": "${xray_sspasw_vrv}",
-            "method": "chacha20-ietf-poly1305"
-          }
-        ],
-        "network": "tcp,udp"
+        "clients": []
       },
       "sniffing": {
         "enabled": true,
@@ -203,22 +166,43 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "tls",
           "quic"
         ]
+      },
+      "streamSettings": {
+        "network": "raw"
       }
     }
   ],
   "outbounds": [
     {
-      "protocol": "freedom",
       "tag": "direct",
+      "protocol": "freedom",
       "settings": {
         "domainStrategy": "ForceIPv4"
       }
     },
     {
-      "protocol": "blackhole",
-      "tag": "block"
+      "tag": "block",
+      "protocol": "blackhole"
     }
-  ]
+  ],
+  "routing": {
+    "rules": [
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy",
+          "geosite:private"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "block"
+      }
+    ]
+  }
 }
 
 EOF
