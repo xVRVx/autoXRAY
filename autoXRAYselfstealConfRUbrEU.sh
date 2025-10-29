@@ -344,12 +344,16 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ]
       },
       "streamSettings": {
-        "network": "$TYPE",
+        "network": "raw",
         "security": "$SECURITY",
         "realitySettings": {
-          "shortId": "$SID",
-          "password": "$PBK",
-          "serverName": "$SNI"
+          "show": false,
+          "fingerprint": "$FP",
+          "serverName": "$SNI",
+		  "password": "$PBK",
+		  "shortId": "$SID",
+		  "mldsa65Verify": "",
+		  "spiderX": "$SPX"
         }
       }
     },
@@ -553,10 +557,12 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
         "network": "raw",
         "security": "reality",
         "realitySettings": {
+          "show": false,
           "fingerprint": "chrome",
           "serverName": "$DOMAIN",
           "password": "${xray_publicKey_vrv}",
           "shortId": "${xray_shortIds_vrv}",
+          "mldsa65Verify": "",
           "spiderX": "/"
         }
       }

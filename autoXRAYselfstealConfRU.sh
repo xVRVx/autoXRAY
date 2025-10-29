@@ -437,10 +437,12 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
         },
         "security": "reality",
         "realitySettings": {
+          "show": false,
           "fingerprint": "chrome",
           "serverName": "$DOMAIN",
           "password": "${xray_publicKey_vrv}",
           "shortId": "${xray_shortIds_vrv}",
+          "mldsa65Verify": "",
           "spiderX": "/"
         }
       }

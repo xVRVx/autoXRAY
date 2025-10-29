@@ -63,7 +63,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   "inbounds": [
     {
       "tag": "VTR$port1",
-      "port": "${port1}",
+      "port": ${port1},
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
@@ -113,7 +113,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     },
     {
       "tag": "VTR$port2",
-      "port": "${port2}",
+      "port": ${port2},
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
@@ -163,7 +163,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     },
     {
       "tag": "SS$port3",
-      "port": "${port3}",
+      "port": ${port3},
       "listen": "0.0.0.0",
       "protocol": "shadowsocks",
       "settings": {
