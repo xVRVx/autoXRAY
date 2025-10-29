@@ -59,7 +59,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
-        "clients": [],
+        "clients": [
+          {
+            "flow": "xtls-rprx-vision",
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
         "decryption": "none"
       },
       "sniffing": {
@@ -104,7 +109,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
-        "clients": [],
+        "clients": [
+          {
+            "flow": "xtls-rprx-vision",
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
         "decryption": "none"
       },
       "sniffing": {
@@ -149,7 +159,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "listen": "0.0.0.0",
       "protocol": "shadowsocks",
       "settings": {
-        "clients": []
+        "clients": [
+          {
+            "password": "${xray_sspasw_vrv}",
+            "method": "chacha20-ietf-poly1305"
+          }
+        ]
       },
       "sniffing": {
         "enabled": true,
@@ -182,7 +197,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       {
         "domain": [
           "geosite:category-ads",
-          "geosite:win-spy"
+          "geosite:win-spy",
+          "geosite:private"
         ],
         "outboundTag": "block"
       },
