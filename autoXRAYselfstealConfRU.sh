@@ -195,109 +195,108 @@ export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_pub
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
-    "dns": {
-        "servers": [
-            "https+local://8.8.4.4/dns-query",
-            "https+local://8.8.8.8/dns-query",
-            "https+local://1.1.1.1/dns-query",
-            "localhost"
-        ]
-    },
-    "log": {
-        "loglevel": "none",
-        "dnsLog": false
-    },
-    "routing": {
-        "domainStrategy": "IPIfNonMatch",
-        "rules": [
-            {
-                "ip": [
-                    "geoip:private"
-                ],
-                "outboundTag": "block"
-            },
-            {
-                "protocol": [
-                    "bittorrent"
-                ],
-                "outboundTag": "block"
-            },
-            {
-                "domain": [
-                    "geosite:category-ads",
-                    "geosite:win-spy",
-					"geosite:private"
-                ],
-                "outboundTag": "block"
-            }
-        ]
-    },
-    "inbounds": [
-        {
-            "tag": "VtcpRself",
-            "listen": "0.0.0.0",
-            "port": 443,
-            "protocol": "vless",
-            "settings": {
-				"flow": "xtls-rprx-vision",
-                "clients": [
-                    {
-                        "flow": "xtls-rprx-vision",
-                        "id": "${xray_uuid_vrv}"
-                    }
-                ],
-                "decryption": "none"
-            },
-            "streamSettings": {
-                "network": "raw",
-                "security": "reality",
-                "realitySettings": {
-                    "show": false,
-                    "target": "3333",
-                    "xver": 1,
-					"SpiderX": "/",
-                    "serverNames": [
-                        "$DOMAIN"
-                    ],
-                    "privateKey": "${xray_privateKey_vrv}",
-                    "shortIds": [
-                        "${xray_shortIds_vrv}"
-                    ],
-					"limitFallbackUpload": {
-						"afterBytes": 0,
-						"bytesPerSec": 65536,
-						"burstBytesPerSec": 0
-					},
-					"limitFallbackDownload": {
-						"afterBytes": 5242880,
-						"bytesPerSec": 262144,
-						"burstBytesPerSec": 2097152
-					}
-                }
-            },
-            "sniffing": {
-                "enabled": true,
-                "destOverride": [
-                    "http",
-                    "tls",
-                    "quic"
-                ]
-            }
-        }
-    ],
-    "outbounds": [
-		{
-		  "protocol": "freedom",
-		  "tag": "direct",
-		  "settings": {
-			"domainStrategy": "ForceIPv4"
-		  }
-		},
-        {
-            "protocol": "blackhole",
-            "tag": "block"
-        }
+  "log": {
+    "dnsLog": false,
+    "loglevel": "none"
+  },
+  "dns": {
+    "servers": [
+      "https+local://8.8.4.4/dns-query",
+      "https+local://8.8.8.8/dns-query",
+      "https+local://1.1.1.1/dns-query",
+      "localhost"
     ]
+  },
+  "inbounds": [
+    {
+      "tag": "VtcpRself",
+      "port": 443,
+      "listen": "0.0.0.0",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "flow": "xtls-rprx-vision",
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "raw",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "xver": 1,
+          "target": "3333",
+          "spiderX": "/",
+          "shortIds": [
+            "${xray_shortIds_vrv}"
+          ],
+          "privateKey": "${xray_privateKey_vrv}",
+          "serverNames": [
+            "$DOMAIN"
+          ],
+          "limitFallbackUpload": {
+            "afterBytes": 0,
+            "bytesPerSec": 65536,
+            "burstBytesPerSec": 0
+          },
+          "limitFallbackDownload": {
+            "afterBytes": 5242880,
+            "bytesPerSec": 262144,
+            "burstBytesPerSec": 2097152
+          }
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "ForceIPv4"
+      }
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy",
+          "geosite:private"
+        ],
+        "outboundTag": "block"
+      }
+    ],
+    "domainStrategy": "IPIfNonMatch"
+  }
 }
 
 EOF
@@ -305,157 +304,156 @@ EOF
 # Создаем JSON конфигурацию клиента
 cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
 {
-    "log": {
-        "loglevel": "warning"
-    },
-    "dns": {
-        "servers": [
-            "8.8.4.4",
-            "8.8.8.8",
-            "1.1.1.1",
-            "localhost"
-        ]
-    },
-    "routing": {
-        "domainStrategy": "IPIfNonMatch",
-        "rules": [
-            {
-                "domain": [
-                    "geosite:category-ads",
-                    "geosite:win-spy"
-                ],
-                "outboundTag": "block"
-            },
-            {
-                "protocol": [
-                    "bittorrent"
-                ],
-                "outboundTag": "direct"
-            },
-            {
-                "domain": [
-                    "geosite:private",
-                    "geosite:apple",
-                    "geosite:apple-pki",
-                    "geosite:huawei",
-                    "geosite:xiaomi",
-                    "geosite:category-android-app-download",
-                    "geosite:f-droid",
-                    "geosite:yandex",
-                    "geosite:vk",
-                    "geosite:microsoft",
-                    "geosite:win-update",
-                    "geosite:win-extra",
-                    "geosite:google-play",
-                    "geosite:steam",
-                    "geosite:category-ru"
-                ],
-                "outboundTag": "direct"
-            },
-            {
-                "ip": [
-                    "geoip:private"
-                ],
-                "outboundTag": "direct"
-            },
-            {
-                "type": "field",
-                "ip": [
-                    "geoip:!ru"
-                ],
-                "outboundTag": "proxy"
-            },
-            {
-                "domain": [
-                    "geosite:discord",
-                    "geosite:youtube",
-                    "geosite:tiktok",
-                    "geosite:signal"
-                ],
-                "outboundTag": "proxy"
-            }
-        ]
-    },
-    "inbounds": [
-        {
-            "tag": "socks-in",
-            "protocol": "socks",
-            "listen": "127.0.0.1",
-            "port": 10808,
-            "settings": {
-                "udp": true
-            }
-        },
-        {
-            "tag": "socks-sb",
-            "protocol": "socks",
-            "listen": "127.0.0.1",
-            "port": 2080,
-            "settings": {
-                "udp": true
-            }
-        },
-        {
-            "tag": "socks-v2rayN",
-            "protocol": "socks",
-            "listen": "127.0.0.1",
-            "port": 1080,
-            "settings": {
-                "udp": true
-            }
-        },
-        {
-            "tag": "http-in",
-            "protocol": "http",
-            "listen": "127.0.0.1",
-            "port": 10809
-        }
-    ],
-    "outbounds": [
-        {
-            "tag": "proxy",
-            "protocol": "vless",
-            "settings": {
-                "vnext": [
-                    {
-                        "address": "$DOMAIN",
-                        "port": 443,
-                        "users": [
-                            {
-                                "id": "${xray_uuid_vrv}",
-                                "flow": "xtls-rprx-vision",
-                                "encryption": "none",
-                                "level": 0
-                            }
-                        ]
-                    }
-                ]
-            },
-            "streamSettings": {
-                "network": "raw",
-                "tcpSettings": {
-                    "acceptProxyProtocol": false
-                },
-                "security": "reality",
-                "realitySettings": {
-					"fingerprint": "chrome",
-                    "serverName": "$DOMAIN",
-                    "password": "${xray_publicKey_vrv}",
-                    "shortId": "${xray_shortIds_vrv}",
-					"spiderX": "/"
-					
-                }
-            }
-        },
-        {
-            "tag": "direct",
-            "protocol": "freedom"
-        },
-        {
-            "tag": "block",
-            "protocol": "blackhole"
-        }
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+      "8.8.4.4",
+      "8.8.8.8",
+      "1.1.1.1",
+      "localhost"
     ]
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:huawei",
+          "geosite:xiaomi",
+          "geosite:category-android-app-download",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:microsoft",
+          "geosite:win-update",
+          "geosite:win-extra",
+          "geosite:google-play",
+          "geosite:steam",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:!ru"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:discord",
+          "geosite:youtube",
+          "geosite:tiktok",
+          "geosite:signal"
+        ],
+        "outboundTag": "proxy"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-sb",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 2080,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-v2rayN",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 1080,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "$DOMAIN",
+            "port": 443,
+            "users": [
+              {
+                "id": "${xray_uuid_vrv}",
+                "flow": "xtls-rprx-vision",
+                "encryption": "none",
+                "level": 0
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "raw",
+        "tcpSettings": {
+          "acceptProxyProtocol": false
+        },
+        "security": "reality",
+        "realitySettings": {
+          "fingerprint": "chrome",
+          "serverName": "$DOMAIN",
+          "password": "${xray_publicKey_vrv}",
+          "shortId": "${xray_shortIds_vrv}",
+          "spiderX": "/"
+        }
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ]
 }
 
 EOF
