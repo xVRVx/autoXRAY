@@ -47,9 +47,9 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ## Настройка VPN
 **Скопируйте конфиг в специализированное приложение:**
 
-- iOS: Happ или v2rayTun или FoXray
-- Android: Happ или v2rayTun или v2rayNG
-- Windows: Happ, winLoadXray, v2rayN, Throne
+- iOS: [Happ](https://www.happ.su/main/ru) или [v2rayTun](https://v2raytun.com/) или FoXray
+- Android: [Happ](https://www.happ.su/main/ru) или [v2rayTun](https://v2raytun.com/) или v2rayNG
+- Windows: [winLoadXray](https://github.com/xVRVx/winLoadXRAY/releases/latest/download/winLoadXRAY.exe), [v2rayN](https://github.com/2dust/v2rayN/releases/), [Throne](https://github.com/throneproj/Throne/releases), (Happ?)
 
 
 ## Пояснение и рекомендации
