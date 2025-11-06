@@ -83,9 +83,9 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 Если вы хотите погрузиться в дело конфигурации xray есть отличный [справочник](https://xtls.github.io/ru/config/outbounds/vless.html) и [руководство](https://github.com/XTLS/Xray-core/discussions/3518).
 
-Редактировать конфиг можно тут: /usr/local/etc/xray/config.json
+Редактировать конфиг можно тут: **/usr/local/etc/xray/config.json**
 
-После изменений ядро надо перезапустить: systemctl restart xray
+После изменений ядро надо перезапустить: **systemctl restart xray**
 
 Также настоятельно рекомендуется: сменить порт ssh со стандартного 22 на другой или сделать вход на сервер по ключу. Настроить файрвол и оставить открытыми порты для работы скрипта: ваш ssh порт, 80 для certbot, 443 для xray.
 
@@ -122,7 +122,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 "ytimg.com",
 "ggpht.com",
 ```
-и перезапустить ядро: sudo systemctl restart xray
+и перезапустить ядро: **systemctl restart xray**
 
 Скрипты будут дорабатываться до актуального состояния.
 
