@@ -45,12 +45,14 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 
 
 ## Настройка VPN
-**Скопируйте конфиг в специализированное приложение:**
+**Скопируйте конфиг (страничка подписки) в специализированное приложение:**
 
-- iOS/macOS: [Happ](https://www.happ.su/main/ru) или [v2rayTun](https://v2raytun.com/) или [FoXray](https://foxray.org/#download)
-- Android: [Happ](https://www.happ.su/main/ru) или [v2rayTun](https://v2raytun.com/) или [v2rayNG](https://github.com/2dust/v2rayNG/releases)
-- Windows: [winLoadXray](https://github.com/xVRVx/winLoadXRAY/releases/latest/download/winLoadXRAY.exe), [v2rayN](https://github.com/2dust/v2rayN/releases/), [Throne](https://github.com/throneproj/Throne/releases), (Happ?)
-- Linux: [Throne](https://github.com/throneproj/Throne/releases), [v2rayN](https://github.com/2dust/v2rayN/releases/), (Happ?)
+- iOS/macOS: [Happ](https://www.happ.su/main/ru) или [v2rayTun](https://v2raytun.com/) или [FoXray](https://foxray.org/#download) | (Hiddify)
+- Android: [Happ](https://www.happ.su/main/ru) или [v2rayTun](https://v2raytun.com/) | (v2rayNG?)
+- Windows: [winLoadXray](https://github.com/xVRVx/winLoadXRAY/releases/latest/download/winLoadXRAY.exe), [v2rayN](https://github.com/2dust/v2rayN/releases/) | (Happ?, v2rayTun, Throne, Hiddify)
+- Linux:  [v2rayN](https://github.com/2dust/v2rayN/releases/) | (Happ?, Throne, Hiddify)
+
+() - не поддерживают клиентский конфиг, только vless:// (конфиг для роутера).
 
 
 ## Пояснение и рекомендации
