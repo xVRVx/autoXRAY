@@ -48,9 +48,9 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 **Скопируйте конфиг (страничка подписки) в специализированное приложение:**
 
 - iOS/macOS: [Happ](https://www.happ.su/main/ru) или [v2rayTun](https://v2raytun.com/) | (FoXray, Hiddify)
-- Android: [Happ](https://www.happ.su/main/ru) или [v2rayTun](https://v2raytun.com/) | (v2rayNG?)
+- Android: [Happ](https://www.happ.su/main/ru) или [v2rayTun](https://v2raytun.com/) | (v2rayNG, SimpleXray)
 - Windows: [winLoadXray](https://github.com/xVRVx/winLoadXRAY/releases/latest/download/winLoadXRAY.exe), [v2rayN](https://github.com/2dust/v2rayN/releases/) | (Happ?, v2rayTun, Throne, Hiddify)
-- Linux:  [v2rayN](https://github.com/2dust/v2rayN/releases/) | (Happ?, Throne, Hiddify)
+- Linux:  [v2rayN](https://github.com/2dust/v2rayN/releases/) | (Happ, Throne, Hiddify)
 
 () - не поддерживают клиентский конфиг, только vless:// (конфиг для роутера).
 
