@@ -306,10 +306,9 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
   },
   "dns": {
     "servers": [
-      "8.8.4.4",
-      "8.8.8.8",
-      "1.1.1.1",
-      "localhost"
+	  "https://8.8.4.4/dns-query",
+	  "https://8.8.8.8/dns-query",
+	  "https://1.1.1.1/dns-query"
     ],
     "queryStrategy": "UseIPv4"
   },

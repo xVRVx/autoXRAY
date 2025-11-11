@@ -308,7 +308,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
   "dns": {
     "servers": [
       {
-        "address": "8.8.8.8",
+        "address": "https://8.8.4.4/dns-query",
         "domains": [
           "geosite:geolocation-!cn"
         ]
