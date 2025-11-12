@@ -116,7 +116,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 
 **Если вы хотите пускать ютуб через ру впс (у вас он без ТСПУ или вы поставили и настроили [zapret4rocket](https://github.com/IndeecFOX/zapret4rocket))**
 
-Тогда в конфиге ру впс, который лежит /usr/local/etc/xray/config.json надо добавить в строке 38:
+Тогда в конфиге ру впс, который лежит /usr/local/etc/xray/config.json надо добавить в строке 137:
 ```bash
 "geosite:youtube",
 "youtube.com",
