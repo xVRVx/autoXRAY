@@ -77,6 +77,11 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 ```
 
+**Перейти на алгоритм BBR**
+
+Если у вас много одновременных подключений, то алгоритм BBR от гугл попомжет повысить пропускную способность VPN.
+Проверка текущего алгоритма sysctl net.ipv4.tcp_congestion_control
+
 
 ## Смена паролей и сайта маскировки
 
