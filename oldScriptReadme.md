@@ -9,14 +9,14 @@
 ## Стандартная установка
 Зайдите в консоль на сервер, например, с помощью PuTTY и введите команду:
 ```bash
-bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAY.sh)"
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/autoXRAY.sh)"
 ```
 Подождите около 5 минут, пока устанавливаются обновления и ядро. В конце установки зелёными цветом будут подсвечены 3 готовых конфига. Вам останется только вставить их в ваше клиентское приложение.
 
 ## Установка для хостеров
 Если вы хотите автоматически развертывать личный VPN для своих клиентов и у вас есть авторизация в Телеграме. 
 ```bash
-bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAY.sh)" -- chatID tgTOKEN
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/autoXRAY.sh)" -- chatID tgTOKEN
 ```
 chatID — id вашего клиента в ТГ, tgTOKEN — токен вашего бота. Просьба указывать автора и ссылку на эту страницу в качестве первоисточника.
 
@@ -28,14 +28,14 @@ chatID — id вашего клиента в ТГ, tgTOKEN — токен ваш
 
 Сделал выбор до 3 портов, два будут vless и третий ss:
 ```bash
-bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYno443.sh)" -- 456 321 2000
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/autoXRAYno443.sh)" -- 456 321 2000
 
 ```
 
 
 **Разработан скрипт автоматизации для получения selfsteal** - вставьте ваш домен!
 ```bash
-bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselfsteal.sh)" -- вашДОМЕН.com
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/autoXRAYselfsteal.sh)" -- вашДОМЕН.com
 ```
 **Вы получите:**
 1. основной [VLESS RAW REALITY](https://gozargah.github.io/marzban/ru/docs/xray-inbounds) xtls-rprx-vision на 443 порту с рандомным сайтом маскировки.
@@ -74,4 +74,11 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 - Ниже пинг - быстрее соединение.
 - Не используются CDN, которые есть на многих популярных сайтах.
 - Лучше маскировка - т.к. сайт находится в той же сети что и сервер.
+
+
+### Конфигурация с клиентским конфигом VPN для Китая
+```bash
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/autoXRAYselfstealConfChina.sh)" -- вашДОМЕН.com
+```
+Разработан по китайским [мануалам](https://xtls.github.io/ru/document/level-0/ch08-xray-clients.html#_8-3-%D0%B4%D0%BE%D0%BF%D0%BE%D0%BB%D0%BD%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B5-%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-1-%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B8%D0%BA%D0%B0-xray-core-%D0%BD%D0%B0-%D0%BF%D0%BA-%D0%B2%D1%80%D1%83%D1%87%D0%BD%D1%83%D1%8E).
 
