@@ -1,9 +1,11 @@
 # autoXRAY - личный ВПН сервер
 Bash-скрипт для автоматической настройки ядра [Xray](https://github.com/XTLS/Xray-core). Предназначен для удобного получения актуальных конфигураций VPN для семейного/личного использования, настраивает selfsteal [VLESS RAW REALITY](https://github.com/XTLS/REALITY/blob/main/README.en.md).
 
-**UPD: Описание неактуальных скриптов перемещено в [oldScriptReadme.md](https://github.com/xVRVx/autoXRAY/blob/main/old/oldScriptReadme.md).**
+**UPD3: Обход новых блокировок beta - [перейти](#%D0%BE%D0%B1%D1%85%D0%BE%D0%B4-%D0%BD%D0%BE%D0%B2%D1%8B%D1%85-%D0%B1%D0%BB%D0%BE%D0%BA%D0%B8%D1%80%D0%BE%D0%B2%D0%BE%D0%BA).**
 
-**UPD: Добавлен новый раздел — [построение моста RU -> EU](#%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%B0%D0%B8%D0%B2%D0%B0%D0%B5%D0%BC-%D0%BC%D0%BE%D1%81%D1%82-ru---eu).**
+**UPD2: Описание неактуальных скриптов перемещено в [oldScriptReadme.md](https://github.com/xVRVx/autoXRAY/blob/main/old/oldScriptReadme.md).**
+
+**UPD1: Добавлен новый раздел — [построение моста RU -> EU](#%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%B0%D0%B8%D0%B2%D0%B0%D0%B5%D0%BC-%D0%BC%D0%BE%D1%81%D1%82-ru---eu).**
 
 Рекомендуемая система: чистая Ubuntu 24/Debian 12 с root правами.
 
@@ -123,6 +125,20 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 "ggpht.com",
 ```
 и перезапустить ядро: **systemctl restart xray**
+
+
+
+## Обход новых блокировок beta
+
+Для тех у кого перестал работать основной вариант.
+
+Используем новый транспорт: xhttp mode:auto chrome reality path
+
+```bash
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/test/autoXRAYselfstealConfRUv4.sh)" -- вашДОМЕН.com
+```
+
+============================================================================================
 
 Скрипты будут дорабатываться до актуального состояния.
 
