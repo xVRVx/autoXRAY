@@ -1,7 +1,7 @@
 # autoXRAY - личный ВПН сервер
 Bash-скрипт для автоматической настройки ядра [Xray](https://github.com/XTLS/Xray-core). Предназначен для удобного получения актуальных конфигураций VPN для семейного/личного использования, настраивает selfsteal [VLESS RAW REALITY](https://github.com/XTLS/REALITY/blob/main/README.en.md).
 
-**UPD3: Обход новых блокировок beta - [перейти](#%D0%BE%D0%B1%D1%85%D0%BE%D0%B4-%D0%BD%D0%BE%D0%B2%D1%8B%D1%85-%D0%B1%D0%BB%D0%BE%D0%BA%D0%B8%D1%80%D0%BE%D0%B2%D0%BE%D0%BA).**
+**UPD3: Обход новых блокировок beta - [перейти](#обход-новых-блокировок-beta).**
 
 **UPD2: Описание неактуальных скриптов перемещено в [oldScriptReadme.md](https://github.com/xVRVx/autoXRAY/blob/main/old/oldScriptReadme.md).**
 
