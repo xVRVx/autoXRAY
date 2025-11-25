@@ -253,13 +253,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "burstBytesPerSec": 2097152
           }
         }
-      },
-      "mux": {
-        "enabled":true,
-        "concurrency":8,
-        "xudpConcurrency":16,
-        "xudpProxyUDP443":"reject"
-	  }
+      }
     }
   ],
   "outbounds": [
@@ -448,7 +442,13 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
           "mldsa65Verify": "",
           "spiderX": "/"
         }
-      }
+      },
+      "mux": {
+        "enabled":true,
+        "concurrency":8,
+        "xudpConcurrency":16,
+        "xudpProxyUDP443":"reject"
+	  }
     },
     {
       "tag": "direct",
