@@ -58,6 +58,7 @@ server {
     ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
 
+    add_header routing-enable 0;
 
     location ~ /\.ht {
         deny all;
@@ -410,6 +411,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       },
       {
         "domain": [
+          "2ip.ru",
           "geosite:private",
           "geosite:apple",
           "geosite:apple-pki",
@@ -572,6 +574,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       },
       {
         "domain": [
+          "2ip.ru",
           "geosite:private",
           "geosite:apple",
           "geosite:apple-pki",
@@ -737,6 +740,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       },
       {
         "domain": [
+          "2ip.ru",
           "geosite:private",
           "geosite:apple",
           "geosite:apple-pki",
