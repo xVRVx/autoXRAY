@@ -392,17 +392,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
     ],
     "queryStrategy": "UseIPv4"
   },
-  "routing": {
-    "domainStrategy": "IPIfNonMatch",
-    "rules": [
-      {
-        "ip": [
-          "geoip:private"
-        ],
-        "outboundTag": "direct"
-      }
-    ]
-  },
   "inbounds": [
     {
       "tag": "socks-in",
@@ -497,17 +486,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
 	  "https://1.1.1.1/dns-query"
     ],
     "queryStrategy": "UseIPv4"
-  },
-  "routing": {
-    "domainStrategy": "IPIfNonMatch",
-    "rules": [
-      {
-        "ip": [
-          "geoip:private"
-        ],
-        "outboundTag": "direct"
-      }
-    ]
   },
   "inbounds": [
     {
@@ -607,17 +585,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
 	  "https://1.1.1.1/dns-query"
     ],
     "queryStrategy": "UseIPv4"
-  },
-  "routing": {
-    "domainStrategy": "IPIfNonMatch",
-    "rules": [
-      {
-        "ip": [
-          "geoip:private"
-        ],
-        "outboundTag": "direct"
-      }
-    ]
   },
   "inbounds": [
     {
