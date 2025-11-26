@@ -429,6 +429,12 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
   ],
   "outbounds": [
     {
+      "mux": {
+        "concurrency": -1,
+        "enabled": false,
+        "xudpConcurrency": 8,
+        "xudpProxyUDP443": ""
+      },
       "tag": "proxy",
       "protocol": "vless",
       "settings": {
@@ -441,7 +447,8 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
                 "id": "${xray_uuid_vrv}",
                 "flow": "xtls-rprx-vision",
                 "encryption": "none",
-                "level": 0
+                "level": 8,
+                "security": "auto"
               }
             ]
           }
@@ -524,6 +531,12 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
   ],
   "outbounds": [
     {
+      "mux": {
+        "concurrency": -1,
+        "enabled": false,
+        "xudpConcurrency": 8,
+        "xudpProxyUDP443": ""
+      },
       "tag": "proxy",
       "protocol": "vless",
       "settings": {
@@ -534,9 +547,9 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
             "users": [
               {
                 "id": "${xray_uuid_vrv}",
-                "flow": "",
                 "encryption": "none",
-                "level": 0
+                "level": 8,
+                "security": "auto"
               }
             ]
           }
@@ -623,6 +636,12 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
   ],
   "outbounds": [
     {
+      "mux": {
+        "concurrency": -1,
+        "enabled": false,
+        "xudpConcurrency": 8,
+        "xudpProxyUDP443": ""
+      },
       "tag": "proxy",
       "protocol": "shadowsocks",
       "settings": {
