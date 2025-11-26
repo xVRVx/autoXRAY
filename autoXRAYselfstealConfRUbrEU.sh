@@ -562,13 +562,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
           "mldsa65Verify": "",
           "spiderX": "/"
         }
-      },
-      "mux": {
-        "enabled":true,
-        "concurrency":8,
-        "xudpConcurrency":16,
-        "xudpProxyUDP443":"reject"
-	  }
+      }
     },
     {
       "tag": "direct",
