@@ -392,6 +392,19 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
     ],
     "queryStrategy": "UseIPv4"
   },
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      }
+	],
+    "domainMatcher": "hybrid",
+    "domainStrategy": "IPIfNonMatch"
+  },
   "inbounds": [
     {
       "tag": "socks-in",
@@ -494,6 +507,19 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
     ],
     "queryStrategy": "UseIPv4"
   },
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      }
+	],
+    "domainMatcher": "hybrid",
+    "domainStrategy": "IPIfNonMatch"
+  },
   "inbounds": [
     {
       "tag": "socks-in",
@@ -561,7 +587,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
           "mode": "auto",
 		  "path": "/xvrvxtt"
         },
-        "tcpSettings": {
+        "rawSettings": {
           "acceptProxyProtocol": false
         },
         "security": "reality",
@@ -598,6 +624,19 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
 	  "https://1.1.1.1/dns-query"
     ],
     "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      }
+	],
+    "domainMatcher": "hybrid",
+    "domainStrategy": "IPIfNonMatch"
   },
   "inbounds": [
     {
