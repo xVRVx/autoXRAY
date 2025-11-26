@@ -393,17 +393,64 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
     "queryStrategy": "UseIPv4"
   },
   "routing": {
+    "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
-        "type": "field",
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy"
+        ],
+        "outboundTag": "block"
+      },
+      {
         "protocol": [
           "bittorrent"
         ],
         "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:huawei",
+          "geosite:xiaomi",
+          "geosite:category-android-app-download",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:microsoft",
+          "geosite:win-update",
+          "geosite:win-extra",
+          "geosite:google-play",
+          "geosite:steam",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:!ru"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:discord",
+          "geosite:youtube",
+          "geosite:tiktok",
+          "geosite:signal"
+        ],
+        "outboundTag": "proxy"
       }
-	],
-    "domainMatcher": "hybrid",
-    "domainStrategy": "IPIfNonMatch"
+    ]
   },
   "inbounds": [
     {
@@ -508,17 +555,64 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
     "queryStrategy": "UseIPv4"
   },
   "routing": {
+    "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
-        "type": "field",
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy"
+        ],
+        "outboundTag": "block"
+      },
+      {
         "protocol": [
           "bittorrent"
         ],
         "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:huawei",
+          "geosite:xiaomi",
+          "geosite:category-android-app-download",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:microsoft",
+          "geosite:win-update",
+          "geosite:win-extra",
+          "geosite:google-play",
+          "geosite:steam",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:!ru"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:discord",
+          "geosite:youtube",
+          "geosite:tiktok",
+          "geosite:signal"
+        ],
+        "outboundTag": "proxy"
       }
-	],
-    "domainMatcher": "hybrid",
-    "domainStrategy": "IPIfNonMatch"
+    ]
   },
   "inbounds": [
     {
@@ -626,17 +720,64 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
     "queryStrategy": "UseIPv4"
   },
   "routing": {
+    "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
-        "type": "field",
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy"
+        ],
+        "outboundTag": "block"
+      },
+      {
         "protocol": [
           "bittorrent"
         ],
         "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:huawei",
+          "geosite:xiaomi",
+          "geosite:category-android-app-download",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:microsoft",
+          "geosite:win-update",
+          "geosite:win-extra",
+          "geosite:google-play",
+          "geosite:steam",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:!ru"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:discord",
+          "geosite:youtube",
+          "geosite:tiktok",
+          "geosite:signal"
+        ],
+        "outboundTag": "proxy"
       }
-	],
-    "domainMatcher": "hybrid",
-    "domainStrategy": "IPIfNonMatch"
+    ]
   },
   "inbounds": [
     {
