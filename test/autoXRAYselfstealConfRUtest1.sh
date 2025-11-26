@@ -484,7 +484,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇧🇩 VlRawRtyXtls"
+  "remarks": "🇧🇩 VlRawRtyXtls - autoXRAY"
 },
 {
   "log": {
@@ -594,7 +594,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇧🇩 VlXhttpRty"
+  "remarks": "🇧🇩 VlXhttpRty - autoXRAY"
 },
 {
   "log": {
@@ -678,7 +678,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇧🇩 ShadowSchacha20"
+  "remarks": "💠 ShadowScha20 - autoXRAY"
 }
 ]
 
