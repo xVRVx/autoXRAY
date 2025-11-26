@@ -663,7 +663,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
           {
             "port": 10443,
             "method": "chacha20-ietf-poly1305",
-            "address": ""$DOMAIN",
+            "address": "$DOMAIN",
             "password": "${xray_sspasw_vrv}"
           }
         ]
