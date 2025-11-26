@@ -254,6 +254,85 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           }
         }
       }
+    },
+    {
+      "tag": "VxhttpRself",
+      "port": 8443,
+      "listen": "0.0.0.0",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "flow": "",
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "mode": "auto",
+		  "path": "/xvrvxtt"
+        },
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "xver": 1,
+          "target": "/dev/shm/nginx.sock",
+          "spiderX": "/",
+          "shortIds": [
+            "${xray_shortIds_vrv}"
+          ],
+          "privateKey": "${xray_privateKey_vrv}",
+          "serverNames": [
+            "$DOMAIN"
+          ],
+          "limitFallbackUpload": {
+            "afterBytes": 0,
+            "bytesPerSec": 65536,
+            "burstBytesPerSec": 0
+          },
+          "limitFallbackDownload": {
+            "afterBytes": 5242880,
+            "bytesPerSec": 262144,
+            "burstBytesPerSec": 2097152
+          }
+        }
+      }
+    },
+	{
+      "tag": "Shadowsocks",
+      "port": 10443,
+      "listen": "0.0.0.0",
+      "protocol": "shadowsocks",
+      "settings": {
+        "clients": [
+          {
+            "password": "${xray_sspasw_vrv}",
+            "method": "chacha20-ietf-poly1305"
+          }
+        ]
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "raw"
+      }
     }
   ],
   "outbounds": [
@@ -299,7 +378,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 EOF
 
 # Создаем JSON конфигурацию клиента
-cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
+cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
+[
 {
   "log": {
     "loglevel": "warning"
@@ -316,59 +396,10 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
     "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
-        "domain": [
-          "geosite:category-ads",
-          "geosite:win-spy"
-        ],
-        "outboundTag": "block"
-      },
-      {
-        "protocol": [
-          "bittorrent"
-        ],
-        "outboundTag": "direct"
-      },
-      {
-        "domain": [
-          "geosite:private",
-          "geosite:apple",
-          "geosite:apple-pki",
-          "geosite:huawei",
-          "geosite:xiaomi",
-          "geosite:category-android-app-download",
-          "geosite:f-droid",
-          "geosite:yandex",
-          "geosite:vk",
-          "geosite:microsoft",
-          "geosite:win-update",
-          "geosite:win-extra",
-          "geosite:google-play",
-          "geosite:steam",
-          "geosite:category-ru"
-        ],
-        "outboundTag": "direct"
-      },
-      {
         "ip": [
           "geoip:private"
         ],
         "outboundTag": "direct"
-      },
-      {
-        "type": "field",
-        "ip": [
-          "geoip:!ru"
-        ],
-        "outboundTag": "proxy"
-      },
-      {
-        "domain": [
-          "geosite:discord",
-          "geosite:youtube",
-          "geosite:tiktok",
-          "geosite:signal"
-        ],
-        "outboundTag": "proxy"
       }
     ]
   },
@@ -429,6 +460,116 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
       },
       "streamSettings": {
         "network": "raw",
+        "rawSettings": {
+          "acceptProxyProtocol": false
+        },
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "fingerprint": "chrome",
+          "serverName": "$DOMAIN",
+          "password": "${xray_publicKey_vrv}",
+          "shortId": "${xray_shortIds_vrv}",
+          "mldsa65Verify": "",
+          "spiderX": "/"
+        }
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "remarks": "🇧🇩 VlRawRtyXtls"
+},
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+	  "https://8.8.4.4/dns-query",
+	  "https://8.8.8.8/dns-query",
+	  "https://1.1.1.1/dns-query"
+    ],
+    "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-sb",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 2080,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-v2rayN",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 1080,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "$DOMAIN",
+            "port": 8443,
+            "users": [
+              {
+                "id": "${xray_uuid_vrv}",
+                "flow": "",
+                "encryption": "none",
+                "level": 0
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "mode": "auto",
+		  "path": "/xvrvxtt"
+        },
         "tcpSettings": {
           "acceptProxyProtocol": false
         },
@@ -442,13 +583,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
           "mldsa65Verify": "",
           "spiderX": "/"
         }
-      },
-      "mux": {
-        "enabled":true,
-        "concurrency":8,
-        "xudpConcurrency":16,
-        "xudpProxyUDP443":"reject"
-	  }
+      }
     },
     {
       "tag": "direct",
@@ -458,8 +593,94 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
       "tag": "block",
       "protocol": "blackhole"
     }
-  ]
+  ],
+  "remarks": "🇧🇩 VlXhttpRty"
+},
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+	  "https://8.8.4.4/dns-query",
+	  "https://8.8.8.8/dns-query",
+	  "https://1.1.1.1/dns-query"
+    ],
+    "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-sb",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 2080,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-v2rayN",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 1080,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "proxy",
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [
+          {
+            "port": 10443,
+            "method": "chacha20-ietf-poly1305",
+            "address": ""$DOMAIN",
+            "password": "${xray_sspasw_vrv}"
+          }
+        ]
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "remarks": "🇧🇩 ShadowSchacha20"
 }
+]
 
 EOF
 
@@ -469,10 +690,15 @@ systemctl restart xray
 echo -e "Готово!\n"
 
 # Формирование ссылок
-subPageLink="https://$DOMAIN/$path_subpage.html"
+subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none&spx=%2F#vlessAX"
+link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none&spx=%2F#VlRawRtyXtls"
+
+link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&path=xvrvxtt&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=xhttp&flow=&encryption=none&spx=%2F#VlXhttpRty"
+
+ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
+link3="ss://$ENCODED_STRING@${ipserv}:2040#ShadowS"
 	
 echo -e "
 Скопируйте подписку в специализированное приложение:
@@ -485,8 +711,14 @@ echo -e "
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
 
-Ваш конфиг для роутера:
+Ваш конфиг для роутера VlRawRtyXtls:
 $link1
+
+Ваш конфиг для роутера VlXhttpRty:
+$link2
+
+Ваш конфиг для роутера ShadowSchacha20:
+$link3
 
 Открыт локальный socks5 на порту 10808, 1080, 2080 и http на 10809.
 
