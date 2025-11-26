@@ -411,7 +411,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       },
       {
         "domain": [
-          "2ip.ru",
           "geosite:private",
           "geosite:apple",
           "geosite:apple-pki",
@@ -574,7 +573,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       },
       {
         "domain": [
-          "2ip.ru",
           "geosite:private",
           "geosite:apple",
           "geosite:apple-pki",
@@ -740,7 +738,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       },
       {
         "domain": [
-          "2ip.ru",
           "geosite:private",
           "geosite:apple",
           "geosite:apple-pki",
