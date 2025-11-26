@@ -662,10 +662,10 @@ subPageLink="https://$DOMAIN/$path_subpage.json"
 # Формирование ссылок
 link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=tcp&flow=xtls-rprx-vision&encryption=none&spx=%2F#VlRawRtyXtls"
 
-link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&path=xvrvxtt&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=xhttp&flow=&encryption=none&spx=%2F#VlXhttpRty"
+link2="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=reality&path=xvrvxtt&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&type=xhttp&flow=&encryption=none&spx=%2F#VlXhttpRty"
 
 ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
-link3="ss://$ENCODED_STRING@${ipserv}:2040#ShadowS"
+link3="ss://$ENCODED_STRING@${ipserv}:10443#ShadowS"
 	
 echo -e "
 Скопируйте подписку в специализированное приложение:
