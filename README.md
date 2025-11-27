@@ -1,5 +1,5 @@
 # autoXRAY - личный ВПН сервер
-Bash-скрипт для автоматической настройки ядра [Xray](https://github.com/XTLS/Xray-core). Предназначен для удобного получения актуальных конфигураций VPN для семейного/личного использования, настраивает selfsteal [VLESS RAW REALITY](https://github.com/XTLS/REALITY/blob/main/README.en.md).
+Bash-скрипт для автоматической настройки ядра [Xray](https://github.com/XTLS/Xray-core). Предназначен для удобного получения актуальных конфигураций VPN для семейного/личного использования, настраивает selfsteal VLESS [XHTTP](https://github.com/XTLS/Xray-core/discussions/4113#discussioncomment-11468947) / [RAW](https://github.com/XTLS/REALITY/blob/main/README.en.md) REALITY.
 
 **UPD3: Обход новых блокировок - скрипт переработан на vless xhttp reality**
 
