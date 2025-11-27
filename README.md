@@ -82,7 +82,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 **Перейти на алгоритм BBR**
 
-Если у вас много одновременных подключений, то алгоритм BBR от гугл попомжет повысить пропускную способность VPN.
+Если у вас много одновременных подключений, то можно включить алгоритм BBR (от гугла) - поможет повысить пропускную способность VPN.
 Проверка текущего алгоритма: sysctl net.ipv4.tcp_congestion_control
 
 
@@ -114,11 +114,15 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ```bash
 bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselflConfRUbrEUxhttp.sh)" -- поддомен2.вашДОМЕН.com "vless://вашКонфиг"
 ```
-Установится прокси мост между серверами, итоговая цепочка: конфиг клиента -> ru VPS -> eu VPS -> зарубежный сайт
+Установится прокси мост между серверами, итоговая цепочка:
 
-**Если вы хотите пускать ютуб через ру впс (у вас он без ТСПУ или вы поставили и настроили [zapret4rocket](https://github.com/IndeecFOX/zapret4rocket))**
+конфиг клиента -> ru VPS -> eu VPS -> зарубежный сайт
 
-Тогда в конфиге ру впс, который лежит /usr/local/etc/xray/config.json надо добавить в строке 146:
+===
+
+**Если вы хотите пускать YouTube через ruVPS (у вас он без ТСПУ или вы поставили и настроили [zapret4rocket](https://github.com/IndeecFOX/zapret4rocket))**
+
+Тогда в конфиге ruVPS, который лежит /usr/local/etc/xray/config.json надо добавить в строке 146:
 ```bash
 "geosite:youtube",
 "youtube.com",
