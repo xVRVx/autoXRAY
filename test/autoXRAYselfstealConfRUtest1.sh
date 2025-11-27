@@ -858,10 +858,10 @@ link2="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=reality&type=xhttp&headerT
 ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
 link3="ss://$ENCODED_STRING@${ipserv}:10443#ShadowS"
 
-configListLink="https://$DOMAIN/$path_configs.html"
+configListLink="https://$DOMAIN/$path_subpage.html"
 
 # Создаем html файл с конфигами
-cat > "$WEB_PATH/$path_configs.html" <<EOF
+cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -869,11 +869,61 @@ cat > "$WEB_PATH/$path_configs.html" <<EOF
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xray Configs</title>
     <style>
+        /* Основные стили */
         body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 20px; max-width: 800px; margin: 0 auto; }
         h3 { color: #82aaff; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 30px; }
-        .box { background: #1e1e1e; padding: 15px; border-radius: 8px; word-break: break-all; border: 1px solid #333; }
-        a { color: #c3e88d; text-decoration: none; display: block; margin-top: 10px; font-weight: bold; }
-        a:hover { text-decoration: underline; }
+        
+        /* Стили блоков с конфигами */
+        .box { background: #1e1e1e; padding: 15px; border-radius: 8px; word-break: break-all; border: 1px solid #333; margin-bottom: 10px; }
+        
+        /* Обычные ссылки внутри текста */
+        .box a { color: #c3e88d; text-decoration: none; display: block; margin-top: 10px; font-weight: bold; }
+        .box a:hover { text-decoration: underline; }
+
+        /* === Новые стили для кнопок HAPP === */
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            flex: 1; /* Кнопки растягиваются равномерно */
+            min-width: 250px; /* Но не становятся слишком узкими на телефонах */
+            background-color: #2c2c2c;
+            color: #c3e88d;
+            border: 1px solid #c3e88d;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Эффект при наведении курсора */
+        .btn:hover {
+            background-color: #c3e88d;
+            color: #121212;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(195, 232, 141, 0.3);
+        }
+        
+        /* Специфичный стиль для кнопки "Скачать" (чуть менее яркий, если нужно, или оставить таким же) */
+        .btn.download {
+             border-color: #82aaff;
+             color: #82aaff;
+        }
+        .btn.download:hover {
+            background-color: #82aaff;
+            color: #121212;
+            box-shadow: 0 0 10px rgba(130, 170, 255, 0.3);
+        }
+
     </style>
 </head>
 <body>
@@ -881,33 +931,44 @@ cat > "$WEB_PATH/$path_configs.html" <<EOF
     <h3>🚀 VLESS RAW Reality Vision</h3>
     <div class="box">
         $link1
+        <a href="$link1">📋 Нажмите, чтобы скопировать/добавить</a>
     </div>
 
     <h3>🛸 VLESS XHTTP Reality</h3>
     <div class="box">
         $link2
+        <a href="$link2">📋 Нажмите, чтобы скопировать/добавить</a>
     </div>
 
     <h3>🛡️ Shadowsocks</h3>
     <div class="box">
         $link3
+        <a href="$link3">📋 Нажмите, чтобы скопировать/добавить</a>
     </div>
 
-    <h3>📂 Подписка с конфигурацией клиента</h3>
+    <h3>📂 Ссылка на подписку</h3>
     <div class="box">
         <a href="$subPageLink" target="_blank">$subPageLink</a>
+    </div>
+
+    <h3>📱 Приложение HAPP (Android/iOS)</h3>
+    <div class="btn-group">
+        <!-- Кнопка импорта -->
+        <a href="happ://add/$subPageLink" class="btn">
+            ⚡ Автодобавление в HAPP
+        </a>
+        
+        <!-- Кнопка скачивания -->
+        <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">
+            ⬇️ Скачать HAPP
+        </a>
     </div>
 
 </body>
 </html>
 EOF
-echo -e "
-Скопируйте подписку в специализированное приложение:
-- iOS: Happ или v2RayTun или v2rayN
-- Android: Happ или v2RayTun или v2rayNG
-- Windows: конфиги Happ или winLoadXRAY или v2rayN
-	для vless v2RayTun или Throne
 
+echo -e "
 Ваш конфиг для роутера vless raw reality xtls:
 $link1
 
@@ -922,6 +983,12 @@ $link3
 
 Ссылка на конфиги: 
 \033[32m$configListLink\033[0m
+
+Скопируйте подписку в специализированное приложение:
+- iOS: Happ или v2RayTun или v2rayN
+- Android: Happ или v2RayTun или v2rayNG
+- Windows: конфиги Happ или winLoadXRAY или v2rayN
+	для vless v2RayTun или Throne
 
 Открыт локальный socks5 на порту 10808, 1080, 2080 и http на 10809.
 
