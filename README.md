@@ -128,10 +128,6 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ```
 и перезапустить ядро: **systemctl restart xray**
 
-
-```bash
-bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/test/autoXRAYselfstealConfRUv4.sh)" -- вашДОМЕН.com
-```
 ===========================================================================
 
 Скрипты будут дорабатываться до актуального состояния.
