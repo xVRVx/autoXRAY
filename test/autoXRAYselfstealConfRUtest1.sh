@@ -264,7 +264,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "settings": {
         "clients": [
           {
-            "flow": "",
             "id": "${xray_uuid_vrv}"
           }
         ],
@@ -492,9 +491,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
     {
       "mux": {
         "concurrency": -1,
-        "enabled": false,
-        "xudpConcurrency": 8,
-        "xudpProxyUDP443": ""
+        "enabled": false
       },
       "tag": "proxy",
       "protocol": "vless",
@@ -508,7 +505,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
                 "id": "${xray_uuid_vrv}",
                 "flow": "xtls-rprx-vision",
                 "encryption": "none",
-                "level": 8,
                 "security": "auto"
               }
             ]
@@ -654,9 +650,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
     {
       "mux": {
         "concurrency": -1,
-        "enabled": false,
-        "xudpConcurrency": 8,
-        "xudpProxyUDP443": ""
+        "enabled": false
       },
       "tag": "proxy",
       "protocol": "vless",
@@ -669,7 +663,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
               {
                 "id": "${xray_uuid_vrv}",
                 "encryption": "none",
-                "level": 8,
                 "security": "auto"
               }
             ]
@@ -819,9 +812,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
     {
       "mux": {
         "concurrency": -1,
-        "enabled": false,
-        "xudpConcurrency": 8,
-        "xudpProxyUDP443": ""
+        "enabled": false
       },
       "tag": "proxy",
       "protocol": "shadowsocks",
@@ -866,7 +857,50 @@ link2="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=reality&type=xhttp&headerT
 
 ENCODED_STRING=$(echo -n "chacha20-ietf-poly1305:${xray_sspasw_vrv}" | base64)
 link3="ss://$ENCODED_STRING@${ipserv}:10443#ShadowS"
-	
+
+configListLink="https://$DOMAIN/$path_configs.html"
+
+# Создаем html файл с конфигами
+cat > "$WEB_PATH/$path_configs.html" <<EOF
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xray Configs</title>
+    <style>
+        body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 20px; max-width: 800px; margin: 0 auto; }
+        h3 { color: #82aaff; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 30px; }
+        .box { background: #1e1e1e; padding: 15px; border-radius: 8px; word-break: break-all; border: 1px solid #333; }
+        a { color: #c3e88d; text-decoration: none; display: block; margin-top: 10px; font-weight: bold; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <h3>🚀 VLESS RAW Reality Vision</h3>
+    <div class="box">
+        $link1
+    </div>
+
+    <h3>🛸 VLESS XHTTP Reality</h3>
+    <div class="box">
+        $link2
+    </div>
+
+    <h3>🛡️ Shadowsocks</h3>
+    <div class="box">
+        $link3
+    </div>
+
+    <h3>📂 Подписка с конфигурацией клиента</h3>
+    <div class="box">
+        <a href="$subPageLink" target="_blank">$subPageLink</a>
+    </div>
+
+</body>
+</html>
+EOF
 echo -e "
 Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2RayTun или v2rayN
@@ -874,18 +908,20 @@ echo -e "
 - Windows: конфиги Happ или winLoadXRAY или v2rayN
 	для vless v2RayTun или Throne
 
+Ваш конфиг для роутера vless raw reality xtls:
+$link1
+
+Ваш конфиг vless xhttp reality:
+$link2
+
+Ваш конфиг Shadowsocks chacha20-ietf-poly1305:
+$link3
 
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
 
-Ваш конфиг для роутера VlRawRtyXtls:
-$link1
-
-Ваш конфиг для роутера VlXhttpRty:
-$link2
-
-Ваш конфиг для роутера ShadowSchacha20:
-$link3
+Ссылка на конфиги: 
+\033[32m$configListLink\033[0m
 
 Открыт локальный socks5 на порту 10808, 1080, 2080 и http на 10809.
 
