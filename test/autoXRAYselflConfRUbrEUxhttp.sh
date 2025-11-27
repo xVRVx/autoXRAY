@@ -62,7 +62,7 @@ echo "== Параметры =="
 SECURITY="${params[security]}"; echo "SECURITY=$SECURITY"
 TYPE="${params[type]}"; echo "TYPE=$TYPE"
 headerType="${params[headerType]}"; echo "headerType=$headerType"
-path="${params[path]}"; echo "path=$path"
+path_url="${params[path]}"; echo "path=$path"
 host="${params[host]}"; echo "host=$host"
 mode="${params[mode]}"; echo "mode=$mode"
 extra="${params[extra]}"; echo "extra=$extra"
@@ -262,7 +262,7 @@ ipserv=$(hostname -I | awk '{print $1}')
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH TYPE FP SNI SPX PBK SECURITY FLOW SID uuidVL addressVL portVL path_xhttp
+export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH TYPE FP SNI SPX PBK SECURITY FLOW SID mode uuidVL addressVL portVL path_xhttp path_url
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
@@ -361,7 +361,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "network": "$TYPE",
         "xhttpSettings": {
           "mode": "${mode}",
-		  "path": "/${path_xhttp}"
+		  "path": "/${path_url}"
         },
         "security": "$SECURITY",
         "realitySettings": {
@@ -613,7 +613,7 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.html"
 
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=${mode}&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#VlXhttpRty"
+link1="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=${mode}&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#VlXhttpRtyRUbrEU"
 	
 echo -e "
 Скопируйте подписку в специализированное приложение:
