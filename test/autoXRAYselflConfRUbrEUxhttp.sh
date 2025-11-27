@@ -443,7 +443,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 EOF
 
 # Создаем JSON конфигурацию клиента
-cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
+cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
 [
 {
   "log": {
@@ -612,7 +612,7 @@ systemctl restart xray
 echo -e "Готово!\n"
 
 # Формирование ссылок
-subPageLink="https://$DOMAIN/$path_subpage.html"
+subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
 link1="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=${mode}&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#VlXhttpRtyRUbrEU"
