@@ -616,7 +616,19 @@ subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
 link1="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=${mode}&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#VlXhttpRtyRUbrEU"
-	
+
+
+configListLink="https://$DOMAIN/$path_subpage.html"
+
+# Создаем html файл с конфигами
+cat > "$WEB_PATH/$path_subpage.html" <<EOF
+<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="bingbot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><title>AutoXRAY RUbrEU configs</title></head>
+<body><div>$link1</div><br><br>
+<div>$subPageLink</div><br><br>
+<div><a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a></div></body></html>
+EOF
+
+
 echo -e "
 Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2RayTun или v2rayN
@@ -627,6 +639,9 @@ echo -e "
 
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
+
+Ссылка на конфиг: 
+\033[32m$configListLink\033[0m
 
 Ваш конфиг для роутера:
 $link1
