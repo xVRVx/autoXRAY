@@ -361,7 +361,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "network": "$TYPE",
         "xhttpSettings": {
           "mode": "${mode}",
-		  "path": "/${path_url}"
+		  "path": "${path_url}"
         },
         "security": "$SECURITY",
         "realitySettings": {
@@ -444,6 +444,7 @@ EOF
 
 # Создаем JSON конфигурацию клиента
 cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
+[
 {
   "log": {
     "loglevel": "warning"
@@ -599,9 +600,10 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
       "tag": "block",
       "protocol": "blackhole"
     }
-  ]
+  ],
+  "remarks": "🇧🇩 Konfig RUbrEU - autoXRAY"
 }
-
+]
 EOF
 
 # Перезапуск Xray
