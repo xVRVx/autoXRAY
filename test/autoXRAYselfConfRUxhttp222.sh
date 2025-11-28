@@ -295,12 +295,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       }
     },
 	{
-      "tag": "ShadowS2022",
+      "tag": "ShadowSocks2022",
       "port": 8443,
       "listen": "0.0.0.0",
       "protocol": "shadowsocks",
       "settings": {
-        "method": "2022-blake3-chacha20-poly1305"
+        "method": "2022-blake3-chacha20-poly1305",
         "password": "${xray_sspasw_vrv}",
         "network": "tcp,udp"
       },
