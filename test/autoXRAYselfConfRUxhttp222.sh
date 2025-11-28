@@ -234,7 +234,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "xhttpSettings": {
           "mode": "auto",
 		  "path": "/${path_xhttp}"
-        },
+        }
       }
     },
 {
@@ -253,7 +253,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "fallbacks": [
           {
             "dest": "3333",
-            "xver": 0    // 不向 xhttp 发送 proxy protocol
+            "xver": 0
           }
         ]
       },
