@@ -164,9 +164,6 @@ SCRIPT_DIR=/usr/local/etc/xray
 
 # Генерируем переменные
 xray_uuid_vrv=$(xray uuid)
-domains=(www.theregister.com www.20minutes.fr www.dealabs.com www.manomano.fr www.caradisiac.com www.techadvisor.com www.computerworld.com teamdocs.su wikiportal.su docscenter.su www.bing.com github.com tradingview.com)
-xray_dest_vrv=${domains[$RANDOM % ${#domains[@]}]}
-xray_dest_vrv222=${domains[$RANDOM % ${#domains[@]}]}
 
 key_output=$(xray x25519)
 xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/PrivateKey/ {print $2}')
@@ -185,12 +182,12 @@ path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
-ipserv=$(hostname -I | awk '{print $1}')
+# ipserv=$(hostname -I | awk '{print $1}')
 
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH
+export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
@@ -827,7 +824,7 @@ link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerTy
 link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityXTLS-autoXRAY"
 
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64)
-link3="ss://$ENCODED_STRING@${ipserv}:8443#Shadowsocks-autoXRAY"
+link3="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
