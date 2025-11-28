@@ -295,17 +295,14 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       }
     },
 	{
-      "tag": "Shadowsocks",
+      "tag": "ShadowS2022",
       "port": 8443,
       "listen": "0.0.0.0",
       "protocol": "shadowsocks",
       "settings": {
-        "clients": [
-          {
-            "password": "${xray_sspasw_vrv}",
-            "method": "2022-blake3-chacha20-poly1305"
-          }
-        ]
+        "method": "2022-blake3-chacha20-poly1305"
+        "password": "${xray_sspasw_vrv}",
+        "network": "tcp,udp"
       },
       "sniffing": {
         "enabled": true,
@@ -314,9 +311,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "tls",
           "quic"
         ]
-      },
-      "streamSettings": {
-        "network": "raw"
       }
     }
   ],
@@ -813,7 +807,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇧🇩 ShadowS2020blake3 - autoXRAY"
+  "remarks": "🇧🇩 ShadowS2022blake3 - autoXRAY"
 }
 ]
 
@@ -840,7 +834,7 @@ configListLink="https://$DOMAIN/$path_subpage.html"
 # Создаем html файл с конфигами
 cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="bingbot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><title>AutoXRAY configs</title><style>body{font-family:monospace;background:#121212;color:#e0e0e0;padding:20px;max-width:800px;margin:0 auto}h3{color:#82aaff;border-bottom:1px solid #333;padding-bottom:10px;margin-top:30px}.box{background:#1e1e1e;padding:15px;border-radius:8px;word-break:break-all;border:1px solid #333;margin-bottom:10px}.box a{color:#c3e88d;text-decoration:none;display:block;margin-top:10px;font-weight:700}.box a:hover{text-decoration:underline}.btn-group{display:flex;flex-wrap:wrap;gap:15px;margin-top:25px}.btn{flex:1;min-width:250px;background-color:#2c2c2c;color:#c3e88d;border:1px solid #c3e88d;padding:15px;text-align:center;border-radius:8px;text-decoration:none;font-weight:700;transition:all 0.3s ease;display:flex;align-items:center;justify-content:center}.btn:hover{background-color:#c3e88d;color:#121212;cursor:pointer;box-shadow:0 0 10px rgba(195,232,141,.3)}.btn.download{border-color:#82aaff;color:#82aaff}.btn.download:hover{background-color:#82aaff;color:#121212;box-shadow:0 0 10px rgba(130,170,255,.3)}</style></head>
-<body><h3>🛸 VLESS XHTTP Reality - конфиг для роутера</h3><div class="box">$link1</div><h3>🚀 VLESS RAW Reality xtls-rprx-vision</h3><div class="box">$link2</div><h3>🛡️ Shadowsocks2020blake3 - новый и быстрый</h3><div class="box">$link3</div><h3>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h3><div class="box">$subPageLink</div><h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
+<body><h3>🛸 VLESS XHTTP Reality - конфиг для роутера</h3><div class="box">$link1</div><h3>🚀 VLESS RAW Reality xtls-rprx-vision</h3><div class="box">$link2</div><h3>🛡️ Shadowsocks2022blake3 - новый и быстрый</h3><div class="box">$link3</div><h3>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h3><div class="box">$subPageLink</div><h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
 <p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p><div class="btn-group"><a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a><a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a></div></body></html>
 EOF
 
