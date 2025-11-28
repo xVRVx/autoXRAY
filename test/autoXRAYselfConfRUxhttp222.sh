@@ -316,7 +316,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ]
       },
       "streamSettings": {
-        "network": "tcp,udp"
+        "network": "raw"
       }
     }
   ],
@@ -833,7 +833,7 @@ link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerTy
 link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityXTLS-autoXRAY"
 
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64)
-link3="ss://$ENCODED_STRING@${ipserv}:8443#Shadowsocks2020-autoXRAY"
+link3="ss://$ENCODED_STRING@${ipserv}:8443#Shadowsocks-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
