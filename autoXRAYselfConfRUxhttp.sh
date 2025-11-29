@@ -206,37 +206,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "queryStrategy": "UseIPv4"
   },
   "inbounds": [
-    {
-      "tag": "VxhttpRself",
-      "port": 3333,
-      "listen": "127.0.0.1",
-      "protocol": "vless",
-      "settings": {
-        "clients": [
-          {
-            "id": "${xray_uuid_vrv}"
-          }
-        ],
-        "decryption": "none"
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ]
-      },
-      "streamSettings": {
-        "network": "xhttp",
-        "xhttpSettings": {
-          "mode": "auto",
-		  "path": "/${path_xhttp}"
-        }
-      }
-    },
-{
-      "tag": "VtcpRself",
+	{
+      "tag": "vsRAWrtyXTLS",
       "port": 443,
       "listen": "0.0.0.0",
       "protocol": "vless",
@@ -288,6 +259,35 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "bytesPerSec": 262144,
             "burstBytesPerSec": 2097152
           }
+        }
+      }
+    },
+	{
+      "tag": "vsXHTTPrty",
+      "port": 3333,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "mode": "auto",
+		  "path": "/${path_xhttp}"
         }
       }
     },
@@ -448,10 +448,147 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       }
     },
     {
-      "tag": "socks-v2rayN",
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809
+    }
+  ],
+  "outbounds": [
+    {
+      "mux": {
+        "concurrency": -1,
+        "enabled": false
+      },
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "$DOMAIN",
+            "port": 443,
+            "users": [
+              {
+                "id": "${xray_uuid_vrv}",
+                "flow": "xtls-rprx-vision",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "raw",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "fingerprint": "chrome",
+          "serverName": "$DOMAIN",
+          "password": "${xray_publicKey_vrv}",
+          "shortId": "${xray_shortIds_vrv}",
+          "mldsa65Verify": "",
+          "spiderX": "/"
+        }
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "remarks": "🇧🇩 VlessRAWrealityXTLS - autoXRAY"
+},
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+	  "https://8.8.4.4/dns-query",
+	  "https://8.8.8.8/dns-query",
+	  "https://1.1.1.1/dns-query"
+    ],
+    "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:huawei",
+          "geosite:xiaomi",
+          "geosite:category-android-app-download",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:microsoft",
+          "geosite:win-update",
+          "geosite:win-extra",
+          "geosite:google-play",
+          "geosite:steam",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:!ru"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:discord",
+          "geosite:youtube",
+          "geosite:tiktok",
+          "geosite:signal"
+        ],
+        "outboundTag": "proxy"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
       "protocol": "socks",
       "listen": "127.0.0.1",
-      "port": 1080,
+      "port": 10808,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-sb",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 2080,
       "settings": {
         "udp": true
       }
@@ -606,170 +743,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       }
     },
     {
-      "tag": "socks-v2rayN",
-      "protocol": "socks",
-      "listen": "127.0.0.1",
-      "port": 1080,
-      "settings": {
-        "udp": true
-      }
-    },
-    {
-      "tag": "http-in",
-      "protocol": "http",
-      "listen": "127.0.0.1",
-      "port": 10809
-    }
-  ],
-  "outbounds": [
-    {
-      "mux": {
-        "concurrency": -1,
-        "enabled": false
-      },
-      "tag": "proxy",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "$DOMAIN",
-            "port": 443,
-            "users": [
-              {
-                "id": "${xray_uuid_vrv}",
-                "flow": "xtls-rprx-vision",
-                "encryption": "none"
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "raw",
-        "security": "reality",
-        "realitySettings": {
-          "show": false,
-          "fingerprint": "chrome",
-          "serverName": "$DOMAIN",
-          "password": "${xray_publicKey_vrv}",
-          "shortId": "${xray_shortIds_vrv}",
-          "mldsa65Verify": "",
-          "spiderX": "/"
-        }
-      }
-    },
-    {
-      "tag": "direct",
-      "protocol": "freedom"
-    },
-    {
-      "tag": "block",
-      "protocol": "blackhole"
-    }
-  ],
-  "remarks": "🇧🇩 VlessRAWrealityXTLS - autoXRAY"
-},
-{
-  "log": {
-    "loglevel": "warning"
-  },
-  "dns": {
-    "servers": [
-	  "https://8.8.4.4/dns-query",
-	  "https://8.8.8.8/dns-query",
-	  "https://1.1.1.1/dns-query"
-    ],
-    "queryStrategy": "UseIPv4"
-  },
-  "routing": {
-    "domainStrategy": "IPIfNonMatch",
-    "rules": [
-      {
-        "domain": [
-          "geosite:category-ads",
-          "geosite:win-spy"
-        ],
-        "outboundTag": "block"
-      },
-      {
-        "protocol": [
-          "bittorrent"
-        ],
-        "outboundTag": "direct"
-      },
-      {
-        "domain": [
-          "geosite:private",
-          "geosite:apple",
-          "geosite:apple-pki",
-          "geosite:huawei",
-          "geosite:xiaomi",
-          "geosite:category-android-app-download",
-          "geosite:f-droid",
-          "geosite:yandex",
-          "geosite:vk",
-          "geosite:microsoft",
-          "geosite:win-update",
-          "geosite:win-extra",
-          "geosite:google-play",
-          "geosite:steam",
-          "geosite:category-ru"
-        ],
-        "outboundTag": "direct"
-      },
-      {
-        "ip": [
-          "geoip:private"
-        ],
-        "outboundTag": "direct"
-      },
-      {
-        "type": "field",
-        "ip": [
-          "geoip:!ru"
-        ],
-        "outboundTag": "proxy"
-      },
-      {
-        "domain": [
-          "geosite:discord",
-          "geosite:youtube",
-          "geosite:tiktok",
-          "geosite:signal"
-        ],
-        "outboundTag": "proxy"
-      }
-    ]
-  },
-  "inbounds": [
-    {
-      "tag": "socks-in",
-      "protocol": "socks",
-      "listen": "127.0.0.1",
-      "port": 10808,
-      "settings": {
-        "udp": true
-      }
-    },
-    {
-      "tag": "socks-sb",
-      "protocol": "socks",
-      "listen": "127.0.0.1",
-      "port": 2080,
-      "settings": {
-        "udp": true
-      }
-    },
-    {
-      "tag": "socks-v2rayN",
-      "protocol": "socks",
-      "listen": "127.0.0.1",
-      "port": 1080,
-      "settings": {
-        "udp": true
-      }
-    },
-    {
       "tag": "http-in",
       "protocol": "http",
       "listen": "127.0.0.1",
@@ -819,28 +792,32 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPreality-autoXRAY"
+link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityXTLS-autoXRAY"
 
-link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityXTLS-autoXRAY"
+link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPreality-autoXRAY"
 
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64)
-link3="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks-autoXRAY"
+link3="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 # Создаем html файл с конфигами
 cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="bingbot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><title>AutoXRAY configs</title><style>body{font-family:monospace;background:#121212;color:#e0e0e0;padding:20px;max-width:800px;margin:0 auto}h3{color:#82aaff;border-bottom:1px solid #333;padding-bottom:10px;margin-top:30px}.box{background:#1e1e1e;padding:15px;border-radius:8px;word-break:break-all;border:1px solid #333;margin-bottom:10px}.box a{color:#c3e88d;text-decoration:none;display:block;margin-top:10px;font-weight:700}.box a:hover{text-decoration:underline}.btn-group{display:flex;flex-wrap:wrap;gap:15px;margin-top:25px}.btn{flex:1;min-width:250px;background-color:#2c2c2c;color:#c3e88d;border:1px solid #c3e88d;padding:15px;text-align:center;border-radius:8px;text-decoration:none;font-weight:700;transition:all 0.3s ease;display:flex;align-items:center;justify-content:center}.btn:hover{background-color:#c3e88d;color:#121212;cursor:pointer;box-shadow:0 0 10px rgba(195,232,141,.3)}.btn.download{border-color:#82aaff;color:#82aaff}.btn.download:hover{background-color:#82aaff;color:#121212;box-shadow:0 0 10px rgba(130,170,255,.3)}</style></head>
-<body><h3>🛸 VLESS XHTTP Reality - конфиг для роутера</h3><div class="box">$link1</div><h3>🚀 VLESS RAW Reality xtls-rprx-vision</h3><div class="box">$link2</div><h3>🛡️ Shadowsocks2022blake3 - новый и быстрый</h3><div class="box">$link3</div><h3>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h3><div class="box">$subPageLink</div><h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
+<body>
+<h3>🚀 VLESS RAW Reality xtls-rprx-vision</h3><div class="box">$link1</div>
+<h3>🛸 VLESS XHTTP Reality - конфиг для роутера</h3><div class="box">$link2</div>
+<h3>🛡️ Shadowsocks2022blake3 - новый и быстрый</h3><div class="box">$link3</div><h3>
+📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h3><div class="box">$subPageLink</div><h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
 <p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p><div class="btn-group"><a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a><a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a></div></body></html>
 EOF
 
 echo -e "
 
-Ваш конфиг для роутера vless xhttp reality:
+Ваш конфиг vless RAW reality XTLS:
 $link1
 
-Ваш конфиг vless raw reality xtls:
+Ваш конфиг vless XHTTP reality:
 $link2
 
 Ваш конфиг Shadowsocks 2022-blake3-chacha20-poly1305:
@@ -858,7 +835,7 @@ $link3
 - Windows: конфиги Happ или winLoadXRAY или v2rayN
 	для vless v2RayTun или Throne
 
-Открыт локальный socks5 на порту 10808, 1080, 2080 и http на 10809.
+Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 "
