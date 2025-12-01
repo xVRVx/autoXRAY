@@ -30,7 +30,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 
 ## Выбор сервера (подбирал промо тарифы)
 
-- [senko.digital](https://senko.digital/?ref=47670) - от 1.5€, есть днс-хостинг и домены для selfsteel.
+- [senko.digital](https://senko.digital/?ref=47670) - от 2€, есть днс-хостинг и домены для selfsteel, есть оплата СБП.
 - [notbad](https://my.notbad.cloud/?from=188) - от 3$, есть оплата рублями, хороший курс и канал.
 - [WAICORE](https://waicore.com/?from=3063) - от 2€ промо, есть оплата рублями.
 - [XorekCloud](https://xorek.cloud/?from=28522) - тут есть новый промо тариф, за 150 руб./мес.
