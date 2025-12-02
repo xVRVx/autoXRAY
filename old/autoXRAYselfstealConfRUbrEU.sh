@@ -515,15 +515,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
       }
     },
     {
-      "tag": "socks-v2rayN",
-      "protocol": "socks",
-      "listen": "127.0.0.1",
-      "port": 1080,
-      "settings": {
-        "udp": true
-      }
-    },
-    {
       "tag": "http-in",
       "protocol": "http",
       "listen": "127.0.0.1",
@@ -592,8 +583,8 @@ echo -e "
 Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2RayTun или v2rayN
 - Android: Happ или v2RayTun или v2rayNG
-- Windows: конфиги winLoadXRAY или v2rayN или ядро Xray
-	для vless Happ(alpha) или  v2RayTun или Throne
+- Windows: конфиги Happ или winLoadXRAY или v2rayN
+	для vless v2RayTun или Throne
 
 
 Ваша страничка подписки:
@@ -602,7 +593,7 @@ echo -e "
 Ваш конфиг для роутера:
 $link1
 
-Открыт локальный socks5 на порту 10808, 1080, 2080 и http на 10809.
+Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 "
