@@ -886,7 +886,7 @@ EOF
 
 echo -e "
 Тестовый TLS:
-link0
+$link0
 
 Ваш конфиг vless RAW reality XTLS:
 $link1
