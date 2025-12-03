@@ -918,7 +918,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS4:
+Тестовый TLS5:
 $link01
 
 $link02
