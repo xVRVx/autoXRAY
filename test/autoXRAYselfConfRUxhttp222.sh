@@ -84,9 +84,8 @@ echo "✅ Конфигурация nginx обновлена."
 
 systemctl restart nginx
 
-#cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
-#cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
-chmod -R 755 /etc/letsencrypt/live/
+cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
+cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
 
 # Создание директории
 WEB_PATH="/var/www/$DOMAIN"
@@ -247,8 +246,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 	  	  "serverName": "$DOMAIN",
 	  	  "certificates": [
             {
-              "certificateFile": "/etc/letsencrypt/live/fullchain.pem",
-              "keyFile": "/etc/letsencrypt/live/privkey.pem"
+              "certificateFile": "/var/lib/xray/cert/fullchain.pem",
+              "keyFile": "/var/lib/xray/cert/privkey.pem"
             }
           ],
          "alpn": [
