@@ -885,6 +885,8 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
+Тестовый TLS:
+link0
 
 Ваш конфиг vless RAW reality XTLS:
 $link1
