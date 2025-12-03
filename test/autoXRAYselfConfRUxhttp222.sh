@@ -182,12 +182,15 @@ path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
+socksUser=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 5)
+socksPasw=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 10)
+
 # ipserv=$(hostname -I | awk '{print $1}')
 
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH
+export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
@@ -206,9 +209,52 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "queryStrategy": "UseIPv4"
   },
   "inbounds": [
+    {
+      "tag": "vsXHTTPtls",
+      "port": 443,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "mode": "auto",
+		  "path": "/${path_xhttp}"
+        },
+		"security": "tls",
+	  	"tlsSettings": {
+	  	  "serverName": "$DOMAIN",
+	  	  "certificates": [
+            {
+              "certificateFile": "/etc/letsencrypt/live/$DOMAIN/fullchain.cer",
+              "keyFile": "/etc/letsencrypt/live/$DOMAIN/private.key"
+            }
+          ],
+         "alpn": [
+           "h2",
+           "http/1.1"
+         ]
+        }
+      }
+    },
 	{
       "tag": "vsRAWrtyXTLS",
-      "port": 443,
+      "port": 999,
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
@@ -321,8 +367,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "auth": "password",
         "accounts": [
           {
-            "pass": "pas123",
-            "user": "vrv123"
+            "pass": "${socksUser}",
+            "user": "${socksPasw}"
           }
         ]
       }
@@ -484,7 +530,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
         "vnext": [
           {
             "address": "$DOMAIN",
-            "port": 443,
+            "port": 999,
             "users": [
               {
                 "id": "${xray_uuid_vrv}",
@@ -630,7 +676,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
         "vnext": [
           {
             "address": "$DOMAIN",
-            "port": 443,
+            "port": 999,
             "users": [
               {
                 "id": "${xray_uuid_vrv}",
@@ -810,9 +856,11 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityXTLS-autoXRAY"
+link0="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
 
-link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPreality-autoXRAY"
+link1="vless://${xray_uuid_vrv}@$DOMAIN:999?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityXTLS-autoXRAY"
+
+link2="vless://${xray_uuid_vrv}@$DOMAIN:999?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPreality-autoXRAY"
 
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64)
 link3="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
