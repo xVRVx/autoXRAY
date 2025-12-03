@@ -184,10 +184,12 @@ path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
 # ipserv=$(hostname -I | awk '{print $1}')
 
+socksUser=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 5)
+socksPasw=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 10)
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH
+export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
@@ -307,6 +309,24 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "http",
           "tls",
           "quic"
+        ]
+      }
+    },
+	{
+      "tag": "socks5",
+      "port": 10443,
+      "listen": "0.0.0.0",
+      "protocol": "mixed",
+      "settings": {
+        "ip": "0.0.0.0",
+        "udp": true,
+        "auth": "password",
+        "accounts": [
+          {
+			"user": "${socksUser}",
+            "pass": "${socksPasw}"
+            
+          }
         ]
       }
     }
@@ -967,6 +987,7 @@ link22="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerT
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64)
 link3="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
 
+
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 # Создаем html файл с конфигами
@@ -977,6 +998,9 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <h3>🛸 VLESS XHTTP Reality - конфиг для роутера</h3><div class="box">$link2</div>
 <h3>🛸 VLESS XHTTP Reality EXTRA</h3><div class="box">$link22</div>
 <h3>🛡️ Shadowsocks2022blake3 - новый и быстрый</h3><div class="box">$link3</div><h3>
+<h3>🛡️ Ваш конфиг socks5 proxy:</h3><div class="box">
+server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}<br>Для ТГ:
+<a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}">автодобавление</a>.</div><h3>
 📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h3><div class="box">$subPageLink</div><h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
 <p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p><div class="btn-group"><a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a><a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a></div></body></html>
 EOF
@@ -994,6 +1018,9 @@ $link22
 
 Ваш конфиг Shadowsocks 2022-blake3-chacha20-poly1305:
 $link3
+
+Ваш конфиг socks5 proxy:
+server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}
 
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
