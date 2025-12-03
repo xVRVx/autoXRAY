@@ -42,6 +42,7 @@ echo "✅ Записываем конфигурацию в $CONFIG_PATH для �
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
+	#listen 443 ssl http2 proxy_protocol;
 	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
 	
     root /var/www/$DOMAIN;
@@ -83,6 +84,8 @@ echo "✅ Конфигурация nginx обновлена."
 
 systemctl restart nginx
 
+cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
+cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
 
 # Создание директории
 WEB_PATH="/var/www/$DOMAIN"
@@ -182,18 +185,23 @@ path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
+socksUser=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 5)
+socksPasw=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 10)
+
 # ipserv=$(hostname -I | awk '{print $1}')
 
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH
+export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
   "log": {
     "dnsLog": false,
+    "access": "/var/log/xray/access.log",
+    "error": "/var/log/xray/error.log",
     "loglevel": "none"
   },
   "dns": {
@@ -206,6 +214,76 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "queryStrategy": "UseIPv4"
   },
   "inbounds": [
+    {
+      "tag": "vsXHTTPtls",
+      "port": 8443,
+      "listen": "0.0.0.0",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none",
+        "fallbacks": [
+          {
+            "dest": 2222,
+            "xver": 1
+          }
+        ]
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "mode": "auto",
+		  "path": "/${path_xhttp}"
+        },
+		"security": "tls",
+	  	"tlsSettings": {
+	  	  "serverName": "$DOMAIN",
+	  	  "certificates": [
+            {
+              "certificateFile": "/var/lib/xray/cert/fullchain.pem",
+              "keyFile": "/var/lib/xray/cert/privkey.pem"
+            }
+          ],
+         "alpn": [
+           "h2",
+           "http/1.1"
+         ]
+        }
+      }
+    },
+        {
+            "port": 2222,
+            "listen": "127.0.0.1",
+            "protocol": "vless",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "${xray_uuid_vrv}"
+                    }
+                ],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "ws",
+                "security": "none",
+                "wsSettings": {
+                  "acceptProxyProtocol": true,
+                  "path": "/websocket"
+                }
+            }
+        },
 	{
       "tag": "vsRAWrtyXTLS",
       "port": 443,
@@ -293,7 +371,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     },
 	{
       "tag": "ShadowSocks2022",
-      "port": 8443,
+      "port": 4443,
       "listen": "0.0.0.0",
       "protocol": "shadowsocks",
       "settings": {
@@ -309,7 +387,26 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "quic"
         ]
       }
+    },
+	{
+      "tag": "socks5",
+      "port": 10443,
+      "listen": "0.0.0.0",
+      "protocol": "mixed",
+      "settings": {
+        "ip": "0.0.0.0",
+        "udp": true,
+        "auth": "password",
+        "accounts": [
+          {
+			"user": "${socksUser}",
+            "pass": "${socksPasw}"
+            
+          }
+        ]
+      }
     }
+
   ],
   "outbounds": [
     {
@@ -760,7 +857,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "settings": {
         "servers": [
           {
-            "port": 8443,
+            "port": 4443,
             "method": "2022-blake3-chacha20-poly1305",
             "address": "$DOMAIN",
             "password": "${xray_sspasw_vrv}"
@@ -792,12 +889,16 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
+link01="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
+
+link02="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=ws&headerType=&path=%2Fwebsocket&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY"
+
 link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityXTLS-autoXRAY"
 
 link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPreality-autoXRAY"
 
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64)
-link3="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
+link3="ss://$ENCODED_STRING@${DOMAIN}:4443#Shadowsocks2022-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
@@ -813,6 +914,10 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
+Тестовый TLS5:
+$link01
+
+$link02
 
 Ваш конфиг vless RAW reality XTLS:
 $link1
