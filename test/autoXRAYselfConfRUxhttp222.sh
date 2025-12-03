@@ -283,7 +283,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                 "network": "ws",
                 "security": "none",
                 "wsSettings": {
-                    "path": "/websocket"
+                  "acceptProxyProtocol": true,
+                  "path": "/websocket"
                 }
             }
         },
@@ -917,7 +918,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS3:
+Тестовый TLS4:
 $link01
 
 $link02
