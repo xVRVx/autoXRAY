@@ -184,8 +184,8 @@ path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
 # ipserv=$(hostname -I | awk '{print $1}')
 
-socksUser=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 5)
-socksPasw=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 10)
+socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
+socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 
 # Экспортируем переменные для envsubst
@@ -997,10 +997,10 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <h3>🚀 VLESS RAW Reality xtls-rprx-vision</h3><div class="box">$link1</div>
 <h3>🛸 VLESS XHTTP Reality - конфиг для роутера</h3><div class="box">$link2</div>
 <h3>🛸 VLESS XHTTP Reality EXTRA</h3><div class="box">$link22</div>
-<h3>🛡️ Shadowsocks2022blake3 - новый и быстрый</h3><div class="box">$link3</div><h3>
-<h3>🛡️ Ваш конфиг socks5 proxy:</h3><div class="box">
-server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}<br>Для ТГ:
-<a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}">автодобавление</a>.</div><h3>
+<h3>🛡️ Shadowsocks2022blake3 - новый и быстрый</h3><div class="box">$link3</div>
+<h3>🛡️ Socks5 proxy</h3><div class="box">
+server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}
+<a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}">Автодобавление в ТГ</a></div><h3>
 📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h3><div class="box">$subPageLink</div><h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
 <p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p><div class="btn-group"><a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a><a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a></div></body></html>
 EOF
@@ -1013,7 +1013,7 @@ $link1
 Ваш конфиг vless XHTTP reality:
 $link2
 
-Ваш конфиг vless XHTTP reality: EXTRA
+Ваш конфиг vless XHTTP reality EXTRA:
 $link22
 
 Ваш конфиг Shadowsocks 2022-blake3-chacha20-poly1305:
