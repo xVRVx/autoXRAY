@@ -42,6 +42,7 @@ echo "✅ Записываем конфигурацию в $CONFIG_PATH для �
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
+	#listen 443 ssl http2 proxy_protocol;
 	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
 	
     root /var/www/$DOMAIN;
@@ -83,6 +84,9 @@ echo "✅ Конфигурация nginx обновлена."
 
 systemctl restart nginx
 
+#cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
+#cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
+chmod -R 755 /etc/letsencrypt/live/
 
 # Создание директории
 WEB_PATH="/var/www/$DOMAIN"
@@ -197,6 +201,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
   "log": {
     "dnsLog": false,
+    "access": "/var/log/xray/access.log",
+    "error": "/var/log/xray/error.log",
     "loglevel": "none"
   },
   "dns": {
@@ -212,7 +218,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     {
       "tag": "vsXHTTPtls",
       "port": 443,
-      "listen": "127.0.0.1",
+      "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
         "clients": [
@@ -241,8 +247,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 	  	  "serverName": "$DOMAIN",
 	  	  "certificates": [
             {
-              "certificateFile": "/etc/letsencrypt/live/$DOMAIN/fullchain.cer",
-              "keyFile": "/etc/letsencrypt/live/$DOMAIN/private.key"
+              "certificateFile": "/etc/letsencrypt/live/fullchain.pem",
+              "keyFile": "/etc/letsencrypt/live/privkey.pem"
             }
           ],
          "alpn": [
@@ -367,8 +373,9 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "auth": "password",
         "accounts": [
           {
-            "pass": "${socksUser}",
-            "user": "${socksPasw}"
+			"user": "${socksUser}",
+            "pass": "${socksPasw}"
+            
           }
         ]
       }
