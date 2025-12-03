@@ -216,7 +216,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   "inbounds": [
     {
       "tag": "vsXHTTPtls",
-      "port": 443,
+      "port": 8443,
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
@@ -225,7 +225,17 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "id": "${xray_uuid_vrv}"
           }
         ],
-        "decryption": "none"
+        "decryption": "none",
+        "fallbacks": [
+          {
+            "dest": 80
+          },
+          {
+            "path": "/websocket",
+            "dest": 2222,
+            "xver": 1
+          }
+        ]
       },
       "sniffing": {
         "enabled": true,
@@ -257,9 +267,29 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         }
       }
     },
+        {
+            "port": 2222,
+            "listen": "127.0.0.1",
+            "protocol": "vless",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "${xray_uuid_vrv}"
+                    }
+                ],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "ws",
+                "security": "none",
+                "wsSettings": {
+                    "path": "/websocket"
+                }
+            }
+        },
 	{
       "tag": "vsRAWrtyXTLS",
-      "port": 999,
+      "port": 443,
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
@@ -344,7 +374,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     },
 	{
       "tag": "ShadowSocks2022",
-      "port": 8443,
+      "port": 4443,
       "listen": "0.0.0.0",
       "protocol": "shadowsocks",
       "settings": {
@@ -536,7 +566,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
         "vnext": [
           {
             "address": "$DOMAIN",
-            "port": 999,
+            "port": 443,
             "users": [
               {
                 "id": "${xray_uuid_vrv}",
@@ -682,7 +712,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
         "vnext": [
           {
             "address": "$DOMAIN",
-            "port": 999,
+            "port": 443,
             "users": [
               {
                 "id": "${xray_uuid_vrv}",
@@ -830,7 +860,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "settings": {
         "servers": [
           {
-            "port": 8443,
+            "port": 4443,
             "method": "2022-blake3-chacha20-poly1305",
             "address": "$DOMAIN",
             "password": "${xray_sspasw_vrv}"
@@ -862,14 +892,14 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-link0="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
+link01="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
 
-link1="vless://${xray_uuid_vrv}@$DOMAIN:999?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityXTLS-autoXRAY"
+link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityXTLS-autoXRAY"
 
-link2="vless://${xray_uuid_vrv}@$DOMAIN:999?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPreality-autoXRAY"
+link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPreality-autoXRAY"
 
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64)
-link3="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
+link3="ss://$ENCODED_STRING@${DOMAIN}:4443#Shadowsocks2022-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
@@ -885,8 +915,8 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS2:
-$link0
+Тестовый TLS1:
+$link01
 
 Ваш конфиг vless RAW reality XTLS:
 $link1
