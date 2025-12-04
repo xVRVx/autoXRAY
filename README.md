@@ -119,12 +119,12 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 ## Настраиваем мост RU -> EU
 Многие столкнулись с блокировками хостинг-сетей по TLS (особенно при использовании мобильного интернета). Существует решение — построение моста между серверами в разных локациях. Для этого необходимо:
 
-1) На заблокированный чистый VPS ставим стандартный рекомендованный скрипт и берем получившийся XHTTP конфиг:
+1) На заблокированный чистый VPS ставим стандартный рекомендованный скрипт и берем стандартый получившийся XHTTP конфиг №2:
 ```bash
 bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselfConfRUxhttp.sh)" -- поддомен1.вашДОМЕН.com
 
 ```
-2) На ru VPS ставим новый скрипт (здесь нам понадобится vless XHTTP reality конфиг):
+2) На ru VPS ставим новый скрипт (здесь нам понадобится vless XHTTP reality конфиг №2):
 ```bash
 bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselflConfRUbrEUxhttp.sh)" -- поддомен2.вашДОМЕН.com "vless://вашКонфигXHTTP"
 ```
