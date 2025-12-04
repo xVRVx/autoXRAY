@@ -214,6 +214,43 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "queryStrategy": "UseIPv4"
   },
   "inbounds": [
+  {
+      "tag": "vsTCPtls",
+      "port": 443,
+      "listen": "0.0.0.0",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none",
+        "fallbacks": [
+          {
+			"path": "/websocket",
+            "dest": 2222,
+            "xver": 1
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls",
+	  	"tlsSettings": {
+	  	  "serverName": "$DOMAIN",
+	  	  "certificates": [
+            {
+              "certificateFile": "/var/lib/xray/cert/fullchain.pem",
+              "keyFile": "/var/lib/xray/cert/privkey.pem"
+            }
+          ],
+         "alpn": [
+           "http/1.1"
+         ]
+        }
+      }
+    },
     {
       "tag": "vsXHTTPtls",
       "port": 8443,
@@ -233,14 +270,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           }
         ]
       },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ]
-      },
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
@@ -257,7 +286,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             }
           ],
          "alpn": [
-           "h2",
            "http/1.1"
          ]
         }
@@ -284,91 +312,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                 }
             }
         },
-	{
-      "tag": "vsRAWrtyXTLS",
-      "port": 443,
-      "listen": "0.0.0.0",
-      "protocol": "vless",
-      "settings": {
-        "clients": [
-          {
-            "flow": "xtls-rprx-vision",
-            "id": "${xray_uuid_vrv}"
-          }
-        ],
-        "decryption": "none",
-        "fallbacks": [
-          {
-            "dest": "3333",
-            "xver": 0
-          }
-        ]
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ]
-      },
-      "streamSettings": {
-        "network": "raw",
-        "security": "reality",
-        "realitySettings": {
-          "show": false,
-          "xver": 1,
-          "target": "/dev/shm/nginx.sock",
-          "spiderX": "/",
-          "shortIds": [
-            "${xray_shortIds_vrv}"
-          ],
-          "privateKey": "${xray_privateKey_vrv}",
-          "serverNames": [
-            "$DOMAIN"
-          ],
-          "limitFallbackUpload": {
-            "afterBytes": 0,
-            "bytesPerSec": 65536,
-            "burstBytesPerSec": 0
-          },
-          "limitFallbackDownload": {
-            "afterBytes": 5242880,
-            "bytesPerSec": 262144,
-            "burstBytesPerSec": 2097152
-          }
-        }
-      }
-    },
-	{
-      "tag": "vsXHTTPrty",
-      "port": 3333,
-      "listen": "127.0.0.1",
-      "protocol": "vless",
-      "settings": {
-        "clients": [
-          {
-            "id": "${xray_uuid_vrv}"
-          }
-        ],
-        "decryption": "none"
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ]
-      },
-      "streamSettings": {
-        "network": "xhttp",
-        "xhttpSettings": {
-          "mode": "auto",
-		  "path": "/${path_xhttp}"
-        }
-      }
-    },
+	,
 	{
       "tag": "ShadowSocks2022",
       "port": 4443,
@@ -889,13 +833,14 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-link01="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
+link01="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessTCPtls-autoXRAY"
 
-link02="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=ws&headerType=&path=%2Fwebsocket&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY"
+link02="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
 
-link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityXTLS-autoXRAY"
+link03="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=ws&headerType=&path=%2Fwebsocket&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY111"
 
-link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPreality-autoXRAY"
+link03="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=ws&headerType=&path=%2Fwebsocket&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY222"
+
 
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64)
 link3="ss://$ENCODED_STRING@${DOMAIN}:4443#Shadowsocks2022-autoXRAY"
@@ -919,11 +864,6 @@ $link01
 
 $link02
 
-Ваш конфиг vless RAW reality XTLS:
-$link1
-
-Ваш конфиг vless XHTTP reality:
-$link2
 
 Ваш конфиг Shadowsocks 2022-blake3-chacha20-poly1305:
 $link3
