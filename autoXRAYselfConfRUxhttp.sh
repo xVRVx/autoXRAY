@@ -59,6 +59,7 @@ server {
     ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
 
     add_header routing-enable 0;
+	add_header profile-title "base64:YXV0b1hSQVk=";
 
     location ~ /\.ht {
         deny all;
@@ -520,7 +521,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇧🇩 VlessRAWrealityXTLS - autoXRAY"
+  "remarks": "🇪🇺 VlessRAWrealityXTLS"
 },
 {
   "log": {
@@ -669,7 +670,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇧🇩 vlessXHTTPreality - autoXRAY"
+  "remarks": "🇪🇺 vlessXHTTPreality"
 },
 {
   "log": {
@@ -835,7 +836,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇧🇩 vlessXHTTPrealityEXTRA - autoXRAY"
+  "remarks": "🇪🇺 vlessXHTTPrealityEXTRA"
 },
 {
   "log": {
@@ -963,7 +964,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇧🇩 ShadowS2022blake3 - autoXRAY"
+  "remarks": "🇪🇺 ShadowS2022blake3"
 }
 ]
 
