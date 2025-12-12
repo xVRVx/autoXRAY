@@ -234,12 +234,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "dest": 3333
           },
           {
-            "path": "/0r2rmm111",
+            "path": "/${path_xhttp}",
             "dest": 8443,
             "xver": 1
           },
           {
-            "path": "/0r2rmm222",
+            "path": "/${path_xhttp}222",
             "dest": 8444,
             "xver": 1
           }
@@ -314,7 +314,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                 "network": "ws",
                 "wsSettings": {
 				"acceptProxyProtocol": true,
-                  "path": "/${path_xhttp}"
+                  "path": "/${path_xhttp}222"
                 },
 				"security": "none"
             },
@@ -848,9 +848,9 @@ subPageLink="https://$DOMAIN/$path_subpage.json"
 # Формирование ссылок
 link01="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessTCPtls-autoXRAY"
 
-link02="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
+link02="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
 
-link03="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=ws&headerType=&path=%2F$path_xhttp&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY111"
+link03="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=ws&headerType=&path=%2F${path_xhttp}222&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY111"
 
 
 
@@ -871,7 +871,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_1055:
+Тестовый TLS_1066:
 $link01
 
 $link02
