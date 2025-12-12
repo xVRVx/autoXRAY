@@ -229,11 +229,21 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           }
         ],
 		"decryption": "none",
-		"fallbacks": [
-			{
-				"dest": 3333
-			}
-		]
+        "fallbacks": [
+          {
+            "dest": 3333
+          },
+          {
+            "path": "/0r2rmm111",
+            "dest": 8443,
+            "xver": 1
+          },
+          {
+            "path": "/0r2rmm222",
+            "dest": 8444,
+            "xver": 1
+          }
+        ]
       },
       "streamSettings": {
         "network": "tcp",
@@ -259,7 +269,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     {
       "tag": "vsXHTTPtls",
       "port": 8443,
-      "listen": "0.0.0.0",
+      "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
         "clients": [
@@ -267,28 +277,16 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "id": "${xray_uuid_vrv}"
           }
         ],
-		"decryption": "none",
-		"fallbacks": [
-			{
-				"dest": 3333
-			}
-		]
+		"decryption": "none"
       },
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
+		"acceptProxyProtocol": true,
           "mode": "auto",
 		  "path": "/${path_xhttp}"
         },
-		"security": "tls",
-	  	"tlsSettings": {
-	  	  "certificates": [
-            {
-              "certificateFile": "/var/lib/xray/cert/fullchain.pem",
-              "keyFile": "/var/lib/xray/cert/privkey.pem"
-            }
-          ]
-        }
+		"security": "none"
       },
 	  "sniffing": {
 		"enabled": true,
@@ -302,7 +300,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         {
 			"tag": "vsWStls",
             "port": 8444,
-            "listen": "0.0.0.0",
+            "listen": "127.0.0.1",
             "protocol": "vless",
             "settings": {
                 "clients": [
@@ -310,27 +308,15 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                         "id": "${xray_uuid_vrv}"
                     }
                 ],
-		"decryption": "none",
-		"fallbacks": [
-			{
-				"dest": 3333
-			}
-		]
+		"decryption": "none"
             },
             "streamSettings": {
                 "network": "ws",
                 "wsSettings": {
+				"acceptProxyProtocol": true,
                   "path": "/${path_xhttp}"
                 },
-				"security": "tls",
-				"tlsSettings": {
-				  "certificates": [
-					{
-					  "certificateFile": "/var/lib/xray/cert/fullchain.pem",
-					  "keyFile": "/var/lib/xray/cert/privkey.pem"
-					}
-				  ]
-				}
+				"security": "none"
             },
 			  "sniffing": {
 				"enabled": true,
@@ -862,9 +848,9 @@ subPageLink="https://$DOMAIN/$path_subpage.json"
 # Формирование ссылок
 link01="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessTCPtls-autoXRAY"
 
-link02="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
+link02="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
 
-link03="vless://${xray_uuid_vrv}@$DOMAIN:8444?security=tls&type=ws&headerType=&path=%2F$path_xhttp&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY111"
+link03="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=ws&headerType=&path=%2F$path_xhttp&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY111"
 
 
 
@@ -885,14 +871,12 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_1022:
+Тестовый TLS_1055:
 $link01
 
 $link02
 
 $link03
-
-$link04
 
 Ваш конфиг Shadowsocks 2022-blake3-chacha20-poly1305:
 $link3
