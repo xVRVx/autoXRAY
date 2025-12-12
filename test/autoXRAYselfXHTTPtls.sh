@@ -42,7 +42,7 @@ echo "✅ Записываем конфигурацию в $CONFIG_PATH для �
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
-	listen 443 ssl http2;
+	listen 3333 ssl http2;
 	#listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
 	
     root /var/www/$DOMAIN;
@@ -217,7 +217,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   "inbounds": [
   {
       "tag": "vsTCPtls",
-      "port": 443,
+      "port": 22443,
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
@@ -226,7 +226,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "id": "${xray_uuid_vrv}"
           }
         ],
-        "decryption": "none"
+		"decryption": "none",
+		"fallbacks": [
+			{
+				"dest": 3333
+			}
+		]
       },
       "streamSettings": {
         "network": "tcp",
@@ -261,7 +266,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "id": "${xray_uuid_vrv}"
           }
         ],
-        "decryption": "none"
+		"decryption": "none",
+		"fallbacks": [
+			{
+				"dest": 3333
+			}
+		]
       },
       "streamSettings": {
         "network": "xhttp",
@@ -300,7 +310,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                         "id": "${xray_uuid_vrv}"
                     }
                 ],
-                "decryption": "none"
+		"decryption": "none",
+		"fallbacks": [
+			{
+				"dest": 3333
+			}
+		]
             },
             "streamSettings": {
                 "network": "ws",
@@ -871,7 +886,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_8:
+Тестовый TLS_9999:
 $link01
 
 $link02
