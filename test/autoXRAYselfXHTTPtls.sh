@@ -202,7 +202,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "dnsLog": false,
     "access": "/var/log/xray/access.log",
     "error": "/var/log/xray/error.log",
-    "loglevel": "none"
+    "loglevel": "warning"
   },
   "dns": {
     "servers": [
@@ -225,14 +225,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "id": "${xray_uuid_vrv}"
           }
         ],
-        "decryption": "none",
-        "fallbacks": [
-          {
-			"path": "/websocket",
-            "dest": 2222,
-            "xver": 1
-          }
-        ]
+        "decryption": "none"
       },
       "streamSettings": {
         "network": "tcp",
@@ -244,12 +237,17 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
               "certificateFile": "/var/lib/xray/cert/fullchain.pem",
               "keyFile": "/var/lib/xray/cert/privkey.pem"
             }
-          ],
-         "alpn": [
-           "http/1.1"
-         ]
+          ]
         }
-      }
+      },
+	  "sniffing": {
+		"enabled": true,
+		"destOverride": [
+		  "http",
+		  "tls",
+		  "quic"
+		]
+	  }
     },
     {
       "tag": "vsXHTTPtls",
@@ -262,13 +260,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "id": "${xray_uuid_vrv}"
           }
         ],
-        "decryption": "none",
-        "fallbacks": [
-          {
-            "dest": 2222,
-            "xver": 1
-          }
-        ]
+        "decryption": "none"
       },
       "streamSettings": {
         "network": "xhttp",
@@ -284,16 +276,22 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
               "certificateFile": "/var/lib/xray/cert/fullchain.pem",
               "keyFile": "/var/lib/xray/cert/privkey.pem"
             }
-          ],
-         "alpn": [
-           "http/1.1"
-         ]
+          ]
         }
-      }
+      },
+	  "sniffing": {
+		"enabled": true,
+		"destOverride": [
+		  "http",
+		  "tls",
+		  "quic"
+		]
+	  }
     },
         {
-            "port": 2222,
-            "listen": "127.0.0.1",
+			"tag": "vsWStls",
+            "port": 8444,
+            "listen": "0.0.0.0",
             "protocol": "vless",
             "settings": {
                 "clients": [
@@ -307,10 +305,27 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                 "network": "ws",
                 "security": "none",
                 "wsSettings": {
-                  "acceptProxyProtocol": true,
-                  "path": "/websocket"
-                }
-            }
+                  "path": "/${path_xhttp}"
+                },
+				"security": "tls",
+				"tlsSettings": {
+				  "serverName": "$DOMAIN",
+				  "certificates": [
+					{
+					  "certificateFile": "/var/lib/xray/cert/fullchain.pem",
+					  "keyFile": "/var/lib/xray/cert/privkey.pem"
+					}
+				  ]
+				}
+            },
+			  "sniffing": {
+				"enabled": true,
+				"destOverride": [
+				  "http",
+				  "tls",
+				  "quic"
+				]
+			  }
         },
 	,
 	{
@@ -837,7 +852,7 @@ link01="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&p
 
 link02="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
 
-link03="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=ws&headerType=&path=%2Fwebsocket&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY111"
+link03="vless://${xray_uuid_vrv}@$DOMAIN:8444?security=tls&type=ws&headerType=&path=%2F$path_xhttp&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY111"
 
 link03="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=ws&headerType=&path=%2Fwebsocket&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY222"
 
@@ -859,7 +874,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS5:
+Тестовый TLS_666:
 $link01
 
 $link02
