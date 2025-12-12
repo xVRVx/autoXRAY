@@ -203,7 +203,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "dnsLog": false,
     "access": "/var/log/xray/access.log",
     "error": "/var/log/xray/error.log",
-    "loglevel": "debug"
+    "loglevel": "warning"
   },
   "dns": {
     "servers": [
@@ -217,7 +217,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   "inbounds": [
   {
       "tag": "vsTCPtls",
-      "port": 22443,
+      "port": 443,
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
@@ -237,7 +237,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "network": "tcp",
         "security": "tls",
 	  	"tlsSettings": {
-	  	  "serverName": "$DOMAIN",
 	  	  "certificates": [
             {
               "certificateFile": "/var/lib/xray/cert/fullchain.pem",
@@ -281,7 +280,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         },
 		"security": "tls",
 	  	"tlsSettings": {
-	  	  "serverName": "$DOMAIN",
 	  	  "certificates": [
             {
               "certificateFile": "/var/lib/xray/cert/fullchain.pem",
@@ -324,7 +322,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
                 },
 				"security": "tls",
 				"tlsSettings": {
-				  "serverName": "$DOMAIN",
 				  "certificates": [
 					{
 					  "certificateFile": "/var/lib/xray/cert/fullchain.pem",
@@ -886,7 +883,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_9999:
+Тестовый TLS_101:
 $link01
 
 $link02
