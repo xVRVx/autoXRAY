@@ -87,6 +87,8 @@ systemctl restart nginx
 mkdir -p /var/lib/xray/cert/
 cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
 cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
+chmod 744 /var/lib/xray/cert/privkey.pem
+chmod 744 /var/lib/xray/cert/fullchain.pem
 
 # Создание директории
 WEB_PATH="/var/www/$DOMAIN"
@@ -883,7 +885,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_101:
+Тестовый TLS_1022:
 $link01
 
 $link02
