@@ -42,8 +42,8 @@ echo "✅ Записываем конфигурацию в $CONFIG_PATH для �
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
-	#listen 443 ssl http2 proxy_protocol;
-	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
+	listen 443 ssl http2;
+	#listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
 	
     root /var/www/$DOMAIN;
     index index.php index.html;
@@ -203,7 +203,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "dnsLog": false,
     "access": "/var/log/xray/access.log",
     "error": "/var/log/xray/error.log",
-    "loglevel": "warning"
+    "loglevel": "debug"
   },
   "dns": {
     "servers": [
@@ -304,7 +304,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             },
             "streamSettings": {
                 "network": "ws",
-                "security": "none",
                 "wsSettings": {
                   "path": "/${path_xhttp}"
                 },
@@ -360,7 +359,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           {
 			"user": "${socksUser}",
             "pass": "${socksPasw}"
-            
           }
         ]
       }
@@ -854,7 +852,6 @@ link02="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType
 
 link03="vless://${xray_uuid_vrv}@$DOMAIN:8444?security=tls&type=ws&headerType=&path=%2F$path_xhttp&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY111"
 
-link03="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=ws&headerType=&path=%2Fwebsocket&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY222"
 
 
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64)
@@ -874,7 +871,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_77:
+Тестовый TLS_8:
 $link01
 
 $link02
