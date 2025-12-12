@@ -217,7 +217,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "queryStrategy": "UseIPv4"
   },
   "inbounds": [
-  {
+    {
       "tag": "vsTCPtls",
       "port": 443,
       "listen": "0.0.0.0",
@@ -228,13 +228,9 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "id": "${xray_uuid_vrv}"
           }
         ],
-		"decryption": "none",
+        "decryption": "none",
         "fallbacks": [
           {
-            "dest": 3333
-          },
-          {
-            "path": "/${path_xhttp}",
             "dest": 8443,
             "xver": 1
           },
@@ -248,8 +244,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "streamSettings": {
         "network": "tcp",
         "security": "tls",
-	  	"tlsSettings": {
-	  	  "certificates": [
+        "tlsSettings": {
+          "certificates": [
             {
               "certificateFile": "/var/lib/xray/cert/fullchain.pem",
               "keyFile": "/var/lib/xray/cert/privkey.pem"
@@ -257,14 +253,14 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           ]
         }
       },
-	  "sniffing": {
-		"enabled": true,
-		"destOverride": [
-		  "http",
-		  "tls",
-		  "quic"
-		]
-	  }
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
     },
     {
       "tag": "vsXHTTPtls",
@@ -277,57 +273,65 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "id": "${xray_uuid_vrv}"
           }
         ],
-		"decryption": "none"
+        "decryption": "none",
+        "fallbacks": [
+          {
+            "dest": 3333,
+            "xver": 0
+          }
+        ]
       },
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-		"acceptProxyProtocol": true,
           "mode": "auto",
-		  "path": "/${path_xhttp}"
+          "path": "/${path_xhttp}"
         },
-		"security": "none"
+        "security": "none",
+        "sockopt": {
+          "acceptProxyProtocol": true
+        }
       },
-	  "sniffing": {
-		"enabled": true,
-		"destOverride": [
-		  "http",
-		  "tls",
-		  "quic"
-		]
-	  }
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
     },
-        {
-			"tag": "vsWStls",
-            "port": 8444,
-            "listen": "127.0.0.1",
-            "protocol": "vless",
-            "settings": {
-                "clients": [
-                    {
-                        "id": "${xray_uuid_vrv}"
-                    }
-                ],
-		"decryption": "none"
-            },
-            "streamSettings": {
-                "network": "ws",
-                "wsSettings": {
-				"acceptProxyProtocol": true,
-                  "path": "/${path_xhttp}222"
-                },
-				"security": "none"
-            },
-			  "sniffing": {
-				"enabled": true,
-				"destOverride": [
-				  "http",
-				  "tls",
-				  "quic"
-				]
-			  }
+    {
+      "tag": "vsWStls",
+      "port": 8444,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "acceptProxyProtocol": true,
+          "path": "/${path_xhttp}222"
         },
-	{
+        "security": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    },
+    {
       "tag": "ShadowSocks2022",
       "port": 4443,
       "listen": "0.0.0.0",
@@ -346,7 +350,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ]
       }
     },
-	{
+    {
       "tag": "socks5",
       "port": 10443,
       "listen": "0.0.0.0",
@@ -357,13 +361,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "auth": "password",
         "accounts": [
           {
-			"user": "${socksUser}",
+            "user": "${socksUser}",
             "pass": "${socksPasw}"
           }
         ]
       }
     }
-
   ],
   "outbounds": [
     {
@@ -871,7 +874,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_1066:
+Тестовый TLS_10777:
 $link01
 
 $link02
