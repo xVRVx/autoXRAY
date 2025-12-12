@@ -84,6 +84,7 @@ echo "✅ Конфигурация nginx обновлена."
 
 systemctl restart nginx
 
+mkdir -p /var/lib/xray/cert/
 cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
 cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
 
@@ -327,7 +328,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 				]
 			  }
         },
-	,
 	{
       "tag": "ShadowSocks2022",
       "port": 4443,
@@ -874,7 +874,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_666:
+Тестовый TLS_77:
 $link01
 
 $link02
