@@ -637,6 +637,12 @@ OUT_WS='{
 
 # --- 5. VLESS TCP Header (Внутренний Fallback Xray path...33) ---
 OUT_TCP_HTTP='{
+  "mux": {
+    "concurrency": 5,
+    "enabled": true,
+    "xudpConcurrency": 8,
+    "xudpProxyUDP443": "allow"
+  },
   "tag": "proxy",
   "protocol": "vless",
   "settings": {
@@ -729,7 +735,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-test-333
+test-555
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
