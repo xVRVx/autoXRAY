@@ -116,7 +116,9 @@ bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
 	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;	
-
+    set_real_ip_from unix:;
+    real_ip_header proxy_protocol;
+	
     root /var/www/$DOMAIN;
     index index.php index.html;
 	
