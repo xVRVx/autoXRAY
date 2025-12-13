@@ -956,7 +956,13 @@ EOF
   
 
 echo -e "
-test-888
+test-111
+
+ENCODED_STRING:
+$ENCODED_STRING
+
+linkSS:
+$linkSS
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
