@@ -795,7 +795,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-test-777
+test-111
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
