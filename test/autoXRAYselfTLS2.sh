@@ -674,21 +674,19 @@ OUT_SS='{
 # Используем subshell ( ) чтобы объединить выводы и передать в envsubst один раз
 (
   echo "["
-  print_client "$OUT_VISION"    "🇪🇺 VLESS RAW XTLS-Vision"
+  print_config "$OUT_VISION"    "🇪🇺 VLESS RAW XTLS-Vision"
   echo ","
-  print_client "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA"
+  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA"
   echo ","
-  print_client "$OUT_GRPC"      "🇪🇺 VLESS gRPC TLS"
+  print_config "$OUT_GRPC"      "🇪🇺 VLESS gRPC TLS"
   echo ","
-  print_client "$OUT_WS"        "🇪🇺 VLESS WebSocket TLS"
+  print_config "$OUT_WS"        "🇪🇺 VLESS WebSocket TLS"
   echo ","
-  print_client "$OUT_TCP_HTTP"  "🇪🇺 VLESS RAW TLS"
+  print_config "$OUT_TCP_HTTP"  "🇪🇺 VLESS RAW TLS"
   echo ","
-  print_client "$OUT_SS"        "🇪🇺 ShadowSocks2022"
+  print_config "$OUT_SS"        "🇪🇺 ShadowSocks2022"
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
-
-echo "Клиентские конфиги успешно созданы в: $CLIENTS_FILE"
 
 
 # Перезапуск Xray
@@ -731,7 +729,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-test-222
+test-333
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
