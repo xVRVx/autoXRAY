@@ -72,7 +72,7 @@ server {
     location /${path_xhttp} {
         proxy_pass http://127.0.0.1:8400;
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
+        proxy_set_header Host \$host;
     }
 }
 
@@ -871,7 +871,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_111:
+Тестовый TLS_222:
 $link01
 
 $link02
