@@ -59,15 +59,15 @@ server {
     index index.php index.html;
 	
     add_header routing-enable 0;
-
-    location ~ /\.ht {
-        deny all;
-    }
 	
     location /${path_xhttp} {
         proxy_pass http://127.0.0.1:8400;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
+    }
+	
+    location ~ /\.ht {
+        deny all;
     }
 }
 
@@ -231,13 +231,13 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "fallbacks": [
           {
             "path": "/${path_xhttp}22",
-            "dest": 8422,
-            "xver": 1
+            "dest": "@vless-ws",
+            "xver": 2
           },
           {
             "path": "/${path_xhttp}33",
-            "dest": 8433,
-            "xver": 1
+            "dest": "@vless-tcp",
+            "xver": 2
           },
           {
             "dest": "/dev/shm/nginx222.sock",
@@ -300,9 +300,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       }
     },
     {
-      "tag": "vsWStls",
-      "port": 8422,
-      "listen": "127.0.0.1",
+      "listen": "@vless-ws",
       "protocol": "vless",
       "settings": {
         "clients": [
@@ -330,9 +328,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       }
     },
     {
-      "tag": "vsTCPtls33",
-      "port": 8433,
-      "listen": "127.0.0.1",
+      "listen": "@vless-tcp",
       "protocol": "vless",
       "settings": {
         "clients": [
@@ -344,7 +340,18 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
       "streamSettings": {
         "network": "raw",
-        "security": "none"
+        "security": "none",
+        "tcpSettings": {
+          "acceptProxyProtocol": true,
+          "header": {
+            "type": "http",
+            "request": {
+              "path": [
+                "/${path_xhttp}33"
+              ]
+            }
+          }
+		}
       },
       "sniffing": {
         "enabled": true,
@@ -873,9 +880,9 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-link01="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessTCPtls-autoXRAY"
+link01="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessTCPxtls-autoXRAY"
 
-link012="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessTCPtls-autoXRAY"
+link012="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=http&path=%2F${path_xhttp}33&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessTCPtls33-autoXRAY"
 
 link02="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
 
@@ -900,7 +907,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_555:
+Тестовый TLS_777:
 $link01
 
 $link012
