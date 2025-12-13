@@ -377,140 +377,451 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 EOF
 
 # Создаем JSON конфигурацию клиента
-#!/bin/bash
-
-# 1. Функция-шаблон (содержит повторяющуюся часть: Log, DNS, Routing, Inbounds)
-print_config() {
-  local PROXY_OUTBOUND="$1"
-  local REMARK="$2"
-
-  cat << TPL
-  {
-    "log": { "loglevel": "warning" },
-    "dns": {
-      "servers": [
-        "https://8.8.4.4/dns-query",
-        "https://8.8.8.8/dns-query",
-        "https://1.1.1.1/dns-query"
-      ],
-      "queryStrategy": "UseIPv4"
-    },
-    "routing": {
-      "domainStrategy": "IPIfNonMatch",
-      "rules": [
-        { "domain": ["geosite:category-ads", "geosite:win-spy"], "outboundTag": "block" },
-        { "protocol": ["bittorrent"], "outboundTag": "direct" },
-        { "domain": ["geosite:private", "geosite:apple", "geosite:apple-pki", "geosite:huawei", "geosite:xiaomi", "geosite:category-android-app-download", "geosite:f-droid", "geosite:yandex", "geosite:vk", "geosite:microsoft", "geosite:win-update", "geosite:win-extra", "geosite:google-play", "geosite:steam", "geosite:category-ru"], "outboundTag": "direct" },
-        { "ip": ["geoip:private"], "outboundTag": "direct" },
-        { "type": "field", "ip": ["geoip:!ru"], "outboundTag": "proxy" },
-        { "domain": ["geosite:discord", "geosite:youtube", "geosite:tiktok", "geosite:signal"], "outboundTag": "proxy" }
-      ]
-    },
-    "inbounds": [
-      { "tag": "socks-in", "protocol": "socks", "listen": "127.0.0.1", "port": 10808, "settings": { "udp": true } },
-      { "tag": "socks-sb", "protocol": "socks", "listen": "127.0.0.1", "port": 2080, "settings": { "udp": true } },
-      { "tag": "http-in", "protocol": "http", "listen": "127.0.0.1", "port": 10809 }
-    ],
-    "outbounds": [
-      $PROXY_OUTBOUND,
-      { "tag": "direct", "protocol": "freedom" },
-      { "tag": "block", "protocol": "blackhole" }
-    ],
-    "remarks": "$REMARK"
-  }
-TPL
-}
-
-# 2. Определяем уникальные настройки (Outbounds)
-
-# --- Config 1: VLESS Reality + Vision ---
-OUT_REALITY_VISION='{
-  "mux": { "concurrency": -1, "enabled": false },
-  "tag": "proxy",
-  "protocol": "vless",
-  "settings": {
-    "vnext": [{
-      "address": "$DOMAIN",
-      "port": 443,
-      "users": [{ "id": "${xray_uuid_vrv}", "flow": "xtls-rprx-vision", "encryption": "none" }]
-    }]
+cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
+[
+{
+  "log": {
+    "loglevel": "warning"
   },
-  "streamSettings": {
-    "network": "raw",
-    "security": "reality",
-    "realitySettings": {
-      "show": false, "fingerprint": "chrome", "serverName": "$DOMAIN",
-      "password": "${xray_publicKey_vrv}", "shortId": "${xray_shortIds_vrv}", "spiderX": "/"
+  "dns": {
+    "servers": [
+	  "https://8.8.4.4/dns-query",
+	  "https://8.8.8.8/dns-query",
+	  "https://1.1.1.1/dns-query"
+    ],
+    "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:huawei",
+          "geosite:xiaomi",
+          "geosite:category-android-app-download",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:microsoft",
+          "geosite:win-update",
+          "geosite:win-extra",
+          "geosite:google-play",
+          "geosite:steam",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:!ru"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:discord",
+          "geosite:youtube",
+          "geosite:tiktok",
+          "geosite:signal"
+        ],
+        "outboundTag": "proxy"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-sb",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 2080,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809
     }
-  }
-}'
-
-# --- Config 2: VLESS Reality + XHTTP (с Extra настройками) ---
-OUT_REALITY_XHTTP='{
-  "mux": { "concurrency": -1, "enabled": false },
-  "tag": "proxy",
-  "protocol": "vless",
-  "settings": {
-    "vnext": [{
-      "address": "$DOMAIN",
-      "port": 443,
-      "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }]
-    }]
-  },
-  "streamSettings": {
-    "network": "xhttp",
-    "security": "reality",
-    "xhttpSettings": {
-      "mode": "auto",
-      "path": "/${path_xhttp}",
-      "extra": {
-        "noGRPCHeader": false,
-        "scMaxEachPostBytes": 1500000,
-        "scMinPostsIntervalMs": 20,
-        "scStreamUpServerSecs": "60-240",
-        "xPaddingBytes": "400-800",
-        "xmux": {
-          "cMaxReuseTimes": "1000-3000",
-          "hKeepAlivePeriod": 0,
-          "hMaxRequestTimes": "400-700",
-          "hMaxReusableSecs": "1200-1800",
-          "maxConcurrency": "3-5",
-          "maxConnections": 0
+  ],
+  "outbounds": [
+    {
+      "mux": {
+        "concurrency": -1,
+        "enabled": false
+      },
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "$DOMAIN",
+            "port": 443,
+            "users": [
+              {
+                "id": "${xray_uuid_vrv}",
+                "flow": "xtls-rprx-vision",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "raw",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "fingerprint": "chrome",
+          "serverName": "$DOMAIN",
+          "password": "${xray_publicKey_vrv}",
+          "shortId": "${xray_shortIds_vrv}",
+          "mldsa65Verify": "",
+          "spiderX": "/"
         }
       }
     },
-    "realitySettings": {
-      "show": false, "fingerprint": "chrome", "serverName": "$DOMAIN",
-      "password": "${xray_publicKey_vrv}", "shortId": "${xray_shortIds_vrv}", "spiderX": "/"
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
     }
-  }
-}'
+  ],
+  "remarks": "🇪🇺 VlessRAWrealityXTLS"
+},
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+	  "https://8.8.4.4/dns-query",
+	  "https://8.8.8.8/dns-query",
+	  "https://1.1.1.1/dns-query"
+    ],
+    "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:huawei",
+          "geosite:xiaomi",
+          "geosite:category-android-app-download",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:microsoft",
+          "geosite:win-update",
+          "geosite:win-extra",
+          "geosite:google-play",
+          "geosite:steam",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:!ru"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:discord",
+          "geosite:youtube",
+          "geosite:tiktok",
+          "geosite:signal"
+        ],
+        "outboundTag": "proxy"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-sb",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 2080,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809
+    }
+  ],
+  "outbounds": [
+    {
+      "mux": {
+        "concurrency": -1,
+        "enabled": false
+      },
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "$DOMAIN",
+            "port": 443,
+            "users": [
+              {
+                "id": "${xray_uuid_vrv}",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "extra": {
+              "headers": {
+              },
+              "noGRPCHeader": false,
+              "scMaxEachPostBytes": 1500000,
+              "scMinPostsIntervalMs": 20,
+              "scStreamUpServerSecs": "60-240",
+              "xPaddingBytes": "400-800",
+              "xmux": {
+                  "cMaxReuseTimes": "1000-3000",
+                  "hKeepAlivePeriod": 0,
+                  "hMaxRequestTimes": "400-700",
+                  "hMaxReusableSecs": "1200-1800",
+                  "maxConcurrency": "3-5",
+                  "maxConnections": 0
+              }
+          },
+          "mode": "auto",
+		  "path": "/${path_xhttp}"
+        },
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "fingerprint": "chrome",
+          "serverName": "$DOMAIN",
+          "password": "${xray_publicKey_vrv}",
+          "shortId": "${xray_shortIds_vrv}",
+          "mldsa65Verify": "",
+          "spiderX": "/"
+        }
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "remarks": "🇪🇺 vlessXHTTPrealityEXTRA"
+},
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+	  "https://8.8.4.4/dns-query",
+	  "https://8.8.8.8/dns-query",
+	  "https://1.1.1.1/dns-query"
+    ],
+    "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:huawei",
+          "geosite:xiaomi",
+          "geosite:category-android-app-download",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:microsoft",
+          "geosite:win-update",
+          "geosite:win-extra",
+          "geosite:google-play",
+          "geosite:steam",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:!ru"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:discord",
+          "geosite:youtube",
+          "geosite:tiktok",
+          "geosite:signal"
+        ],
+        "outboundTag": "proxy"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-sb",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 2080,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809
+    }
+  ],
+  "outbounds": [
+    {
+      "mux": {
+        "concurrency": -1,
+        "enabled": false
+      },
+      "tag": "proxy",
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [
+          {
+            "port": 8443,
+            "method": "2022-blake3-chacha20-poly1305",
+            "address": "$DOMAIN",
+            "password": "${xray_sspasw_vrv}"
+          }
+        ]
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "remarks": "🇪🇺 ShadowS2022blake3"
+}
+]
 
-# --- Config 3: Shadowsocks 2022 (Port 8443, Chacha20) ---
-OUT_SS='{
-  "mux": { "concurrency": -1, "enabled": false },
-  "tag": "proxy",
-  "protocol": "shadowsocks",
-  "settings": {
-    "servers": [{
-      "port": 8443,
-      "method": "2022-blake3-chacha20-poly1305",
-      "address": "$DOMAIN",
-      "password": "${xray_sspasw_vrv}"
-    }]
-  }
-}'
-
-# 3. Сборка JSON массива и сохранение в файл
-(
-  echo "["
-  print_config "$OUT_REALITY_VISION" "🇪🇺 VlessRAWrealityXTLS"
-  echo ","
-  print_config "$OUT_REALITY_XHTTP"  "🇪🇺 vlessXHTTPrealityEXTRA"
-  echo ","
-  print_config "$OUT_SS"             "🇪🇺 ShadowS2022blake3"
-  echo "]"
-) | envsubst > "$WEB_PATH/$path_subpage.json"
+EOF
 
 # Перезапуск Xray
 echo "Перезапуск Xray..."
