@@ -54,9 +54,16 @@ server {
     server_name $DOMAIN;
 	#listen 3333 ssl http2 proxy_protocol;
 	listen unix:/dev/shm/nginx.sock http2 proxy_protocol;
+    set_real_ip_from unix:;
+    real_ip_header proxy_protocol;
 	
     root /var/www/$DOMAIN;
     index index.php index.html;
+	
+    # grpc settings
+    grpc_read_timeout 1h;
+    grpc_send_timeout 1h;
+    grpc_set_header X-Real-IP \$remote_addr;
 	
     add_header routing-enable 0;
 	
@@ -947,7 +954,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS-333:
+Тестовый TLS-555:
 $link01
 
 $link012
