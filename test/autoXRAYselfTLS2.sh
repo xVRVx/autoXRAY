@@ -53,7 +53,8 @@ bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
 	#listen 3333 ssl http2 proxy_protocol;
-	listen unix:/dev/shm/nginx.sock http2 proxy_protocol;
+	listen unix:/dev/shm/nginx.sock proxy_protocol;
+	listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
     set_real_ip_from unix:;
     real_ip_header proxy_protocol;
 	
@@ -255,6 +256,11 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           {
             "path": "/${path_xhttp}33",
             "dest": "@vless-tcp",
+            "xver": 2
+          },
+          {
+		    "alpn": "h2",
+            "dest": "/dev/shm/nginx_h2.sock",
             "xver": 2
           },
           {
@@ -800,7 +806,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-test-333
+test-555
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
