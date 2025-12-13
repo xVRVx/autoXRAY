@@ -65,6 +65,16 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
     }
+    location /${path_xhttp}11 {
+        if (\$request_method != "POST") {
+            return 404;
+        }
+        client_body_buffer_size 1m;
+        client_body_timeout 1h;
+        client_max_body_size 0;
+        grpc_pass grpc://127.0.0.1:8411;
+
+    }
 	
     location ~ /\.ht {
         deny all;
@@ -289,6 +299,35 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "sockopt": {
           "acceptProxyProtocol": false
         }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    },
+    {
+      "tag": "vsGRPCtls",
+      "port": 8411,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "grpcSettings": {
+          "serviceName": "${path_xhttp}"
+        },
+        "security": "none"
       },
       "sniffing": {
         "enabled": true,
@@ -888,6 +927,7 @@ link02="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=
 
 link03="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=ws&headerType=&path=%2F${path_xhttp}22&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY111"
 
+link04="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=grpc&headerType=&serviceName=${path_xhttp}11&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessGRPCtls-autoXRAY"
 
 
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64)
@@ -907,7 +947,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_777:
+Тестовый TLS_111:
 $link01
 
 $link012
