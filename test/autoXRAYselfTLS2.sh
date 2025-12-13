@@ -787,7 +787,7 @@ link04="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=grpc&headerType=&
 
 
 ENCODED_STRING=$(echo -n "2022-blake3-aes-256-gcm:${xray_sspasw_vrv}" | base64)
-linkSS="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
+linkSS="ss://${ENCODED_STRING}@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
@@ -821,7 +821,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
     /* Контейнер для текста ссылки */
     .config-code {
         flex: 1;
-        white-space: nowrap; /* Для одиночных конфигов - одна строка */
+        white-space: nowrap;
         overflow-x: auto;
         padding: 10px;
         background: #121212;
@@ -832,12 +832,14 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
         scrollbar-color: #333 #121212;
     }
 
-    /* Специальный стиль для блока "Все конфиги", чтобы переносы строк отображались корректно */
+    /* === ИЗМЕНЕНИЯ ЗДЕСЬ === */
+    /* Стиль для общего блока всех конфигов */
     #cAll {
-        white-space: pre-wrap; /* Разрешаем перенос строк */
-        word-break: break-all;
-        max-height: 300px;     /* Ограничение высоты, если конфигов много */
+        white-space: pre-wrap; /* Перенос строк */
+        word-break: break-all; /* Разрыв длинных ссылок */
+        max-height: 90px;      /* Ограничение высоты (~3-4 строки) */
         overflow-y: auto;      /* Вертикальная прокрутка */
+        font-size: 12px;       /* Чуть меньший шрифт для компактности */
     }
     
     /* Кнопка копирования */
@@ -852,6 +854,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
         transition: all 0.2s;
         min-width: 100px;
         height: 100%;
+        align-self: flex-start; /* Чтобы кнопка была вверху, если блок высокий */
     }
     .copy-btn:hover {
         background: #c3e88d;
@@ -941,8 +944,8 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 
 <h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
-    <!-- Здесь используется <br> для переноса строк и ID cAll -->
-    <div class="config-code" id="cAll">$link01<br>$link012<br>$link02<br>$link03<br>$link04<br>$linkSS</div>
+    <!-- max-height: 90px ограничивает блок, а <br> делает перенос строк -->
+    <div class="config-code" id="cAll">$link01<br>$link012<br>$link02<br>$link03<br>$link04<br>$linkSS<br></div>
     <button class="copy-btn" onclick="copyText('cAll', this)">Копировать</button>
 </div>
 
@@ -953,7 +956,7 @@ EOF
   
 
 echo -e "
-test-666
+test-888
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
