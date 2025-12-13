@@ -791,22 +791,155 @@ linkSS="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
+    
 # Создаем html файл с конфигами
 cat > "$WEB_PATH/$path_subpage.html" <<EOF
-<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="bingbot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><title>AutoXRAY configs</title><style>body{font-family:monospace;background:#121212;color:#e0e0e0;padding:20px;max-width:800px;margin:0 auto}h3{color:#82aaff;border-bottom:1px solid #333;padding-bottom:10px;margin-top:30px}.box{background:#1e1e1e;padding:15px;border-radius:8px;word-break:break-all;border:1px solid #333;margin-bottom:10px}.box a{color:#c3e88d;text-decoration:none;display:block;margin-top:10px;font-weight:700}.box a:hover{text-decoration:underline}.btn-group{display:flex;flex-wrap:wrap;gap:15px;margin-top:25px}.btn{flex:1;min-width:250px;background-color:#2c2c2c;color:#c3e88d;border:1px solid #c3e88d;padding:15px;text-align:center;border-radius:8px;text-decoration:none;font-weight:700;transition:all 0.3s ease;display:flex;align-items:center;justify-content:center}.btn:hover{background-color:#c3e88d;color:#121212;cursor:pointer;box-shadow:0 0 10px rgba(195,232,141,.3)}.btn.download{border-color:#82aaff;color:#82aaff}.btn.download:hover{background-color:#82aaff;color:#121212;box-shadow:0 0 10px rgba(130,170,255,.3)}</style></head>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+<title>AutoXRAY configs</title>
+<style>
+    body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 20px; max-width: 800px; margin: 0 auto; }
+    h3 { color: #82aaff; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 30px; }
+    
+    /* Стили для строки с конфигом */
+    .config-row {
+        background: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    
+    /* Контейнер для текста ссылки (прокрутка) */
+    .config-code {
+        flex: 1;
+        white-space: nowrap;
+        overflow-x: auto;
+        padding: 10px;
+        background: #121212;
+        border-radius: 4px;
+        color: #c3e88d;
+        font-size: 14px;
+        /* Скрываем скроллбар, но оставляем функционал (опционально) */
+        scrollbar-width: thin;
+        scrollbar-color: #333 #121212;
+    }
+    
+    /* Кнопка копирования */
+    .copy-btn {
+        background: #2c2c2c;
+        color: #e0e0e0;
+        border: 1px solid #555;
+        padding: 10px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s;
+        min-width: 100px;
+    }
+    .copy-btn:hover {
+        background: #c3e88d;
+        color: #121212;
+        border-color: #c3e88d;
+    }
+    .copy-btn:active {
+        transform: translateY(2px);
+    }
+
+    /* Старые стили для кнопок приложений */
+    .box { background: #1e1e1e; padding: 15px; border-radius: 8px; word-break: break-all; border: 1px solid #333; margin-bottom: 10px; }
+    .box a { color: #c3e88d; text-decoration: none; display: block; margin-top: 10px; font-weight: 700; }
+    .btn-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 25px; }
+    .btn { flex: 1; min-width: 250px; background-color: #2c2c2c; color: #c3e88d; border: 1px solid #c3e88d; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: 700; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
+    .btn:hover { background-color: #c3e88d; color: #121212; cursor: pointer; box-shadow: 0 0 10px rgba(195,232,141,.3); }
+    .btn.download { border-color: #82aaff; color: #82aaff; }
+    .btn.download:hover { background-color: #82aaff; color: #121212; box-shadow: 0 0 10px rgba(130,170,255,.3); }
+</style>
+<script>
+    function copyText(elementId, btnElement) {
+        const text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = btnElement.innerText;
+            btnElement.innerText = "Скопировано!";
+            btnElement.style.background = "#c3e88d";
+            btnElement.style.color = "#121212";
+            setTimeout(() => {
+                btnElement.innerText = originalText;
+                btnElement.style.background = "";
+                btnElement.style.color = "";
+            }, 2000);
+        }).catch(err => {
+            console.error('Ошибка:', err);
+        });
+    }
+</script>
+</head>
 <body>
-<h3>➡️ vless TCP xtls-Vision</h3><div class="box">$link01</div>
-<h3>➡️ vless TCP tls</h3><div class="box">$link012</div>
-<h3>➡️ vless XHTTP tls</h3><div class="box">$link02</div>
-<h3>➡️ vless WS tls</h3><div class="box">$link03</div>
-<h3>➡️ vless GRPC tls</h3><div class="box">$link04</div>
-<h3>➡️ Shadowsocks2022blake3 - новый и быстрый</h3><div class="box">$linkSS</div><h3>
-📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h3><div class="box">$subPageLink</div><h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
-<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p><div class="btn-group"><a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a><a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a></div></body></html>
+
+<h3>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h3>
+<div class="config-row">
+    <div class="config-code" id="subLink">$subPageLink</div>
+    <button class="copy-btn" onclick="copyText('subLink', this)">Копировать</button>
+</div>
+
+<h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
+<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p>
+<div class="btn-group">
+    <a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a>
+    <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a>
+</div>
+
+<h3>➡️ vless TCP xtls-Vision</h3>
+<div class="config-row">
+    <div class="config-code" id="c1">$link01</div>
+    <button class="copy-btn" onclick="copyText('c1', this)">Копировать</button>
+</div>
+
+<h3>➡️ vless TCP tls</h3>
+<div class="config-row">
+    <div class="config-code" id="c2">$link012</div>
+    <button class="copy-btn" onclick="copyText('c2', this)">Копировать</button>
+</div>
+
+<h3>➡️ vless XHTTP tls</h3>
+<div class="config-row">
+    <div class="config-code" id="c3">$link02</div>
+    <button class="copy-btn" onclick="copyText('c3', this)">Копировать</button>
+</div>
+
+<h3>➡️ vless WS tls</h3>
+<div class="config-row">
+    <div class="config-code" id="c4">$link03</div>
+    <button class="copy-btn" onclick="copyText('c4', this)">Копировать</button>
+</div>
+
+<h3>➡️ vless GRPC tls</h3>
+<div class="config-row">
+    <div class="config-code" id="c5">$link04</div>
+    <button class="copy-btn" onclick="copyText('c5', this)">Копировать</button>
+</div>
+
+<h3>➡️ Shadowsocks2022blake3 - новый и быстрый</h3>
+<div class="config-row">
+    <div class="config-code" id="c6">$linkSS</div>
+    <button class="copy-btn" onclick="copyText('c6', this)">Копировать</button>
+</div>
+
+</body>
+</html>
 EOF
 
+  
+
 echo -e "
-test-555
+test-888
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
