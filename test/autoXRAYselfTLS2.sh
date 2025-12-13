@@ -945,7 +945,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
     <!-- max-height: 90px ограничивает блок, а <br> делает перенос строк -->
-    <div class="config-code" id="cAll">$link01<br>$link012<br>$link02<br>$link03<br>$link04<br>$linkSS<br></div>
+    <div class="config-code" id="cAll">$link01<br>$link012<br>$link02<br>$link03<br>$link04<br>$linkSS</div>
     <button class="copy-btn" onclick="copyText('cAll', this)">Копировать</button>
 </div>
 
@@ -956,8 +956,7 @@ EOF
   
 
 echo -e "
-test-222
-
+test-333
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
