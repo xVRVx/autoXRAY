@@ -33,17 +33,21 @@ systemctl enable --now nginx
 
 apt install certbot -y
 
-certbot certonly --webroot -w /var/www/html -d $DOMAIN -m mail@$DOMAIN --agree-tos --non-interactive --deploy-hook "systemctl reload nginx"
+mkdir -p /var/lib/xray/cert/
+
+certbot certonly --webroot -w /var/www/html -d $DOMAIN -m mail@$DOMAIN --agree-tos --non-interactive --deploy-hook "systemctl reload nginx; cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem; cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/fullchain.pem; systemctl restart xray"
 
 CONFIG_PATH="/etc/nginx/sites-available/default"
+
+path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
 echo "✅ Записываем конфигурацию в $CONFIG_PATH для домена $DOMAIN"
 
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
-	listen 3333 ssl http2;
-	#listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
+	#listen 3333 ssl http2 proxy_protocol;
+	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
 	
     root /var/www/$DOMAIN;
     index index.php index.html;
@@ -63,6 +67,12 @@ server {
 
     location ~ /\.ht {
         deny all;
+    }
+	
+    location /${path_xhttp} {
+        proxy_pass http://127.0.0.1:8400;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
     }
 }
 
@@ -84,11 +94,6 @@ echo "✅ Конфигурация nginx обновлена."
 
 systemctl restart nginx
 
-mkdir -p /var/lib/xray/cert/
-cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
-cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
-chmod 744 /var/lib/xray/cert/privkey.pem
-chmod 744 /var/lib/xray/cert/fullchain.pem
 
 # Создание директории
 WEB_PATH="/var/www/$DOMAIN"
@@ -186,8 +191,6 @@ xray_sspasw_vrv=$(openssl rand -base64 32)
 
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
-path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
-
 socksUser=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 5)
 socksPasw=$(openssl rand -base64 20 | tr -dc 'A-Za-z0-9' | head -c 10)
 
@@ -231,12 +234,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "decryption": "none",
         "fallbacks": [
           {
-            "dest": 8443,
+            "path": "/${path_xhttp}22",
+            "dest": 8422,
             "xver": 1
           },
           {
-            "path": "/${path_xhttp}222",
-            "dest": 8444,
+            "dest": "/dev/shm/nginx.sock",
             "xver": 1
           }
         ]
@@ -264,7 +267,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     },
     {
       "tag": "vsXHTTPtls",
-      "port": 8443,
+      "port": 8400,
       "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
@@ -273,13 +276,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "id": "${xray_uuid_vrv}"
           }
         ],
-        "decryption": "none",
-        "fallbacks": [
-          {
-            "dest": 3333,
-            "xver": 0
-          }
-        ]
+        "decryption": "none"
       },
       "streamSettings": {
         "network": "xhttp",
@@ -289,7 +286,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         },
         "security": "none",
         "sockopt": {
-          "acceptProxyProtocol": true
+          "acceptProxyProtocol": false
         }
       },
       "sniffing": {
@@ -303,7 +300,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     },
     {
       "tag": "vsWStls",
-      "port": 8444,
+      "port": 8422,
       "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
@@ -318,7 +315,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "network": "ws",
         "wsSettings": {
           "acceptProxyProtocol": true,
-          "path": "/${path_xhttp}222"
+          "path": "/${path_xhttp}22"
         },
         "security": "none"
       },
@@ -853,7 +850,7 @@ link01="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&p
 
 link02="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
 
-link03="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=ws&headerType=&path=%2F${path_xhttp}222&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY111"
+link03="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=ws&headerType=&path=%2F${path_xhttp}22&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessWStls-autoXRAY111"
 
 
 
@@ -874,7 +871,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_10777:
+Тестовый TLS_111:
 $link01
 
 $link02
