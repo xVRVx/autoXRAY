@@ -786,7 +786,7 @@ link03="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=ws&headerType=&pa
 link04="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=grpc&headerType=&serviceName=${path_xhttp}11&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessGRPCtls-autoXRAY"
 
 
-ENCODED_STRING=$(echo -n "2022-blake3-aes-256-gcm:${xray_sspasw_vrv}" | base64)
+ENCODED_STRING=$(echo -n "2022-blake3-aes-256-gcm:${xray_sspasw_vrv}" | base64 -w 0)
 linkSS="ss://${ENCODED_STRING}@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
@@ -956,13 +956,8 @@ EOF
   
 
 echo -e "
-test-111
+test-222
 
-ENCODED_STRING:
-$ENCODED_STRING
-
-linkSS:
-$linkSS
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
