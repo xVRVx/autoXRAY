@@ -332,7 +332,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "streamSettings": {
         "network": "grpc",
         "grpcSettings": {
-          "serviceName": "${path_xhttp}"
+          "serviceName": "${path_xhttp}11"
         },
         "security": "none"
       },
@@ -954,7 +954,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS-555:
+Тестовый TLS-666:
 $link01
 
 $link012
