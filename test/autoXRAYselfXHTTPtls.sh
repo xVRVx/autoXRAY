@@ -53,22 +53,11 @@ bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
 	#listen 3333 ssl http2 proxy_protocol;
-	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
+	listen unix:/dev/shm/nginx222.sock http2 proxy_protocol;
 	
     root /var/www/$DOMAIN;
     index index.php index.html;
 	
-	ssl_protocols TLSv1.2 TLSv1.3;
-	ssl_ciphers HIGH:!aNULL:!MD5;
-	ssl_prefer_server_ciphers on;
-
-    ssl_session_timeout 1d;
-    ssl_session_cache shared:MozSSL:10m;
-    ssl_session_tickets off;
-
-    ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
-    ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
-
     add_header routing-enable 0;
 
     location ~ /\.ht {
@@ -227,13 +216,14 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   },
   "inbounds": [
     {
-      "tag": "vsTCPtls",
+      "tag": "vsTCPxtls",
       "port": 443,
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
         "clients": [
           {
+			"flow": "xtls-rprx-vision",
             "id": "${xray_uuid_vrv}"
           }
         ],
@@ -245,13 +235,18 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "xver": 1
           },
           {
-            "dest": "/dev/shm/nginx.sock",
+            "path": "/${path_xhttp}33",
+            "dest": 8433,
+            "xver": 1
+          },
+          {
+            "dest": "/dev/shm/nginx222.sock",
             "xver": 1
           }
         ]
       },
       "streamSettings": {
-        "network": "tcp",
+        "network": "raw",
         "security": "tls",
         "tlsSettings": {
           "certificates": [
@@ -323,6 +318,32 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "acceptProxyProtocol": true,
           "path": "/${path_xhttp}22"
         },
+        "security": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    },
+    {
+      "tag": "vsTCPtls33",
+      "port": 8433,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "raw",
         "security": "none"
       },
       "sniffing": {
@@ -852,7 +873,9 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-link01="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessTCPtls-autoXRAY"
+link01="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessTCPtls-autoXRAY"
+
+link012="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessTCPtls-autoXRAY"
 
 link02="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPtls-autoXRAY"
 
@@ -877,8 +900,10 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_333:
+Тестовый TLS_555:
 $link01
+
+$link012
 
 $link02
 
