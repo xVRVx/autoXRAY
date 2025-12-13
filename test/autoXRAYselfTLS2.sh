@@ -956,8 +956,6 @@ EOF
   
 
 echo -e "
-test-333
-
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
 
