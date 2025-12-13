@@ -440,7 +440,6 @@ print_config() {
         "outboundTag": "direct"
       },
       {
-        "type": "field",
         "ip": [
           "geoip:!ru"
         ],
