@@ -66,6 +66,7 @@ server {
     grpc_set_header X-Real-IP \$remote_addr;
 	
     add_header routing-enable 0;
+	add_header profile-title "base64:YXV0b1hSQVk=";
 	
     location /${path_xhttp} {
         proxy_pass http://127.0.0.1:8400;
@@ -410,7 +411,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     },
     {
       "tag": "ShadowSocks2022",
-      "port": 4443,
+      "port": 8443,
       "listen": "0.0.0.0",
       "protocol": "shadowsocks",
       "settings": {
@@ -537,9 +538,8 @@ print_config() {
 TPL
 }
 
-# --- Config 1: VLESS TCP Reality ---
-OUT_TCP_REALITY='{
-  "mux": { "concurrency": -1, "enabled": false },
+# --- 1. VLESS TCP XTLS-Vision (Основной, самый быстрый) ---
+OUT_VISION='{
   "tag": "proxy",
   "protocol": "vless",
   "settings": {
@@ -551,17 +551,16 @@ OUT_TCP_REALITY='{
   },
   "streamSettings": {
     "network": "raw",
-    "security": "reality",
-    "realitySettings": {
-      "show": false, "fingerprint": "chrome", "serverName": "$DOMAIN",
-      "password": "${xray_publicKey_vrv}", "shortId": "${xray_shortIds_vrv}", "spiderX": "/"
+    "security": "tls",
+    "tlsSettings": {
+      "serverName": "$DOMAIN",
+      "fingerprint": "chrome"
     }
   }
 }'
 
-# --- Config 2: VLESS XHTTP Reality ---
-OUT_XHTTP_REALITY='{
-  "mux": { "concurrency": -1, "enabled": false },
+# --- 2. VLESS XHTTP (Через Fallback Nginx) ---
+OUT_XHTTP='{
   "tag": "proxy",
   "protocol": "vless",
   "settings": {
@@ -573,41 +572,123 @@ OUT_XHTTP_REALITY='{
   },
   "streamSettings": {
     "network": "xhttp",
-    "xhttpSettings": { "mode": "auto", "path": "/${path_xhttp}" },
-    "security": "reality",
-    "realitySettings": {
-      "show": false, "fingerprint": "chrome", "serverName": "$DOMAIN",
-      "password": "${xray_publicKey_vrv}", "shortId": "${xray_shortIds_vrv}", "spiderX": "/"
-    }
+    "xhttpSettings": {
+		"extra": {
+			"headers": {
+			},
+			"noGRPCHeader": false,
+			"scMaxEachPostBytes": 1500000,
+			"scMinPostsIntervalMs": 20,
+			"scStreamUpServerSecs": "60-240",
+			"xPaddingBytes": "400-800",
+			"xmux": {
+				"cMaxReuseTimes": "1000-3000",
+				"hKeepAlivePeriod": 0,
+				"hMaxRequestTimes": "400-700",
+				"hMaxReusableSecs": "1200-1800",
+				"maxConcurrency": "3-5",
+				"maxConnections": 0
+			}
+		},
+	"mode": "auto", "path": "/${path_xhttp}" },
+    "security": "tls",
+    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "chrome" }
   }
 }'
 
-# --- Config 3: ShadowSocks 2022 ---
-OUT_SHADOWSOCKS='{
-  "mux": { "concurrency": -1, "enabled": false },
+# --- 3. VLESS gRPC (Через Fallback Nginx) ---
+# Важно: alpn h2 обязателен для корректной работы через Nginx
+OUT_GRPC='{
+  "tag": "proxy",
+  "protocol": "vless",
+  "settings": {
+    "vnext": [{
+      "address": "$DOMAIN",
+      "port": 443,
+      "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }]
+    }]
+  },
+  "streamSettings": {
+    "network": "grpc",
+    "grpcSettings": { "serviceName": "${path_xhttp}11", "multiMode": false },
+    "security": "tls",
+    "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "chrome" }
+  }
+}'
+
+# --- 4. VLESS WebSocket (Внутренний Fallback Xray path...22) ---
+OUT_WS='{
+  "tag": "proxy",
+  "protocol": "vless",
+  "settings": {
+    "vnext": [{
+      "address": "$DOMAIN",
+      "port": 443,
+      "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }]
+    }]
+  },
+  "streamSettings": {
+    "network": "ws",
+    "wsSettings": { "path": "/${path_xhttp}22" },
+    "security": "tls",
+    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "chrome" }
+  }
+}'
+
+# --- 5. VLESS TCP Header (Внутренний Fallback Xray path...33) ---
+OUT_TCP_HTTP='{
+  "tag": "proxy",
+  "protocol": "vless",
+  "settings": {
+    "vnext": [{
+      "address": "$DOMAIN",
+      "port": 443,
+      "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }]
+    }]
+  },
+  "streamSettings": {
+    "network": "raw",
+    "rawSettings": {
+        "header": { "type": "http", "request": { "path": ["/${path_xhttp}33"] } }
+    },
+    "security": "tls",
+    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "chrome" }
+  }
+}'
+
+# --- 6. ShadowSocks 2022 (Порт 8443) ---
+OUT_SS='{
   "tag": "proxy",
   "protocol": "shadowsocks",
   "settings": {
     "servers": [{
-      "port": 4443,
-      "method": "2022-blake3-aes-256-gcm",
       "address": "$DOMAIN",
+      "port": 8443,
+      "method": "2022-blake3-aes-256-gcm",
       "password": "${xray_sspasw_vrv}"
     }]
   }
 }'
 
-
-# 3. Собираем всё вместе и прогоняем через envsubst
+# 3. Сборка и генерация файла
+# Используем subshell ( ) чтобы объединить выводы и передать в envsubst один раз
 (
   echo "["
-  print_config "$OUT_TCP_REALITY"    "🇪🇺 VlessRAWrealityXTLS - autoXRAY"
+  print_client "$OUT_VISION"    "🇪🇺 VLESS RAW XTLS-Vision"
   echo ","
-  print_config "$OUT_XHTTP_REALITY"  "🇪🇺 vlessXHTTPreality - autoXRAY"
+  print_client "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA"
   echo ","
-  print_config "$OUT_SHADOWSOCKS"    "🇪🇺 ShadowS2022blake3 - autoXRAY"
+  print_client "$OUT_GRPC"      "🇪🇺 VLESS gRPC TLS"
+  echo ","
+  print_client "$OUT_WS"        "🇪🇺 VLESS WebSocket TLS"
+  echo ","
+  print_client "$OUT_TCP_HTTP"  "🇪🇺 VLESS RAW TLS"
+  echo ","
+  print_client "$OUT_SS"        "🇪🇺 ShadowSocks2022"
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
+
+echo "Клиентские конфиги успешно созданы в: $CLIENTS_FILE"
 
 
 # Перезапуск Xray
@@ -631,7 +712,7 @@ link04="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=grpc&headerType=&
 
 
 ENCODED_STRING=$(echo -n "2022-blake3-aes-256-gcm:${xray_sspasw_vrv}" | base64)
-linkSS="ss://$ENCODED_STRING@${DOMAIN}:4443#Shadowsocks2022-autoXRAY"
+linkSS="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
@@ -650,6 +731,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
+test-222
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
