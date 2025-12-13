@@ -765,19 +765,6 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-
-Ваш конфиг vless RAW reality XTLS:
-$link1
-
-Ваш конфиг vless XHTTP reality EXTRA:
-$link2
-
-Ваш конфиг Shadowsocks 2022-blake3-chacha20-poly1305:
-$linkSS
-
-Ваш конфиг socks5 proxy (используйте для ТГ):
-server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}
-
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
 
