@@ -1,7 +1,7 @@
 # autoXRAY - личный ВПН сервер
 Bash-скрипт для автоматической настройки ядра [Xray](https://github.com/XTLS/Xray-core). Предназначен для удобного получения актуальных конфигураций VPN для семейного/личного использования, настраивает selfsteal VLESS [XHTTP](https://github.com/XTLS/Xray-core/discussions/4113#discussioncomment-11468947) / [RAW](https://github.com/XTLS/REALITY/blob/main/README.en.md) REALITY.
 
-**UPD4: Добавлен новый экспериментальный скрипт с GRPC XHTTP RAW WS XTLS/TLS**
+**UPD4: Добавлен новый экспериментальный скрипт с [GRPC XHTTP RAW WS XTLS/TLS](#%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%B0%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9-%D1%81%D0%BA%D1%80%D0%B8%D0%BF%D1%82-%D1%81-grpc-xhttp-raw-ws-xtlstls)**
 
 **UPD3: Обход новых блокировок - скрипт переработан на vless xhttp reality**
 
