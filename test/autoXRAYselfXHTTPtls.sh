@@ -35,6 +35,12 @@ apt install certbot -y
 
 mkdir -p /var/lib/xray/cert/
 
+### Проверить
+cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
+cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
+chmod 744 /var/lib/xray/cert/privkey.pem
+chmod 744 /var/lib/xray/cert/fullchain.pem
+
 certbot certonly --webroot -w /var/www/html -d $DOMAIN -m mail@$DOMAIN --agree-tos --non-interactive --deploy-hook "systemctl reload nginx; cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem; cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/fullchain.pem; systemctl restart xray"
 
 CONFIG_PATH="/etc/nginx/sites-available/default"
@@ -871,7 +877,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS_222:
+Тестовый TLS_333:
 $link01
 
 $link02
