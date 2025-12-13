@@ -53,7 +53,7 @@ bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
 	#listen 3333 ssl http2 proxy_protocol;
-	listen unix:/dev/shm/nginx222.sock http2 proxy_protocol;
+	listen unix:/dev/shm/nginx.sock http2 proxy_protocol;
 	
     root /var/www/$DOMAIN;
     index index.php index.html;
@@ -250,8 +250,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "xver": 2
           },
           {
-            "dest": "/dev/shm/nginx222.sock",
-            "xver": 1
+            "dest": "/dev/shm/nginx.sock",
+            "xver": 2
           }
         ]
       },
@@ -947,7 +947,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 EOF
 
 echo -e "
-Тестовый TLS-222:
+Тестовый TLS-333:
 $link01
 
 $link012
