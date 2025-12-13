@@ -804,6 +804,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <style>
     body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 20px; max-width: 800px; margin: 0 auto; }
     h3 { color: #82aaff; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 30px; }
+    h2 { color: #c3e88d; border-top: 2px solid #333; padding-top: 20px; margin-top: 40px; }
     
     /* Стили для строки с конфигом */
     .config-row {
@@ -817,19 +818,26 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
         margin-bottom: 10px;
     }
     
-    /* Контейнер для текста ссылки (прокрутка) */
+    /* Контейнер для текста ссылки */
     .config-code {
         flex: 1;
-        white-space: nowrap;
+        white-space: nowrap; /* Для одиночных конфигов - одна строка */
         overflow-x: auto;
         padding: 10px;
         background: #121212;
         border-radius: 4px;
         color: #c3e88d;
         font-size: 14px;
-        /* Скрываем скроллбар, но оставляем функционал (опционально) */
         scrollbar-width: thin;
         scrollbar-color: #333 #121212;
+    }
+
+    /* Специальный стиль для блока "Все конфиги", чтобы переносы строк отображались корректно */
+    #cAll {
+        white-space: pre-wrap; /* Разрешаем перенос строк */
+        word-break: break-all;
+        max-height: 300px;     /* Ограничение высоты, если конфигов много */
+        overflow-y: auto;      /* Вертикальная прокрутка */
     }
     
     /* Кнопка копирования */
@@ -843,6 +851,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
         font-weight: bold;
         transition: all 0.2s;
         min-width: 100px;
+        height: 100%;
     }
     .copy-btn:hover {
         background: #c3e88d;
@@ -853,9 +862,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
         transform: translateY(2px);
     }
 
-    /* Старые стили для кнопок приложений */
-    .box { background: #1e1e1e; padding: 15px; border-radius: 8px; word-break: break-all; border: 1px solid #333; margin-bottom: 10px; }
-    .box a { color: #c3e88d; text-decoration: none; display: block; margin-top: 10px; font-weight: 700; }
+    /* Старые стили */
     .btn-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 25px; }
     .btn { flex: 1; min-width: 250px; background-color: #2c2c2c; color: #c3e88d; border: 1px solid #c3e88d; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: 700; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
     .btn:hover { background-color: #c3e88d; color: #121212; cursor: pointer; box-shadow: 0 0 10px rgba(195,232,141,.3); }
@@ -932,10 +939,11 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
     <button class="copy-btn" onclick="copyText('c6', this)">Копировать</button>
 </div>
 
-<h3>💠 Все конфиги вместе</h3>
+<h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
-    <div class="config-code" id="c6">$link01$link012$link02$link03$link04$linkSS</div>
-    <button class="copy-btn" onclick="copyText('c6', this)">Копировать</button>
+    <!-- Здесь используется <br> для переноса строк и ID cAll -->
+    <div class="config-code" id="cAll">$link01<br>$link012<br>$link02<br>$link03<br>$link04<br>$linkSS</div>
+    <button class="copy-btn" onclick="copyText('cAll', this)">Копировать</button>
 </div>
 
 </body>
@@ -945,7 +953,7 @@ EOF
   
 
 echo -e "
-test-111
+test-666
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
