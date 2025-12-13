@@ -494,47 +494,107 @@ print_config() {
   local REMARK="$2"
 
   cat << TPL
-  {
-    "log": {
-      "loglevel": "warning"
-    },
-    "dns": {
-      "servers": [
-        "https://8.8.4.4/dns-query",
-        "https://8.8.8.8/dns-query",
-        "https://1.1.1.1/dns-query"
-      ],
-      "queryStrategy": "UseIPv4"
-    },
-    "routing": {
-      "domainStrategy": "IPIfNonMatch",
-      "rules": [
-        { "domain": ["geosite:category-ads", "geosite:win-spy"], "outboundTag": "block" },
-        { "protocol": ["bittorrent"], "outboundTag": "direct" },
-        { "domain": ["geosite:private", "geosite:apple", "geosite:google-play", "geosite:yandex", "geosite:vk", "geosite:category-ru"], "outboundTag": "direct" },
-        { "ip": ["geoip:private"], "outboundTag": "direct" },
-        { "type": "field", "ip": ["geoip:!ru"], "outboundTag": "proxy" },
-        { "domain": ["geosite:discord", "geosite:youtube", "geosite:tiktok", "geosite:signal"], "outboundTag": "proxy" }
-      ]
-    },
-    "inbounds": [
-      { "tag": "socks-in", "protocol": "socks", "listen": "127.0.0.1", "port": 10808, "settings": { "udp": true } },
-      { "tag": "socks-sb", "protocol": "socks", "listen": "127.0.0.1", "port": 2080, "settings": { "udp": true } },
-      { "tag": "http-in", "protocol": "http", "listen": "127.0.0.1", "port": 10809 }
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+      "https://8.8.4.4/dns-query",
+      "https://8.8.8.8/dns-query",
+      "https://1.1.1.1/dns-query"
     ],
-    "outbounds": [
-      $PROXY_OUTBOUND,
+    "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
       {
-        "tag": "direct",
-        "protocol": "freedom"
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy"
+        ],
+        "outboundTag": "block"
       },
       {
-        "tag": "block",
-        "protocol": "blackhole"
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "geosite:apple",
+          "geosite:google-play",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:!ru"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:discord",
+          "geosite:youtube",
+          "geosite:tiktok",
+          "geosite:signal"
+        ],
+        "outboundTag": "proxy"
       }
-    ],
-    "remarks": "$REMARK"
-  }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-sb",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 2080,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809
+    }
+  ],
+  "outbounds": [
+      $PROXY_OUTBOUND,
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "remarks": "$REMARK"
+}
 TPL
 }
 
@@ -688,7 +748,7 @@ OUT_SS='{
   echo ","
   print_config "$OUT_WS"        "🇪🇺 VLESS WebSocket TLS"
   echo ","
-  print_config "$OUT_TCP_HTTP"  "🇪🇺 VLESS RAW TLS"
+  print_config "$OUT_TCP_HTTP"  "🇪🇺 VLESS RAW TLS MUX"
   echo ","
   print_config "$OUT_SS"        "🇪🇺 ShadowSocks2022"
   echo "]"
