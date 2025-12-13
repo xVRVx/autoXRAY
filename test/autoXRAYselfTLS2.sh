@@ -932,6 +932,12 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
     <button class="copy-btn" onclick="copyText('c6', this)">Копировать</button>
 </div>
 
+<h3>💠 Все конфиги вместе</h3>
+<div class="config-row">
+    <div class="config-code" id="c6">$link01$link012$link02$link03$link04$linkSS</div>
+    <button class="copy-btn" onclick="copyText('c6', this)">Копировать</button>
+</div>
+
 </body>
 </html>
 EOF
@@ -939,7 +945,7 @@ EOF
   
 
 echo -e "
-test-888
+test-111
 
 Ваша json страничка подписки:
 \033[32m$subPageLink\033[0m
