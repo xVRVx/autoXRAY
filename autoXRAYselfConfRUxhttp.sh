@@ -199,6 +199,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
   "log": {
     "dnsLog": false,
+    "access": "/var/log/xray/access.log",
+    "error": "/var/log/xray/error.log",
     "loglevel": "none"
   },
   "dns": {
@@ -345,7 +347,19 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     {
       "tag": "block",
       "protocol": "blackhole"
-    }
+    },
+	{
+	  "tag": "warp",
+	  "protocol": "socks",
+	  "settings": {
+		"servers": [
+		  {
+			"address": "127.0.0.1",
+			"port": 40000
+		  }
+		]
+	  }
+	}
   ],
   "routing": {
     "rules": [
@@ -368,7 +382,11 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "geosite:private"
         ],
         "outboundTag": "block"
-      }
+      },
+	{
+	  "outboundTag": "direct",
+	  "domain": ["geosite:google-gemini"]
+	}
     ],
     "domainStrategy": "IPIfNonMatch"
   }
