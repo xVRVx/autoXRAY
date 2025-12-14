@@ -1,6 +1,8 @@
 # autoXRAY - личный ВПН сервер
 Bash-скрипт для автоматической настройки ядра [Xray](https://github.com/XTLS/Xray-core). Предназначен для удобного получения актуальных конфигураций VPN для семейного/личного использования, настраивает selfsteal VLESS [XHTTP](https://github.com/XTLS/Xray-core/discussions/4113#discussioncomment-11468947) / [RAW](https://github.com/XTLS/REALITY/blob/main/README.en.md) REALITY.
 
+**UPD5: Обходим блокировку Gemini на серых IP через [WARP-cli](#%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BA%D0%B0-warp-cli-%D0%B4%D0%BB%D1%8F-%D0%BE%D0%B1%D1%85%D0%BE%D0%B4%D0%B0-%D1%81%D0%B5%D1%80%D1%8B%D1%85-ip)**
+
 **UPD4: Добавлен новый экспериментальный скрипт с [GRPC XHTTP RAW WS XTLS/TLS](#%D1%8D%D0%BA%D1%81%D0%BF%D0%B5%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D1%82%D0%B0%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9-%D1%81%D0%BA%D1%80%D0%B8%D0%BF%D1%82-%D1%81-grpc-xhttp-raw-ws-xtlstls)**
 
 **UPD3: Обход новых блокировок - скрипт переработан на vless xhttp reality**
@@ -163,6 +165,32 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/test/au
 ```
 
 
+===========================================================================
+
+## Установка WARP-cli для обхода серых IP
+WARP-cli нужен когда VPS выдают серые IP и доступ к некоторым нужным сервисам закрыт.
+В этом примере мы обойдем геоблокировку гугл для Gemini.
+Установите ПО:
+```bash
+cd && bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
+```
+Ответы на вопросы: 1, 1, 40000, 1
+
+В конфиге xray **/usr/local/etc/xray/config.json** 
+поменяйте в конце
+```json
+{
+  "outboundTag": "direct",
+  "domain": ["geosite:google-gemini","geosite:category-ru"]
+}
+```
+на
+```json
+{
+  "outboundTag": "warp",
+  "domain": ["geosite:google-gemini","geosite:category-ru"]
+}
+```
 ===========================================================================
 
 Скрипты будут дорабатываться до актуального состояния.
