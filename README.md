@@ -191,6 +191,8 @@ cd && bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
   "domain": ["geosite:google-gemini","geosite:category-ru"]
 }
 ```
+После изменений ядро надо перезапустить: **systemctl restart xray**
+
 ===========================================================================
 
 Скрипты будут дорабатываться до актуального состояния.
