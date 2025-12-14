@@ -66,12 +66,9 @@ server {
     grpc_send_timeout 1h;
     grpc_set_header X-Real-IP \$remote_addr;
 	
-    #add_header routing-enable 0;
 	add_header profile-title "base64:YXV0b1hSQVk=";
-	add_header announce "base64:aHR0cHM6Ly9naXRodWIuY29tL3hWUlZ4L2F1dG9YUkFZ";
-	add_header announce-url "https://github.com/xVRVx/autoXRAY";
-	add_header announce "base64:aHR0cHM6Ly9naXRodWIuY29tL3hWUlZ4L2F1dG9YUkFZ";
 	add_header routing "happ://routing/onadd/ewogICAgIk5hbWUiOiAiYXV0b1hSQVkiLAogICAgIkdsb2JhbFByb3h5IjogInRydWUiLAogICAgIlVzZUNodW5rRmlsZXMiOiAidHJ1ZSIsCiAgICAiUmVtb3RlRE5TVHlwZSI6ICJEb0giLAogICAgIlJlbW90ZUROU0RvbWFpbiI6ICIiLAogICAgIlJlbW90ZUROU0lQIjogIiIsCiAgICAiRG9tZXN0aWNETlNUeXBlIjogIkRvSCIsCiAgICAiRG9tZXN0aWNETlNEb21haW4iOiAiIiwKICAgICJEb21lc3RpY0ROU0lQIjogIiIsCiAgICAiR2VvaXB1cmwiOiAiIiwKICAgICJHZW9zaXRldXJsIjogIiIsCiAgICAiTGFzdFVwZGF0ZWQiOiAiIiwKICAgICJEbnNIb3N0cyI6IHt9LAogICAgIk9yZGVyUm91dGluZyI6ICJibG9jay1kaXJlY3QtcHJveHkiLAogICAgIkRpcmVjdFNpdGVzIjogWwogICAgICAgICJjYXRlZ29yeS1ydSIsCiAgICAgICAgImdlb3NpdGU6cHJpdmF0ZSIKICAgIF0sCiAgICAiRGlyZWN0SXAiOiBbCiAgICAgICAgImdlb2lwOnByaXZhdGUiCiAgICBdLAogICAgIlByb3h5U2l0ZXMiOiBbXSwKICAgICJQcm94eUlwIjogW10sCiAgICAiQmxvY2tTaXRlcyI6IFsKICAgICAgICAiZ2Vvc2l0ZTpjYXRlZ29yeS1hZHMiLAogICAgICAgICJnZW9zaXRlOndpbi1zcHkiCiAgICBdLAogICAgIkJsb2NrSXAiOiBbXSwKICAgICJEb21haW5TdHJhdGVneSI6ICJJUElmTm9uTWF0Y2giLAogICAgIkZha2VETlMiOiAiZmFsc2UiCn0=";
+    add_header routing-enable 0;
 	
     location /${path_xhttp} {
         proxy_pass http://127.0.0.1:8400;
@@ -920,7 +917,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 </div>
 
 <h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
-<!--p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p-->
+<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p>
 <div class="btn-group">
     <a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a>
     <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a>
@@ -992,5 +989,5 @@ echo -e "
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 
-v333
+v444
 "
