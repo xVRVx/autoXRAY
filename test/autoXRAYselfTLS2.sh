@@ -506,7 +506,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
 	{
 	  "outboundTag": "direct",
-	  "domain": ["geosite:google-gemini"]
+	  "domain": ["geosite:google-gemini","geosite:category-ru"]
 	}
     ],
     "domainStrategy": "IPIfNonMatch"
