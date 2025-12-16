@@ -29,7 +29,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 
 **Вы получите:**
 1) vless RAW reality XTLS на 443 порту - хорошая маскировка, быстрый.
-2) vless XHTTP reality EXTRA на 443 порту - продвинутые настройки соединения.
+2) vless XHTTP reality EXTRA на 443 порту - продвинутые настройки, повышенная нагрузка на cpu.
 3) shadowsocks 2022-blake3-chacha20-poly1305 на 8443 порту  - новый, простой и быстрый.
 4) socks5 прокси на 10443 порту - используйте для сервисов (например: ТГ).
 
