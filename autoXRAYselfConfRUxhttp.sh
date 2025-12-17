@@ -92,78 +92,13 @@ systemctl restart nginx
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
 
-# Установка прав
-#chown -R $USER:$USER "$WEB_PATH"
-#chmod -R 755 "$WEB_PATH"
 
-# Arrays with random options
-TITLES=("FileShare" "CloudBox" "DataVault" "SecureShare" "EasyFiles" "QuickAccess" "VaultZone" "SkyDrive" "SafeData" "FlexShare"
-        "DropZone" "SecureStorage" "FastFiles" "SharePoint" "MegaVault" "Boxify" "DataBank" "DriveSecure" "FileStream" "AccessHub")
-
-HEADERS=("Welcome to FileShare" "Login to Your CloudBox" "Enter Your Secure Vault" "Access Your DataVault" "Sign in to EasyFiles"
-         "Connect to QuickAccess" "Welcome to VaultZone" "Login to SkyDrive" "Enter Your SafeData" "Sign in to FlexShare"
-         "Access Your DropZone" "Welcome to SecureStorage" "Login to FastFiles" "Enter Your SharePoint" "Welcome to MegaVault"
-         "Sign in to Boxify" "Access Your DataBank" "Welcome to DriveSecure" "Login to FileStream" "Connect to AccessHub")
-
-BUTTON_COLORS=("bg-blue-600" "bg-green-600" "bg-red-600" "bg-yellow-600" "bg-purple-600" "bg-pink-600" "bg-indigo-600"
-               "bg-teal-600" "bg-orange-600" "bg-cyan-600" "bg-lime-600" "bg-amber-600" "bg-fuchsia-600" "bg-violet-600"
-               "bg-rose-600" "bg-emerald-600" "bg-sky-600" "bg-gray-600" "bg-zinc-600" "bg-stone-600")
-			   
-BUTTON_TEXTS=("Sign In" "Log In" "Login" "Access Account" "Enter Account"
-              "Sign In to Continue" "Sign In to Dashboard" "Log In to Your Account" "Continue to Account" "Access Your Dashboard"
-              "Let’s Go" "Welcome Back!" "Get Started" "Join Us Again" "Back Again? Sign In"
-              "Secure Sign In" "Protected Login" "Sign In Securely"
-              "Enter" "Go")
-
-# Random selection
-TITLE=${TITLES[$RANDOM % ${#TITLES[@]}]}
-HEADER=${HEADERS[$RANDOM % ${#HEADERS[@]}]}
-BUTTON_COLOR=${BUTTON_COLORS[$RANDOM % ${#BUTTON_COLORS[@]}]}
-BUTTON_TEXT=${BUTTON_TEXTS[$RANDOM % ${#BUTTON_TEXTS[@]}]}
-
-echo "✅ Creating index.html at $WEB_PATH"
-
-# Generate HTML content
-cat > "$WEB_PATH/index.html" <<EOF
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>$TITLE</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-	<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
-	<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js" integrity="sha256-9zljDKpE/mQxmaR4V2cGVaQ7arF3CcXxarvgr7Sj8Uc=" crossorigin="anonymous"></script>
-</head>
-<body class="flex items-center justify-center min-h-screen bg-gray-100">
-    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-md">
-        <h2 class="text-2xl font-bold text-center text-gray-700">$HEADER</h2>
-        <form action="#" method="POST" class="space-y-4">
-            <div>
-                <label for="login" class="block text-sm font-medium text-gray-600">Username</label>
-                <input type="text" id="login" name="login" class="w-full p-2 mt-1 border rounded-lg focus:ring focus:ring-blue-200" />
-            </div>
-            <div>
-                <label for="password" class="block text-sm font-medium text-gray-600">Password</label>
-                <input type="password" id="password" name="password" class="w-full p-2 mt-1 border rounded-lg focus:ring focus:ring-blue-200" />
-            </div>
-            <button type="submit" class="w-full px-4 py-2 text-white $BUTTON_COLOR rounded-lg hover:opacity-90 focus:ring focus:ring-blue-200">
-                $BUTTON_TEXT
-            </button>
-        </form>
-    </div>
-</body>
-</html>
-EOF
-
-
+# Генерируем сайт маскировку
+bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page.sh)" -- $WEB_PATH
 
 # Установка Xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
-
-# Определяем директорию скрипта
-#SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 SCRIPT_DIR=/usr/local/etc/xray
 
 # Генерируем переменные
@@ -229,8 +164,13 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "decryption": "none",
         "fallbacks": [
           {
+			"path": "/${path_xhttp}44",
+            "dest": "4444",
+            "xver": 2
+          },
+          {
             "dest": "3333",
-            "xver": 0
+            "xver": 2
           }
         ]
       },
@@ -247,7 +187,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "xver": 1,
+          "xver": 2,
           "target": "/dev/shm/nginx.sock",
           "spiderX": "/",
           "shortIds": [
@@ -296,9 +236,50 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "xhttpSettings": {
           "mode": "auto",
 		  "path": "/${path_xhttp}"
+        },
+        "security": "none",
+        "sockopt": {
+          "acceptProxyProtocol": true
         }
       }
     },
+    {
+      "tag": "vsRAWrty",
+      "port": 4444,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "raw",
+        "rawSettings": {
+          "acceptProxyProtocol": true,
+          "header": {
+            "type": "http",
+            "request": {
+              "path": [
+                "/${path_xhttp}44"
+              ]
+            }
+          }
+		},
+        "security": "none"
+      }
+    },	
 	{
       "tag": "ShadowSocks2022",
       "port": 8443,
@@ -582,7 +563,41 @@ OUT_REALITY_XHTTP='{
   }
 }'
 
-# --- Config 3: Shadowsocks 2022 (Port 8443, Chacha20) ---
+# --- Config 3: VLESS Reality usual MUX---
+OUT_REALITY_usual='{
+  "mux": { "concurrency": 8, "enabled": true,
+    "xudpConcurrency": 16,
+    "xudpProxyUDP443": "reject" },
+  "tag": "proxy",
+  "protocol": "vless",
+  "settings": {
+    "vnext": [{
+      "address": "$DOMAIN",
+      "port": 443,
+      "users": [{ "id": "${xray_uuid_vrv}", "flow": "", "encryption": "none" }]
+    }]
+  },
+  "streamSettings": {
+    "network": "raw",
+    "security": "reality",
+    "realitySettings": {
+      "show": false, "fingerprint": "chrome", "serverName": "$DOMAIN",
+      "password": "${xray_publicKey_vrv}", "shortId": "${xray_shortIds_vrv}", "spiderX": "/"
+    },
+	"rawSettings": {
+		"header": {
+			"request": {
+				"path": [
+					"/${path_xhttp}44"
+				]
+			},
+			"type": "http"
+		}
+	}
+  }
+}'
+
+# --- Config 4: Shadowsocks 2022 (Port 8443, Chacha20) ---
 OUT_SS='{
   "mux": { "concurrency": -1, "enabled": false },
   "tag": "proxy",
@@ -604,6 +619,8 @@ OUT_SS='{
   echo ","
   print_config "$OUT_REALITY_XHTTP"  "🇪🇺 vlessXHTTPrealityEXTRA"
   echo ","
+  print_config "$OUT_REALITY_usual"  "🇪🇺 vlessRAWrealityMUX"
+  echo ","
   print_config "$OUT_SS"             "🇪🇺 ShadowS2022blake3"
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
@@ -621,6 +638,8 @@ link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType
 
 link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
 
+link3="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=http&path=%2F${path_xhttp}44&host=&flow=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityNOmux-autoXRAY"
+
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64 -w 0)
 linkSS="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
 
@@ -637,9 +656,9 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
 <title>AutoXRAY configs</title>
 <style>
-    body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 20px; max-width: 800px; margin: 0 auto; }
+    body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 10px; max-width: 800px; margin: 0 auto; }
     h3 { color: #82aaff; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 30px; }
-    h2 { color: #c3e88d; border-top: 2px solid #333; padding-top: 20px; margin-top: 40px; }
+    h2 { color: #c3e88d; border-top: 2px solid #333; padding-top: 20px; margin-top: 0; }
     
     /* Стили для строки с конфигом */
     .config-row {
@@ -756,10 +775,16 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
     <button class="copy-btn" onclick="copyText('c2', this)">Копировать</button>
 </div>
 
+<h3>➡️ VLESS RAW Reality with MUX</h3>
+<div class="config-row">
+    <div class="config-code" id="c3">$link3</div>
+    <button class="copy-btn" onclick="copyText('c3', this)">Копировать</button>
+</div>
+
 <h3>➡️ Shadowsocks2022blake3 - новый и быстрый</h3>
 <div class="config-row">
-    <div class="config-code" id="c3">$linkSS</div>
-    <button class="copy-btn" onclick="copyText('c3', this)">Копировать</button>
+    <div class="config-code" id="c4">$linkSS</div>
+    <button class="copy-btn" onclick="copyText('c4', this)">Копировать</button>
 </div>
 
 <h3>➡️ Socks5 proxy (используйте для ТГ)</h3>
@@ -775,7 +800,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 
 <h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
-    <div class="config-code" id="cAll">$link1<br>$link2<br>$linkSS</div>
+    <div class="config-code" id="cAll">$link1<br>$link2<br>$link3<br>$linkSS</div>
     <button class="copy-btn" onclick="copyText('cAll', this)">Копировать</button>
 </div>
 
@@ -790,6 +815,9 @@ $link1
 
 Ваш конфиг vless XHTTP reality EXTRA:
 $link2
+
+Ваш конфиг vless RAW reality noMUX:
+$link3
 
 Ваш конфиг Shadowsocks 2022-blake3-chacha20-poly1305:
 $linkSS
