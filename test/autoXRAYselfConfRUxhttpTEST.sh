@@ -173,7 +173,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   "inbounds": [
 	{
       "tag": "vsRAWrtyXTLS",
-      "port": 443,
+      "port": 9000,
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
