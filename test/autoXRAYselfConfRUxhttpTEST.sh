@@ -167,7 +167,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 			"path": "/${path_xhttp}44",
             "dest": "4444",
             "xver": 2
-          }
+          },
           {
             "dest": "3333",
             "xver": 2
@@ -563,7 +563,41 @@ OUT_REALITY_XHTTP='{
   }
 }'
 
-# --- Config 3: Shadowsocks 2022 (Port 8443, Chacha20) ---
+# --- Config 3: VLESS Reality + Vision ---
+OUT_REALITY_NOxtls='{
+  "mux": { "concurrency": 4, "enabled": true,
+    "xudpConcurrency": 8,
+    "xudpProxyUDP443": "allow" },
+  "tag": "proxy",
+  "protocol": "vless",
+  "settings": {
+    "vnext": [{
+      "address": "$DOMAIN",
+      "port": 443,
+      "users": [{ "id": "${xray_uuid_vrv}", "flow": "", "encryption": "none" }]
+    }]
+  },
+  "streamSettings": {
+    "network": "raw",
+    "security": "reality",
+    "realitySettings": {
+      "show": false, "fingerprint": "chrome", "serverName": "$DOMAIN",
+      "password": "${xray_publicKey_vrv}", "shortId": "${xray_shortIds_vrv}", "spiderX": "/"
+    },
+	"rawSettings": {
+		"header": {
+			"request": {
+				"path": [
+					"/${path_xhttp}44"
+				]
+			},
+			"type": "http"
+		}
+	}
+  }
+}'
+
+# --- Config 4: Shadowsocks 2022 (Port 8443, Chacha20) ---
 OUT_SS='{
   "mux": { "concurrency": -1, "enabled": false },
   "tag": "proxy",
@@ -584,6 +618,8 @@ OUT_SS='{
   print_config "$OUT_REALITY_VISION" "🇪🇺 VlessRAWrealityXTLS"
   echo ","
   print_config "$OUT_REALITY_XHTTP"  "🇪🇺 vlessXHTTPrealityEXTRA"
+  echo ","
+  print_config "$OUT_REALITY_NOxtls"  "🇪🇺 vlessRAWrealityMUX"
   echo ","
   print_config "$OUT_SS"             "🇪🇺 ShadowS2022blake3"
   echo "]"
@@ -739,7 +775,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
     <button class="copy-btn" onclick="copyText('c2', this)">Копировать</button>
 </div>
 
-<h3>➡️ VLESS RAW Reality</h3>
+<h3>➡️ VLESS RAW Reality with MUX</h3>
 <div class="config-row">
     <div class="config-code" id="c3">$link3</div>
     <button class="copy-btn" onclick="copyText('c3', this)">Копировать</button>
@@ -779,6 +815,9 @@ $link1
 
 Ваш конфиг vless XHTTP reality EXTRA:
 $link2
+
+Ваш конфиг vless RAW reality noMUX:
+$link3
 
 Ваш конфиг Shadowsocks 2022-blake3-chacha20-poly1305:
 $linkSS
