@@ -775,7 +775,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
     <button class="copy-btn" onclick="copyText('c2', this)">Копировать</button>
 </div>
 
-<h3>➡️ VLESS RAW Reality with MUX</h3>
+<h3>➡️ VLESS RAW Reality noMUX</h3>
 <div class="config-row">
     <div class="config-code" id="c3">$link3</div>
     <button class="copy-btn" onclick="copyText('c3', this)">Копировать</button>
