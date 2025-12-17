@@ -26,25 +26,38 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo "Продолжение выполнения скрипта..."
 fi
 
-
-apt install nginx -y
-
+# Ставим современный nginx
+apt install curl gnupg2 ca-certificates lsb-release debian-archive-keyring
+curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
+    | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
+https://nginx.org/packages/debian `lsb_release -cs` nginx" \
+    | tee /etc/apt/sources.list.d/nginx.list
+echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" \
+    | tee /etc/apt/preferences.d/99nginx
+apt update; apt install nginx
 systemctl enable --now nginx
+nginx -v
 
-apt install certbot -y
+# Ставим современный certbot
+apt install snapd -y
+snap install core; snap refresh core
+snap install --classic certbot
+ln -s /snap/bin/certbot /usr/bin/certbot
+certbot --version
 
 certbot certonly --webroot -w /var/www/html -d $DOMAIN -m mail@$DOMAIN --agree-tos --non-interactive --deploy-hook "systemctl reload nginx"
 
-CONFIG_PATH="/etc/nginx/sites-available/default"
+CONFIG_PATH="/etc/nginx/conf.d/default.conf"
 
 echo "✅ Записываем конфигурацию в $CONFIG_PATH для домена $DOMAIN"
 
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
-    server_name $DOMAIN;
-	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
-    set_real_ip_from unix:;
-    real_ip_header proxy_protocol;
+	listen 443 ssl http2;
+	http2 on;
+
+    server_name $DOMAIN;	
 	
     root /var/www/$DOMAIN;
     index index.php index.html;
@@ -60,8 +73,9 @@ server {
     ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
 
-    add_header routing-enable 0;
 	add_header profile-title "base64:YXV0b1hSQVk=";
+	add_header routing "happ://routing/onadd/ewogICAgIk5hbWUiOiAiYXV0b1hSQVkiLAogICAgIkdsb2JhbFByb3h5IjogInRydWUiLAogICAgIlVzZUNodW5rRmlsZXMiOiAidHJ1ZSIsCiAgICAiUmVtb3RlRE5TVHlwZSI6ICJEb0giLAogICAgIlJlbW90ZUROU0RvbWFpbiI6ICIiLAogICAgIlJlbW90ZUROU0lQIjogIiIsCiAgICAiRG9tZXN0aWNETlNUeXBlIjogIkRvSCIsCiAgICAiRG9tZXN0aWNETlNEb21haW4iOiAiIiwKICAgICJEb21lc3RpY0ROU0lQIjogIiIsCiAgICAiR2VvaXB1cmwiOiAiIiwKICAgICJHZW9zaXRldXJsIjogIiIsCiAgICAiTGFzdFVwZGF0ZWQiOiAiIiwKICAgICJEbnNIb3N0cyI6IHt9LAogICAgIk9yZGVyUm91dGluZyI6ICJibG9jay1kaXJlY3QtcHJveHkiLAogICAgIkRpcmVjdFNpdGVzIjogWwogICAgICAgICJjYXRlZ29yeS1ydSIsCiAgICAgICAgImdlb3NpdGU6cHJpdmF0ZSIKICAgIF0sCiAgICAiRGlyZWN0SXAiOiBbCiAgICAgICAgImdlb2lwOnByaXZhdGUiCiAgICBdLAogICAgIlByb3h5U2l0ZXMiOiBbXSwKICAgICJQcm94eUlwIjogW10sCiAgICAiQmxvY2tTaXRlcyI6IFsKICAgICAgICAiZ2Vvc2l0ZTpjYXRlZ29yeS1hZHMiLAogICAgICAgICJnZW9zaXRlOndpbi1zcHkiCiAgICBdLAogICAgIkJsb2NrSXAiOiBbXSwKICAgICJEb21haW5TdHJhdGVneSI6ICJJUElmTm9uTWF0Y2giLAogICAgIkZha2VETlMiOiAiZmFsc2UiCn0=";
+    add_header routing-enable 0;
 
     location ~ /\.ht {
         deny all;
@@ -95,64 +109,79 @@ mkdir -p "$WEB_PATH"
 #chown -R $USER:$USER "$WEB_PATH"
 #chmod -R 755 "$WEB_PATH"
 
-# Arrays with random options
-TITLES=("FileShare" "CloudBox" "DataVault" "SecureShare" "EasyFiles" "QuickAccess" "VaultZone" "SkyDrive" "SafeData" "FlexShare"
-        "DropZone" "SecureStorage" "FastFiles" "SharePoint" "MegaVault" "Boxify" "DataBank" "DriveSecure" "FileStream" "AccessHub")
+# --- CONTENT ARRAYS ---
+TITLES=("FileShare" "CloudBox" "DataVault" "SecureShare" "EasyFiles" "QuickAccess" "VaultZone" "SkyDrive" "SafeData" "FlexShare" "DropZone" "SecureStorage" "FastFiles" "SharePoint" "MegaVault" "Boxify" "DataBank" "DriveSecure" "FileStream" "AccessHub")
 
-HEADERS=("Welcome to FileShare" "Login to Your CloudBox" "Enter Your Secure Vault" "Access Your DataVault" "Sign in to EasyFiles"
-         "Connect to QuickAccess" "Welcome to VaultZone" "Login to SkyDrive" "Enter Your SafeData" "Sign in to FlexShare"
-         "Access Your DropZone" "Welcome to SecureStorage" "Login to FastFiles" "Enter Your SharePoint" "Welcome to MegaVault"
-         "Sign in to Boxify" "Access Your DataBank" "Welcome to DriveSecure" "Login to FileStream" "Connect to AccessHub")
+HEADERS=("Welcome to FileShare" "Login to Your CloudBox" "Enter Your Secure Vault" "Access Your DataVault" "Sign in to EasyFiles" "Connect to QuickAccess" "Welcome to VaultZone" "Login to SkyDrive" "Enter Your SafeData" "Sign in to FlexShare" "Access Your DropZone" "Welcome to SecureStorage" "Login to FastFiles" "Enter Your SharePoint" "Welcome to MegaVault" "Sign in to Boxify" "Access Your DataBank" "Welcome to DriveSecure" "Login to FileStream" "Connect to AccessHub")
 
-BUTTON_COLORS=("bg-blue-600" "bg-green-600" "bg-red-600" "bg-yellow-600" "bg-purple-600" "bg-pink-600" "bg-indigo-600"
-               "bg-teal-600" "bg-orange-600" "bg-cyan-600" "bg-lime-600" "bg-amber-600" "bg-fuchsia-600" "bg-violet-600"
-               "bg-rose-600" "bg-emerald-600" "bg-sky-600" "bg-gray-600" "bg-zinc-600" "bg-stone-600")
-			   
-BUTTON_TEXTS=("Sign In" "Log In" "Login" "Access Account" "Enter Account"
-              "Sign In to Continue" "Sign In to Dashboard" "Log In to Your Account" "Continue to Account" "Access Your Dashboard"
-              "Let’s Go" "Welcome Back!" "Get Started" "Join Us Again" "Back Again? Sign In"
-              "Secure Sign In" "Protected Login" "Sign In Securely"
-              "Enter" "Go")
+BUTTON_TEXTS=("Sign In" "Log In" "Login" "Access Account" "Enter Account" "Sign In to Continue" "Sign In to Dashboard" "Log In to Your Account" "Continue to Account" "Access Your Dashboard" "Let’s Go" "Welcome Back!" "Get Started" "Join Us Again" "Back Again? Sign In" "Secure Sign In" "Protected Login" "Sign In Securely" "Enter" "Go")
 
-# Random selection
+# --- STYLE ARRAYS ---
+
+# Google Fonts (Name|URL_Part)
+FONTS_DATA=(
+    "Inter|Inter:wght@400;600;700"
+    "Poppins|Poppins:wght@400;600;700"
+    "Roboto|Roboto:wght@400;500;700"
+    "Lato|Lato:wght@400;700"
+    "Montserrat|Montserrat:wght@400;600;700"
+    "Open Sans|Open+Sans:wght@400;600;700"
+    "Raleway|Raleway:wght@400;600;700"
+)
+
+# Border Radius Options (Tailwind classes)
+ROUNDNESS_OPTS=("rounded-none" "rounded-lg" "rounded-xl" "rounded-2xl" "rounded-3xl" "rounded-[2rem]")
+
+# Button Colors (Tailwind classes with gradients for better look)
+BUTTON_COLORS=("bg-blue-600 hover:bg-blue-700" "bg-green-600 hover:bg-green-700" "bg-red-600 hover:bg-red-700" "bg-purple-600 hover:bg-purple-700" "bg-indigo-600 hover:bg-indigo-700" "bg-teal-600 hover:bg-teal-700" "bg-orange-600 hover:bg-orange-700" "bg-pink-600 hover:bg-pink-700" "bg-cyan-600 hover:bg-cyan-700" "bg-emerald-600 hover:bg-emerald-700" "bg-rose-600 hover:bg-rose-700" "bg-slate-800 hover:bg-slate-900" "bg-violet-600 hover:bg-violet-700" "bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90" "bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90" "bg-gradient-to-r from-orange-400 to-red-500 hover:opacity-90")
+
+# Background Gradients (Tailwind classes)
+BG_GRADIENTS=(
+    "bg-gradient-to-br from-blue-100 via-blue-300 to-blue-500"
+    "bg-gradient-to-tr from-purple-200 via-purple-400 to-purple-800"
+    "bg-gradient-to-bl from-teal-200 to-lime-200"
+    "bg-gradient-to-r from-rose-100 to-teal-100"
+    "bg-gradient-to-tl from-gray-700 via-gray-900 to-black"
+    "bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"
+    "bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500"
+    "bg-gradient-to-b from-gray-900 to-gray-600 bg-gradient-to-r"
+    "bg-gradient-to-bl from-indigo-900 via-slate-800 to-indigo-900"
+)
+
+# --- RANDOM SELECTION LOGIC ---
+
+# 1. Content
 TITLE=${TITLES[$RANDOM % ${#TITLES[@]}]}
 HEADER=${HEADERS[$RANDOM % ${#HEADERS[@]}]}
-BUTTON_COLOR=${BUTTON_COLORS[$RANDOM % ${#BUTTON_COLORS[@]}]}
 BUTTON_TEXT=${BUTTON_TEXTS[$RANDOM % ${#BUTTON_TEXTS[@]}]}
 
-echo "✅ Creating index.html at $WEB_PATH"
+# 2. Styling
+BUTTON_COLOR=${BUTTON_COLORS[$RANDOM % ${#BUTTON_COLORS[@]}]}
+BG_STYLE=${BG_GRADIENTS[$RANDOM % ${#BG_GRADIENTS[@]}]}
+ROUNDING=${ROUNDNESS_OPTS[$RANDOM % ${#ROUNDNESS_OPTS[@]}]}
 
-# Generate HTML content
+# 3. Fonts
+FONT_PAIR=${FONTS_DATA[$RANDOM % ${#FONTS_DATA[@]}]}
+FONT_NAME=$(echo $FONT_PAIR | cut -d'|' -f1)
+FONT_URL_PART=$(echo $FONT_PAIR | cut -d'|' -f2)
+
+
+THEME_MODE=1 # 0 = Light, 1 = Dark
+
+TEXT_MAIN="text-white"
+TEXT_MUTED="text-gray-300"
+TEXT_INPUT="text-white"
+CARD_BG="bg-gray-900/60 backdrop-blur-xl border border-gray-700 shadow-2xl"
+INPUT_BG="bg-gray-800/50 border-gray-600 focus:border-blue-500 focus:ring-blue-500/20 placeholder-gray-400"
+
+OVERLAY_CLASS="absolute inset-0 bg-black/40 z-0" # Adds a tint over any BG
+
+
+echo "✅ Creating index.html at $WEB_PATH with theme: $FONT_NAME (Dark Mode: $THEME_MODE)"
+
+# --- GENERATE HTML ---
 cat > "$WEB_PATH/index.html" <<EOF
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>$TITLE</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-	<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
-	<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js" integrity="sha256-9zljDKpE/mQxmaR4V2cGVaQ7arF3CcXxarvgr7Sj8Uc=" crossorigin="anonymous"></script>
-</head>
-<body class="flex items-center justify-center min-h-screen bg-gray-100">
-    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-md">
-        <h2 class="text-2xl font-bold text-center text-gray-700">$HEADER</h2>
-        <form action="#" method="POST" class="space-y-4">
-            <div>
-                <label for="login" class="block text-sm font-medium text-gray-600">Username</label>
-                <input type="text" id="login" name="login" class="w-full p-2 mt-1 border rounded-lg focus:ring focus:ring-blue-200" />
-            </div>
-            <div>
-                <label for="password" class="block text-sm font-medium text-gray-600">Password</label>
-                <input type="password" id="password" name="password" class="w-full p-2 mt-1 border rounded-lg focus:ring focus:ring-blue-200" />
-            </div>
-            <button type="submit" class="w-full px-4 py-2 text-white $BUTTON_COLOR rounded-lg hover:opacity-90 focus:ring focus:ring-blue-200">
-                $BUTTON_TEXT
-            </button>
-        </form>
-    </div>
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>$TITLE</title><!-- Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script><!-- Google Font --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=${FONT_URL_PART}&display=swap" rel="stylesheet"><script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script><style> body { font-family: '$FONT_NAME', sans-serif; } .glass-effect { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); } </style></head><body class="relative flex items-center justify-center min-h-screen overflow-hidden $BG_STYLE transition-all duration-500"><!-- Dark Mode Overlay (if needed) --><div class="$OVERLAY_CLASS pointer-events-none"></div><!-- Main Card --><div class="relative z-10 w-full max-w-md p-8 sm:p-10 space-y-8 $CARD_BG $ROUNDING transform transition-all hover:scale-[1.01]"><div class="text-center space-y-2"><h2 class="text-3xl font-bold tracking-tight $TEXT_MAIN">$HEADER</h2><p class="text-sm $TEXT_MUTED">Please enter your credentials to continue</p></div><form action="#" method="POST" class="space-y-6"><div class="space-y-1"><label for="login" class="block text-sm font-medium $TEXT_MUTED ml-1">Username</label><input type="text" id="login" name="login" class="w-full px-4 py-3 text-base transition-colors duration-200 rounded-lg outline-none focus:ring-4 $INPUT_BG $TEXT_INPUT" placeholder="user@example.com" /></div><div class="space-y-1"><div class="flex justify-between"><label for="password" class="block text-sm font-medium $TEXT_MUTED ml-1">Password</label><a href="#" class="text-sm font-medium text-blue-500 hover:text-blue-400">Forgot?</a></div><input type="password" id="password" name="password" class="w-full px-4 py-3 text-base transition-colors duration-200 rounded-lg outline-none focus:ring-4 $INPUT_BG $TEXT_INPUT" placeholder="••••••••" /></div><button type="submit" class="w-full py-3.5 text-base font-bold text-white shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 $BUTTON_COLOR $ROUNDING focus:outline-none focus:ring-4 focus:ring-opacity-50"> $BUTTON_TEXT </button></form><div class="text-center text-xs $TEXT_MUTED"> &copy; $(date +%Y) $TITLE. All rights reserved. </div></div></body></html>
 EOF
 
 
@@ -199,6 +228,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
   "log": {
     "dnsLog": false,
+    "access": "/var/log/xray/access.log",
+    "error": "/var/log/xray/error.log",
     "loglevel": "none"
   },
   "dns": {
@@ -345,7 +376,19 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     {
       "tag": "block",
       "protocol": "blackhole"
-    }
+    },
+	{
+	  "tag": "warp",
+	  "protocol": "socks",
+	  "settings": {
+		"servers": [
+		  {
+			"address": "127.0.0.1",
+			"port": 40000
+		  }
+		]
+	  }
+	}
   ],
   "routing": {
     "rules": [
@@ -368,7 +411,11 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "geosite:private"
         ],
         "outboundTag": "block"
-      }
+      },
+	{
+	  "outboundTag": "direct",
+	  "domain": ["geosite:google-gemini","geosite:category-ru"]
+	}
     ],
     "domainStrategy": "IPIfNonMatch"
   }
@@ -440,7 +487,6 @@ print_config() {
         "outboundTag": "direct"
       },
       {
-        "type": "field",
         "ip": [
           "geoip:!ru"
         ],
@@ -603,7 +649,7 @@ link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType
 
 link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
 
-ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64)
+ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64 -w 0)
 linkSS="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
 
 
@@ -611,16 +657,158 @@ configListLink="https://$DOMAIN/$path_subpage.html"
 
 # Создаем html файл с конфигами
 cat > "$WEB_PATH/$path_subpage.html" <<EOF
-<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="bingbot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><title>AutoXRAY configs</title><style>body{font-family:monospace;background:#121212;color:#e0e0e0;padding:20px;max-width:800px;margin:0 auto}h3{color:#82aaff;border-bottom:1px solid #333;padding-bottom:10px;margin-top:30px}.box{background:#1e1e1e;padding:15px;border-radius:8px;word-break:break-all;border:1px solid #333;margin-bottom:10px}.box a{color:#c3e88d;text-decoration:none;display:block;margin-top:10px;font-weight:700}.box a:hover{text-decoration:underline}.btn-group{display:flex;flex-wrap:wrap;gap:15px;margin-top:25px}.btn{flex:1;min-width:250px;background-color:#2c2c2c;color:#c3e88d;border:1px solid #c3e88d;padding:15px;text-align:center;border-radius:8px;text-decoration:none;font-weight:700;transition:all 0.3s ease;display:flex;align-items:center;justify-content:center}.btn:hover{background-color:#c3e88d;color:#121212;cursor:pointer;box-shadow:0 0 10px rgba(195,232,141,.3)}.btn.download{border-color:#82aaff;color:#82aaff}.btn.download:hover{background-color:#82aaff;color:#121212;box-shadow:0 0 10px rgba(130,170,255,.3)}</style></head>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+<title>AutoXRAY configs</title>
+<style>
+    body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 20px; max-width: 800px; margin: 0 auto; }
+    h3 { color: #82aaff; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 30px; }
+    h2 { color: #c3e88d; border-top: 2px solid #333; padding-top: 20px; margin-top: 40px; }
+    
+    /* Стили для строки с конфигом */
+    .config-row {
+        background: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    
+    /* Контейнер для текста ссылки */
+    .config-code {
+        flex: 1;
+        white-space: nowrap;
+        overflow-x: auto;
+        padding: 10px;
+        background: #121212;
+        border-radius: 4px;
+        color: #c3e88d;
+        font-size: 14px;
+        scrollbar-width: thin;
+        scrollbar-color: #333 #121212;
+    }
+
+    /* Блок всех конфигов (многострочный с прокруткой) */
+    #cAll {
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 90px;
+        overflow-y: auto;
+        font-size: 12px;
+    }
+    
+    /* Кнопка копирования */
+    .copy-btn {
+        background: #2c2c2c;
+        color: #e0e0e0;
+        border: 1px solid #555;
+        padding: 10px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s;
+        min-width: 100px;
+        height: 100%;
+        align-self: flex-start;
+    }
+    .copy-btn:hover {
+        background: #c3e88d;
+        color: #121212;
+        border-color: #c3e88d;
+    }
+    .copy-btn:active {
+        transform: translateY(2px);
+    }
+
+    /* Кнопки ссылок (HAPP, TG) */
+    .btn-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; margin-bottom: 25px; }
+    .btn { flex: 1; min-width: 250px; background-color: #2c2c2c; color: #c3e88d; border: 1px solid #c3e88d; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: 700; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
+    .btn:hover { background-color: #c3e88d; color: #121212; cursor: pointer; box-shadow: 0 0 10px rgba(195,232,141,.3); }
+    .btn.download { border-color: #82aaff; color: #82aaff; }
+    .btn.download:hover { background-color: #82aaff; color: #121212; box-shadow: 0 0 10px rgba(130,170,255,.3); }
+    
+    /* Спец цвет для телеграма */
+    .btn.tg { border-color: #2AABEE; color: #2AABEE; }
+    .btn.tg:hover { background-color: #2AABEE; color: #fff; box-shadow: 0 0 10px rgba(42,171,238,.3); }
+</style>
+<script>
+    function copyText(elementId, btnElement) {
+        const text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = btnElement.innerText;
+            btnElement.innerText = "Скопировано!";
+            btnElement.style.background = "#c3e88d";
+            btnElement.style.color = "#121212";
+            setTimeout(() => {
+                btnElement.innerText = originalText;
+                btnElement.style.background = "";
+                btnElement.style.color = "";
+            }, 2000);
+        }).catch(err => {
+            console.error('Ошибка:', err);
+        });
+    }
+</script>
+</head>
 <body>
-<h3>➡️ VLESS RAW Reality xtls-rprx-vision</h3><div class="box">$link1</div>
-<h3>➡️ VLESS XHTTP Reality EXTRA - конфиг для роутера</h3><div class="box">$link2</div>
-<h3>➡️ Shadowsocks2022blake3 - новый и быстрый</h3><div class="box">$linkSS</div>
-<h3>➡️ Socks5 proxy (используйте для ТГ)</h3><div class="box">
-server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}
-<a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}">Автодобавление в ТГ</a></div><h3>
-📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h3><div class="box">$subPageLink</div><h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
-<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включается, если вы пользовались сторонними сервисами.</p><div class="btn-group"><a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a><a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a></div></body></html>
+
+<h2>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h2>
+<div class="config-row">
+    <div class="config-code" id="subLink">$subPageLink</div>
+    <button class="copy-btn" onclick="copyText('subLink', this)">Копировать</button>
+</div>
+
+<h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
+<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p>
+<div class="btn-group">
+    <a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a>
+    <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a>
+</div>
+
+<h3>➡️ VLESS RAW Reality xtls-rprx-vision</h3>
+<div class="config-row">
+    <div class="config-code" id="c1">$link1</div>
+    <button class="copy-btn" onclick="copyText('c1', this)">Копировать</button>
+</div>
+
+<h3>➡️ VLESS XHTTP Reality EXTRA - конфиг для роутера</h3>
+<div class="config-row">
+    <div class="config-code" id="c2">$link2</div>
+    <button class="copy-btn" onclick="copyText('c2', this)">Копировать</button>
+</div>
+
+<h3>➡️ Shadowsocks2022blake3 - новый и быстрый</h3>
+<div class="config-row">
+    <div class="config-code" id="c3">$linkSS</div>
+    <button class="copy-btn" onclick="copyText('c3', this)">Копировать</button>
+</div>
+
+<h3>➡️ Socks5 proxy (используйте для ТГ)</h3>
+<!-- Поле для копирования данных -->
+<div class="config-row">
+    <div class="config-code" id="sockCreds">server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}</div>
+    <button class="copy-btn" onclick="copyText('sockCreds', this)">Копировать</button>
+</div>
+<!-- Кнопка добавления -->
+<div class="btn-group">
+    <a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}" target="_blank" class="btn tg">✈️ Автодобавление в Telegram</a>
+</div>
+
+<h2>💠 Все конфиги вместе</h2>
+<div class="config-row">
+    <div class="config-code" id="cAll">$link1<br>$link2<br>$linkSS</div>
+    <button class="copy-btn" onclick="copyText('cAll', this)">Копировать</button>
+</div>
+
+</body>
+</html>
 EOF
 
 echo -e "
@@ -633,9 +821,6 @@ $link2
 
 Ваш конфиг Shadowsocks 2022-blake3-chacha20-poly1305:
 $linkSS
-
-Ваш конфиг socks5 proxy (используйте для ТГ):
-server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}
 
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
