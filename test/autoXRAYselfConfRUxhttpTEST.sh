@@ -563,11 +563,11 @@ OUT_REALITY_XHTTP='{
   }
 }'
 
-# --- Config 3: VLESS Reality ---
+# --- Config 3: VLESS Reality usual MUX---
 OUT_REALITY_usual='{
-  "mux": { "concurrency": 4, "enabled": true,
-    "xudpConcurrency": 8,
-    "xudpProxyUDP443": "allow" },
+  "mux": { "concurrency": 8, "enabled": true,
+    "xudpConcurrency": 16,
+    "xudpProxyUDP443": "reject" },
   "tag": "proxy",
   "protocol": "vless",
   "settings": {
