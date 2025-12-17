@@ -44,7 +44,7 @@ apt update; apt install nginx -y
 systemctl restart nginx
 echo -e "\033[32m$(nginx -v 2>&1)\033[0m"
 
-echo -e "v111"
+echo -e "v---222"
 
 # Ставим современный certbot
 apt install snapd -y
@@ -106,8 +106,13 @@ echo "✅ Конфигурация nginx обновлена."
 
 systemctl restart nginx
 
+
+# Создание директории
+WEB_PATH="/var/www/$DOMAIN"
+mkdir -p "$WEB_PATH"
+
 # Генерируем сайт маскировку
-bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page.sh)"
+bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page.sh)" -- $WEB_PATH
 
 
 # Установка Xray
