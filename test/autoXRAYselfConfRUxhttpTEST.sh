@@ -187,7 +187,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "xver": 1,
+          "xver": 2,
           "target": "/dev/shm/nginx.sock",
           "spiderX": "/",
           "shortIds": [
@@ -246,7 +246,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     {
       "tag": "vsRAWrty",
       "port": 4444,
-      "listen": "0.0.0.0",
+      "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
         "clients": [
@@ -563,8 +563,8 @@ OUT_REALITY_XHTTP='{
   }
 }'
 
-# --- Config 3: VLESS Reality + Vision ---
-OUT_REALITY_NOxtls='{
+# --- Config 3: VLESS Reality ---
+OUT_REALITY_usual='{
   "mux": { "concurrency": 4, "enabled": true,
     "xudpConcurrency": 8,
     "xudpProxyUDP443": "allow" },
@@ -619,7 +619,7 @@ OUT_SS='{
   echo ","
   print_config "$OUT_REALITY_XHTTP"  "🇪🇺 vlessXHTTPrealityEXTRA"
   echo ","
-  print_config "$OUT_REALITY_NOxtls"  "🇪🇺 vlessRAWrealityMUX"
+  print_config "$OUT_REALITY_usual"  "🇪🇺 vlessRAWrealityMUX"
   echo ","
   print_config "$OUT_SS"             "🇪🇺 ShadowS2022blake3"
   echo "]"
