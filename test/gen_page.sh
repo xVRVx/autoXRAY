@@ -95,7 +95,6 @@ fi
 echo "✅ Создаю index.html в папке: $TARGET_DIR (Тема: $FONT_NAME)"
 
 # --- 4. ГЕНЕРАЦИЯ HTML ---
-# Обратите внимание: я экранирую \$ в JS коде, чтобы bash не пытался их интерпретировать
 cat > "$TARGET_DIR/index.html" <<EOF
 <!DOCTYPE html>
 <html lang="en">
@@ -111,18 +110,17 @@ cat > "$TARGET_DIR/index.html" <<EOF
     <style>
         body { font-family: '$FONT_NAME', sans-serif; }
         
-        /* Анимация тряски при ошибке */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
         .shake-animation {
-            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+            animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
         }
         
         .fade-in {
-            animation: fadeIn 0.3s ease-in-out;
+            animation: fadeIn 0.2s ease-in-out;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -133,7 +131,6 @@ cat > "$TARGET_DIR/index.html" <<EOF
 <body class="relative flex items-center justify-center min-h-screen overflow-hidden $BG_STYLE transition-all duration-500">
     <div class="$OVERLAY_CLASS pointer-events-none"></div>
     
-    <!-- Карточка входа -->
     <div id="login-card" class="relative z-10 w-full max-w-md p-8 sm:p-10 space-y-8 $CARD_BG $ROUNDING transform transition-all hover:scale-[1.01]">
         
         <div class="text-center space-y-2">
@@ -141,7 +138,6 @@ cat > "$TARGET_DIR/index.html" <<EOF
             <p class="text-sm $TEXT_MUTED">Please enter your credentials to continue</p>
         </div>
 
-        <!-- Блок с ошибкой (скрыт по умолчанию) -->
         <div id="error-msg" class="hidden flex items-center p-4 mb-4 text-sm border rounded-lg $ERROR_BOX fade-in" role="alert">
             <svg class="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
@@ -163,7 +159,7 @@ cat > "$TARGET_DIR/index.html" <<EOF
                 <label for="password" class="block text-sm font-medium $TEXT_MUTED ml-1">Password</label>
                 <input type="password" id="password" name="password" required
                     class="w-full px-4 py-3 text-base transition-colors duration-200 rounded-lg outline-none focus:ring-4 $INPUT_BG $TEXT_INPUT" 
-                    placeholder="••••••••" />
+                    placeholder="" />
             </div>
             
             <button type="submit" id="submit-btn" 
@@ -184,13 +180,10 @@ cat > "$TARGET_DIR/index.html" <<EOF
                 var \$errorBox = \$('#error-msg');
                 var \$card = \$('#login-card');
 
-                // 1. Скрываем старую ошибку
                 \$errorBox.addClass('hidden');
 
-                // 2. Включаем состояние загрузки
                 \$btn.prop('disabled', true).addClass('opacity-75 cursor-not-allowed');
                 \$span.text('Verifying...');
-                // Добавляем спиннер
                 \$btn.prepend('<svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>');
 
                 var delay = Math.floor(1000);
@@ -204,7 +197,6 @@ cat > "$TARGET_DIR/index.html" <<EOF
                     
                     \$card.addClass('shake-animation');
                     
-                    // Очищаем пароль
                     \$('#password').val('');
                     \$('#password').focus();
 

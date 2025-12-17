@@ -638,7 +638,7 @@ link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType
 
 link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
 
-link3="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=http&path=%2F${path_xhttp}44&host=&flow=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWreality-autoXRAY"
+link3="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=http&path=%2F${path_xhttp}44&host=&flow=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityNOmux-autoXRAY"
 
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64 -w 0)
 linkSS="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
@@ -656,9 +656,9 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
 <title>AutoXRAY configs</title>
 <style>
-    body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 20px; max-width: 800px; margin: 0 auto; }
+    body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 10px; max-width: 800px; margin: 0 auto; }
     h3 { color: #82aaff; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 30px; }
-    h2 { color: #c3e88d; border-top: 2px solid #333; padding-top: 20px; margin-top: 40px; }
+    h2 { color: #c3e88d; border-top: 2px solid #333; padding-top: 20px; margin-top: 0; }
     
     /* Стили для строки с конфигом */
     .config-row {
