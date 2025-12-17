@@ -800,7 +800,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 
 <h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
-    <div class="config-code" id="cAll">$link1<br>$link2<br>$linkSS</div>
+    <div class="config-code" id="cAll">$link1<br>$link2<br>$link3<br>$linkSS</div>
     <button class="copy-btn" onclick="copyText('cAll', this)">Копировать</button>
 </div>
 
