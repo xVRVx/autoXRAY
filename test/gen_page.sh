@@ -179,61 +179,7 @@ cat > "$TARGET_DIR/index.html" <<EOF
     </div>
 
     <script>
-    (function() {
-        const _0x4e = ['$ERROR_TEXT', 'Verifying...', 'Authenticating...', 'Handshake failed', 'Unexpected 502', 'Connection established'];
-        
-        const \$ = (s) => document.querySelector(s);
-        const wait = (ms) => new Promise(r => setTimeout(r, ms));
-        
-        \$('#fp').value = btoa(navigator.userAgent + Date.now());
-
-        const AuthController = {
-            init: function() {
-                \$('#vform').addEventListener('submit', this.handleSubmit.bind(this));
-                console.log('%c [System] Secure Gateway Initialized', 'color: #22c55e; font-weight:bold');
-            },
-            
-            handleSubmit: async function(e) {
-                e.preventDefault();
-                const btn = \$('#act-btn');
-                const txt = \$('#btn-txt');
-                const msg = \$('#sys-msg');
-                const original = txt.innerText;
-                
-                msg.classList.add('hidden');
-                btn.disabled = true;
-                btn.classList.add('opacity-80', 'cursor-wait');
-                
-                txt.innerHTML = '<div class="loader"></div>';
-                console.log('[Net] Sending handshake packet...');
-                
-                await wait(600 + Math.random() * 400);
-                txt.innerHTML = '<div class="loader"></div> <span class="ml-2">' + _0x4e[1] + '</span>';
-                
-                await wait(800 + Math.random() * 600);
-                console.log('[Auth] Token exchange in progress...');
-                
-                btn.disabled = false;
-                btn.classList.remove('opacity-80', 'cursor-wait');
-                txt.innerText = original;
-                
-                const errContainer = \$('#auth-container');
-                msg.querySelector('#msg-content').innerText = _0x4e[0];
-                msg.classList.remove('hidden');
-                msg.classList.add('fade-enter-active');
-                
-                errContainer.classList.add('shake');
-                console.error('[Err] ' + _0x4e[3]);
-                
-                \$('#sec').value = '';
-                \$('#sec').focus();
-                
-                setTimeout(() => errContainer.classList.remove('shake'), 500);
-            }
-        };
-
-        document.addEventListener('DOMContentLoaded', () => AuthController.init());
-    })();
+!function(){const e=["$ERROR_TEXT","Verifying...","Authenticating...","Handshake failed","Unexpected 502","Connection established"],t=e=>document.querySelector(e),n=e=>new Promise((t=>setTimeout(t,e)));t("#fp").value=btoa(navigator.userAgent+Date.now());const s={init:function(){t("#vform").addEventListener("submit",this.handleSubmit.bind(this)),console.log("%c [System] Secure Gateway Initialized","color: #22c55e; font-weight:bold")},handleSubmit:async function(s){s.preventDefault();const a=t("#act-btn"),i=t("#btn-txt"),o=t("#sys-msg"),c=i.innerText;o.classList.add("hidden"),a.disabled=!0,a.classList.add("opacity-80","cursor-wait"),i.innerHTML='<div class="loader"></div>',console.log("[Net] Sending handshake packet..."),await n(600+400*Math.random()),i.innerHTML='<div class="loader"></div> <span class="ml-2">'+e[1]+"</span>",await n(800+600*Math.random()),console.log("[Auth] Token exchange in progress..."),a.disabled=!1,a.classList.remove("opacity-80","cursor-wait"),i.innerText=c;const d=t("#auth-container");o.querySelector("#msg-content").innerText=e[0],o.classList.remove("hidden"),o.classList.add("fade-enter-active"),d.classList.add("shake"),console.error("[Err] "+e[3]),t("#sec").value="",t("#sec").focus(),setTimeout((()=>d.classList.remove("shake")),500)}};document.addEventListener("DOMContentLoaded",(()=>s.init()))}();
     </script>
 </body>
 </html>
