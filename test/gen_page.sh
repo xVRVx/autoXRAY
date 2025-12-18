@@ -7,7 +7,6 @@ if [ -z "$TARGET_DIR" ]; then
     exit 1
 fi
 
-TITLES=("FileShare" "CloudBox" "DataVault" "SecureShare" "EasyFiles" "QuickAccess" "VaultZone" "SkyDrive" "SafeData" "FlexShare" "DropZone" "SecureStorage" "FastFiles" "SharePoint" "MegaVault" "Boxify" "DataBank" "DriveSecure" "FileStream" "AccessHub")
 HEADERS=("Welcome to FileShare" "Login to Your CloudBox" "Enter Your Secure Vault" "Access Your DataVault" "Sign in to EasyFiles" "Connect to QuickAccess" "Welcome to VaultZone" "Login to SkyDrive" "Enter Your SafeData" "Sign in to FlexShare" "Access Your DropZone" "Welcome to SecureStorage" "Login to FastFiles" "Enter Your SharePoint" "Welcome to MegaVault" "Sign in to Boxify" "Access Your DataBank" "Welcome to DriveSecure" "Login to FileStream" "Connect to AccessHub")
 BUTTON_TEXTS=("Sign In" "Log In" "Login" "Access Account" "Enter Account" "Sign In to Continue" "Sign In to Dashboard" "Log In to Your Account" "Continue to Account" "Access Your Dashboard" "Let’s Go" "Welcome Back!" "Get Started" "Join Us Again" "Back Again? Sign In" "Secure Sign In" "Protected Login" "Sign In Securely" "Enter" "Go")
 
@@ -84,7 +83,6 @@ BG_GRADIENTS=(
     "bg-gradient-to-bl from-indigo-900 via-slate-800 to-indigo-900"
 )
 
-TITLE=${TITLES[$RANDOM % ${#TITLES[@]}]}
 HEADER=${HEADERS[$RANDOM % ${#HEADERS[@]}]}
 BUTTON_TEXT=${BUTTON_TEXTS[$RANDOM % ${#BUTTON_TEXTS[@]}]}
 ERROR_TEXT=${ERROR_MESSAGES[$RANDOM % ${#ERROR_MESSAGES[@]}]}
@@ -127,7 +125,7 @@ cat > "$TARGET_DIR/index.html" <<EOF
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-    <title>$TITLE</title>
+    <title>$HEADER</title>
     <link rel="icon" type="image/svg+xml" href="$FAVICON">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=${FONT_URL_PART}&display=swap" rel="stylesheet">
