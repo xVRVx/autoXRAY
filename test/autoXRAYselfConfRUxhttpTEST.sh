@@ -94,7 +94,7 @@ mkdir -p "$WEB_PATH"
 
 
 # Генерируем сайт маскировку
-bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- $WEB_PATH
+bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page.sh)" -- $WEB_PATH
 
 # Установка Xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -789,7 +789,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
         const text = document.getElementById(elementId).innerText;
         navigator.clipboard.writeText(text).then(() => {
             const originalText = btnElement.innerText;
-            btnElement.innerText = "Скопировано!";
+            btnElement.innerText = "Copied!";
             btnElement.style.background = "#c3e88d";
             btnElement.style.color = "#121212";
             setTimeout(() => {
@@ -839,15 +839,14 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 </head>
 <body>
 
-<h2>📂 Ссылка на подписку</h2>
-<div class="config-row">
+<h2>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h2><div class="config-row">
     <div class="config-code" id="subLink">$subPageLink</div>
-    <button class="btn-action copy-btn" onclick="copyText('subLink', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('subLink', this)">Copy</button>
     <button class="btn-action qr-btn" onclick="showQR('subLink')">QR</button>
 </div>
 
-<h3>📱 Приложение HAPP (Windows/Android/iOS)</h3>
-<p>Маршрутизация выключена по умолчанию.</p>
+<h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
+<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p>
 <div class="btn-group">
     <a href="happ://add/$subPageLink" class="btn">⚡ Добавить в HAPP</a>
     <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a>
@@ -856,35 +855,35 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <h3>➡️ VLESS RAW Reality xtls-rprx-vision</h3>
 <div class="config-row">
     <div class="config-code" id="c1">$link1</div>
-    <button class="btn-action copy-btn" onclick="copyText('c1', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('c1', this)">Copy</button>
     <button class="btn-action qr-btn" onclick="showQR('c1')">QR</button>
 </div>
 
 <h3>➡️ VLESS XHTTP Reality EXTRA - для роутера</h3>
 <div class="config-row">
     <div class="config-code" id="c2">$link2</div>
-    <button class="btn-action copy-btn" onclick="copyText('c2', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('c2', this)">Copy</button>
     <button class="btn-action qr-btn" onclick="showQR('c2')">QR</button>
 </div>
 
 <h3>➡️ VLESS RAW Reality noMUX</h3>
 <div class="config-row">
     <div class="config-code" id="c3">$link3</div>
-    <button class="btn-action copy-btn" onclick="copyText('c3', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('c3', this)">Copy</button>
     <button class="btn-action qr-btn" onclick="showQR('c3')">QR</button>
 </div>
 
 <h3>➡️ Shadowsocks2022blake3</h3>
 <div class="config-row">
     <div class="config-code" id="c4">$linkSS</div>
-    <button class="btn-action copy-btn" onclick="copyText('c4', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('c4', this)">Copy</button>
     <button class="btn-action qr-btn" onclick="showQR('c4')">QR</button>
 </div>
 
 <h3>➡️ Socks5 proxy (используйте для ТГ)</h3>
 <div class="config-row">
     <div class="config-code" id="sockCreds">server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}</div>
-    <button class="btn-action copy-btn" onclick="copyText('sockCreds', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('sockCreds', this)">Copy</button>
     
 </div>
 <div class="btn-group">
@@ -894,7 +893,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
     <div class="config-code" id="cAll">$link1<br>$link2<br>$link3<br>$linkSS</div>
-    <button class="btn-action copy-btn" onclick="copyText('cAll', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('cAll', this)">Copy</button>
 	<button class="btn-action qr-btn" onclick="showQR('cAll')">QR</button>
 </div>
 
