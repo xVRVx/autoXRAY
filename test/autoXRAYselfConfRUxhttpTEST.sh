@@ -677,13 +677,15 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
     <button class="btn-action qr-btn" onclick="showQR('subLink')">QR</button>
 </div>
 
+<div class="config-row">
 <h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
 
 <div class="btn-group">
     <a href="happ://add/$subPageLink" class="btn">⚡ Add to HAPP</a>
-    <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Get App</a>
+    <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Download App</a>
 </div>
-<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p>
+<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включается, если вы пользовались сторонними сервисами.</p>
+</div>
 
 <h2>➡️ Конфиги</h2>
 EOF
@@ -719,7 +721,7 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
     <div class="config-code" id="cAll" style="max-height:60px;white-space:pre-wrap;word-break:break-all">$ALL_LINKS_TEXT</div>
-    <button class="btn-action copy-btn" onclick="copyText('cAll', this)">All</button>
+    <button class="btn-action copy-btn" onclick="copyText('cAll', this)">Copy ALL</button>
     <button class="btn-action qr-btn" onclick="showQR('cAll')">QR</button>
 </div>
 
