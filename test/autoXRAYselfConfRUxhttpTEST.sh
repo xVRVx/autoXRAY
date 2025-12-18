@@ -885,8 +885,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
     <div class="config-code" id="sockCreds">server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}</div>
     <button class="btn-action copy-btn" onclick="copyText('sockCreds', this)">Копировать</button>
-    <!-- Для Socks5 QR будет содержать просто текст с данными, так как нет стандартного формата URI -->
-    <button class="btn-action qr-btn" onclick="showQR('sockCreds')">QR</button>
+    
 </div>
 <div class="btn-group">
     <a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}" target="_blank" class="btn tg">✈️ Добавить в Telegram</a>
@@ -896,6 +895,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
     <div class="config-code" id="cAll">$link1<br>$link2<br>$link3<br>$linkSS</div>
     <button class="btn-action copy-btn" onclick="copyText('cAll', this)">Копировать</button>
+	<button class="btn-action qr-btn" onclick="showQR('cAll')">QR</button>
 </div>
 
 <!-- Модальное окно для QR кода -->
