@@ -647,9 +647,9 @@ linkSS="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 CONFIGS_ARRAY=(
-    "VLESS XTLS Vision|$link1"
-    "VLESS XHTTP (Router)|$link2"
-    "VLESS Reality NoMux|$link3"
+    "VLESS RAW Reality XTLS|$link1"
+    "VLESS XHTTP Reality (для моста)|$link2"
+    "VLESS RAW Reality NoMux|$link3"
     "Shadowsocks 2022|$linkSS"
 )
 ALL_LINKS_TEXT=""
