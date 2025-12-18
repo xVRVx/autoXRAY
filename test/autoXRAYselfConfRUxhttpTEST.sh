@@ -646,267 +646,82 @@ linkSS="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
-# Создаем html файл с конфигами
-cat > "$WEB_PATH/$path_subpage.html" <<EOF
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
-<title>AutoXRAY configs</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+CONFIGS_ARRAY=(
+    "VLESS XTLS Vision|$link1"
+    "VLESS XHTTP (Router)|$link2"
+    "VLESS Reality NoMux|$link3"
+    "Shadowsocks 2022|$linkSS"
+)
+ALL_LINKS_TEXT=""
+
+# --- ЗАПИСЬ HEAD (СТАТИКА, МИНИФИЦИРОВАННЫЕ СТИЛИ И JS) ---
+cat > "$WEB_PATH/$path_subpage.html" <<'EOF'
+<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow"><title>Configs</title><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-    body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 10px; max-width: 800px; margin: 0 auto; }
-    h3 { color: #82aaff; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 30px; }
-    h2 { color: #c3e88d; border-top: 2px solid #333; padding-top: 20px; margin-top: 0; }
-    
-    /* Стили для строки с конфигом */
-    .config-row {
-        background: #1e1e1e;
-        border: 1px solid #333;
-        border-radius: 8px;
-        padding: 10px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 10px;
-    }
-    
-    /* Контейнер для текста ссылки */
-    .config-code {
-        flex: 1;
-        white-space: nowrap;
-        overflow-x: auto;
-        padding: 10px;
-        background: #121212;
-        border-radius: 4px;
-        color: #c3e88d;
-        font-size: 14px;
-        scrollbar-width: thin;
-        scrollbar-color: #333 #121212;
-    }
-
-    /* Блок всех конфигов */
-    #cAll {
-        white-space: pre-wrap;
-        word-break: break-all;
-        max-height: 90px;
-        overflow-y: auto;
-        font-size: 12px;
-    }
-    
-    /* Кнопки */
-    .btn-action {
-        border: 1px solid #555;
-        padding: 10px 15px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: all 0.2s;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        white-space: nowrap;
-    }
-    
-    /* Кнопка копирования */
-    .copy-btn {
-        background: #2c2c2c;
-        color: #e0e0e0;
-        min-width: 100px;
-    }
-    .copy-btn:hover { background: #c3e88d; color: #121212; border-color: #c3e88d; }
-    
-    /* Кнопка QR */
-    .qr-btn {
-        background: #2c2c2c;
-        color: #82aaff;
-        border-color: #82aaff;
-        min-width: 50px;
-    }
-    .qr-btn:hover { background: #82aaff; color: #121212; }
-
-    /* Кнопки ссылок (HAPP, TG) */
-    .btn-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; margin-bottom: 25px; }
-    .btn { flex: 1; min-width: 250px; background-color: #2c2c2c; color: #c3e88d; border: 1px solid #c3e88d; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: 700; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
-    .btn:hover { background-color: #c3e88d; color: #121212; cursor: pointer; box-shadow: 0 0 10px rgba(195,232,141,.3); }
-    .btn.download { border-color: #82aaff; color: #82aaff; }
-    .btn.download:hover { background-color: #82aaff; color: #121212; box-shadow: 0 0 10px rgba(130,170,255,.3); }
-    .btn.tg { border-color: #2AABEE; color: #2AABEE; }
-    .btn.tg:hover { background-color: #2AABEE; color: #fff; box-shadow: 0 0 10px rgba(42,171,238,.3); }
-
-    /* Модальное окно для QR */
-    .modal-overlay {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0,0,0,0.85);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-        backdrop-filter: blur(5px);
-    }
-    .modal-content {
-        background: #1e1e1e;
-        padding: 25px;
-        border-radius: 12px;
-        border: 1px solid #82aaff;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    }
-    #qrcode {
-        background: white;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-    }
-    .close-modal-btn {
-        background: #c31e1e;
-        color: white;
-        border: none;
-        padding: 8px 20px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: bold;
-        width: 100%;
-    }
-    .close-modal-btn:hover { background: #ff5252; }
-
-    /* Адаптив для маленьких экранов */
-    @media (max-width: 500px) {
-        .config-row { flex-wrap: wrap; }
-        .config-code { width: 100%; margin-bottom: 5px; }
-        .btn-action { flex: 1; }
-    }
+body{font-family:monospace;background:#121212;color:#e0e0e0;padding:10px;max-width:900px;margin:0 auto}h2{color:#c3e88d;border-top:2px solid #333;padding-top:20px;margin:15px 0 10px;font-size:18px}.config-row{background:#1e1e1e;border:1px solid #333;border-radius:6px;padding:5px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}.config-label{background:#2c2c2c;color:#82aaff;padding:6px 10px;border-radius:4px;font-weight:700;font-size:13px;white-space:nowrap;min-width:140px;text-align:center}.config-code{flex:1;white-space:nowrap;overflow-x:auto;padding:8px;background:#121212;border-radius:4px;color:#c3e88d;font-size:12px;scrollbar-width:none}.config-code::-webkit-scrollbar{display:none}.btn-action{border:1px solid #555;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;transition:all .2s;height:32px;display:flex;align-items:center;justify-content:center}.copy-btn{background:#333;color:#e0e0e0;min-width:60px}.copy-btn:hover{background:#c3e88d;color:#121212;border-color:#c3e88d}.qr-btn{background:#333;color:#82aaff;border-color:#82aaff;min-width:40px}.qr-btn:hover{background:#82aaff;color:#121212}.btn-group{display:flex;gap:10px;margin:10px 0 20px}.btn{flex:1;background:#2c2c2c;color:#c3e88d;border:1px solid #c3e88d;padding:10px;text-align:center;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px}.btn:hover{background:#c3e88d;color:#121212}.btn.download{border-color:#82aaff;color:#82aaff}.btn.download:hover{background:#82aaff;color:#121212}.btn.tg{border-color:#2AABEE;color:#2AABEE}.btn.tg:hover{background:#2AABEE;color:#fff}.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:999;justify-content:center;align-items:center;backdrop-filter:blur(3px)}.modal-content{background:#1e1e1e;padding:20px;border-radius:10px;border:1px solid #82aaff;text-align:center}#qrcode{background:#fff;padding:10px;border-radius:6px;margin-bottom:10px}.close-modal-btn{background:#c31e1e;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer}@media(max-width:600px){.config-label{width:100%;margin-bottom:2px}.config-code{min-width:100%;order:3}.btn-action{flex:1;order:2}}
 </style>
 <script>
-    function copyText(elementId, btnElement) {
-        const text = document.getElementById(elementId).innerText;
-        navigator.clipboard.writeText(text).then(() => {
-            const originalText = btnElement.innerText;
-            btnElement.innerText = "Copied!";
-            btnElement.style.background = "#c3e88d";
-            btnElement.style.color = "#121212";
-            setTimeout(() => {
-                btnElement.innerText = originalText;
-                btnElement.style.background = "";
-                btnElement.style.color = "";
-            }, 2000);
-        }).catch(err => {
-            console.error('Ошибка:', err);
-        });
-    }
-
-    function showQR(elementId) {
-        const text = document.getElementById(elementId).innerText;
-        const modal = document.getElementById('qrModal');
-        const container = document.getElementById('qrcode');
-        
-        // Очищаем предыдущий QR
-        container.innerHTML = "";
-        
-        // Генерируем новый
-        new QRCode(container, {
-            text: text,
-            width: 256,
-            height: 256,
-            colorDark : "#000000",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.L
-        });
-        
-        // Показываем модалку
-        modal.style.display = 'flex';
-    }
-
-    function closeModal() {
-        document.getElementById('qrModal').style.display = 'none';
-    }
-
-    // Закрытие по клику вне окна
-    window.onclick = function(event) {
-        const modal = document.getElementById('qrModal');
-        if (event.target == modal) {
-            modal.style.display = "none";
-        }
-    }
+function copyText(e,t){navigator.clipboard.writeText(document.getElementById(e).innerText).then(()=>{let o=t.innerText;t.innerText="OK",t.style.cssText="background:#c3e88d;color:#121212",setTimeout(()=>{t.innerText=o,t.style.cssText=""},1500)}).catch(e=>console.error(e))}function showQR(e){let t=document.getElementById(e).innerText,o=document.getElementById("qrModal"),n=document.getElementById("qrcode");n.innerHTML="",new QRCode(n,{text:t,width:256,height:256,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.L}),o.style.display="flex"}function closeModal(){document.getElementById("qrModal").style.display="none"}window.onclick=function(e){e.target==document.getElementById("qrModal")&&closeModal()};
 </script>
-</head>
-<body>
+</head><body>
+EOF
 
-<h2>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h2><div class="config-row">
+# --- ЗАПИСЬ BODY (ДИНАМИЧЕСКИЕ ДАННЫЕ) ---
+cat >> "$WEB_PATH/$path_subpage.html" <<EOF
+
+<h2>📂 Подписка</h2>
+<div class="config-row">
+    <div class="config-label">Subscription</div>
     <div class="config-code" id="subLink">$subPageLink</div>
     <button class="btn-action copy-btn" onclick="copyText('subLink', this)">Copy</button>
     <button class="btn-action qr-btn" onclick="showQR('subLink')">QR</button>
 </div>
 
-<h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
-<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p>
 <div class="btn-group">
-    <a href="happ://add/$subPageLink" class="btn">⚡ Добавить в HAPP</a>
-    <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a>
+    <a href="happ://add/$subPageLink" class="btn">⚡ Add to HAPP</a>
+    <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Get App</a>
 </div>
 
-<h3>➡️ VLESS RAW Reality xtls-rprx-vision</h3>
-<div class="config-row">
-    <div class="config-code" id="c1">$link1</div>
-    <button class="btn-action copy-btn" onclick="copyText('c1', this)">Copy</button>
-    <button class="btn-action qr-btn" onclick="showQR('c1')">QR</button>
-</div>
+<h2>🚀 Конфиги</h2>
+EOF
 
-<h3>➡️ VLESS XHTTP Reality EXTRA - для роутера</h3>
-<div class="config-row">
-    <div class="config-code" id="c2">$link2</div>
-    <button class="btn-action copy-btn" onclick="copyText('c2', this)">Copy</button>
-    <button class="btn-action qr-btn" onclick="showQR('c2')">QR</button>
-</div>
-
-<h3>➡️ VLESS RAW Reality noMUX</h3>
-<div class="config-row">
-    <div class="config-code" id="c3">$link3</div>
-    <button class="btn-action copy-btn" onclick="copyText('c3', this)">Copy</button>
-    <button class="btn-action qr-btn" onclick="showQR('c3')">QR</button>
-</div>
-
-<h3>➡️ Shadowsocks2022blake3</h3>
-<div class="config-row">
-    <div class="config-code" id="c4">$linkSS</div>
-    <button class="btn-action copy-btn" onclick="copyText('c4', this)">Copy</button>
-    <button class="btn-action qr-btn" onclick="showQR('c4')">QR</button>
-</div>
-
-<h3>➡️ Socks5 proxy (используйте для ТГ)</h3>
-<div class="config-row">
-    <div class="config-code" id="sockCreds">server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}</div>
-    <button class="btn-action copy-btn" onclick="copyText('sockCreds', this)">Copy</button>
+# Цикл генерации строк конфигов
+idx=1
+for item in "${CONFIGS_ARRAY[@]}"; do
+    title="${item%%|*}"
+    link="${item#*|}"
     
-</div>
-<div class="btn-group">
-    <a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}" target="_blank" class="btn tg">✈️ Добавить в Telegram</a>
-</div>
-
-<h2>💠 Все конфиги вместе</h2>
+    if [ -z "$ALL_LINKS_TEXT" ]; then ALL_LINKS_TEXT="$link"; else ALL_LINKS_TEXT="$ALL_LINKS_TEXT<br>$link"; fi
+    
+    cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
-    <div class="config-code" id="cAll">$link1<br>$link2<br>$link3<br>$linkSS</div>
-    <button class="btn-action copy-btn" onclick="copyText('cAll', this)">Copy</button>
-	<button class="btn-action qr-btn" onclick="showQR('cAll')">QR</button>
+    <div class="config-label">$title</div>
+    <div class="config-code" id="c$idx">$link</div>
+    <button class="btn-action copy-btn" onclick="copyText('c$idx', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('c$idx')">QR</button>
+</div>
+EOF
+    ((idx++))
+done
+
+# Дописываем Socks5, All links и подвал
+cat >> "$WEB_PATH/$path_subpage.html" <<EOF
+<div class="config-row">
+    <div class="config-label">Socks5 (TG)</div>
+    <div class="config-code" id="sock">server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}</div>
+    <button class="btn-action copy-btn" onclick="copyText('sock', this)">Copy</button>
+    <a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}" target="_blank" class="btn-action qr-btn" style="text-decoration:none">✈️</a>
 </div>
 
-<!-- Модальное окно для QR кода -->
-<div id="qrModal" class="modal-overlay">
-    <div class="modal-content">
-        <div id="qrcode"></div>
-        <button class="close-modal-btn" onclick="closeModal()">Закрыть</button>
-    </div>
+<h2>📦 Все сразу</h2>
+<div class="config-row">
+    <div class="config-code" id="cAll" style="max-height:60px;white-space:pre-wrap;word-break:break-all">$ALL_LINKS_TEXT</div>
+    <button class="btn-action copy-btn" onclick="copyText('cAll', this)">All</button>
+    <button class="btn-action qr-btn" onclick="showQR('cAll')">QR</button>
 </div>
 
-</body>
-</html>
+<div id="qrModal" class="modal-overlay"><div class="modal-content"><div id="qrcode"></div><button class="close-modal-btn" onclick="closeModal()">Close</button></div></div>
+</body></html>
 EOF
 
 echo -e "
