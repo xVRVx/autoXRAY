@@ -167,7 +167,7 @@ cat > "$TARGET_DIR/index.html" <<EOF
             
             <div class="space-y-1.5">
                 <label class="block text-xs font-semibold uppercase tracking-wider $TEXT_MUTED">Password</label>
-                <input type="password" id="sec" required class="w-full px-4 py-2.5 text-sm transition-all rounded-md outline-none focus:ring-2 $INPUT_BG $TEXT_INPUT" placeholder="password" />
+                <input type="password" id="sec" required class="w-full px-4 py-2.5 text-sm transition-all rounded-md outline-none focus:ring-2 $INPUT_BG $TEXT_INPUT" placeholder="Enter your password" />
             </div>
             
             <button type="submit" id="act-btn" class="w-full py-2.5 text-sm font-semibold text-white shadow-md transition-all active:scale-[0.98] $BUTTON_COLOR $ROUNDING flex justify-center items-center gap-2">
