@@ -656,7 +656,7 @@ ALL_LINKS_TEXT=""
 
 # --- ЗАПИСЬ HEAD (СТАТИКА, МИНИФИЦИРОВАННЫЕ СТИЛИ И JS) ---
 cat > "$WEB_PATH/$path_subpage.html" <<'EOF'
-<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow"><title>Configs</title><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow"><title>AutoXRAY configs</title><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 body{font-family:monospace;background:#121212;color:#e0e0e0;padding:10px;max-width:900px;margin:0 auto}h2{color:#c3e88d;border-top:2px solid #333;padding-top:20px;margin:15px 0 10px;font-size:18px}.config-row{background:#1e1e1e;border:1px solid #333;border-radius:6px;padding:5px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}.config-label{background:#2c2c2c;color:#82aaff;padding:6px 10px;border-radius:4px;font-weight:700;font-size:13px;white-space:nowrap;min-width:140px;text-align:center}.config-code{flex:1;white-space:nowrap;overflow-x:auto;padding:8px;background:#121212;border-radius:4px;color:#c3e88d;font-size:12px;scrollbar-width:none}.config-code::-webkit-scrollbar{display:none}.btn-action{border:1px solid #555;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;transition:all .2s;height:32px;display:flex;align-items:center;justify-content:center}.copy-btn{background:#333;color:#e0e0e0;min-width:60px}.copy-btn:hover{background:#c3e88d;color:#121212;border-color:#c3e88d}.qr-btn{background:#333;color:#82aaff;border-color:#82aaff;min-width:40px}.qr-btn:hover{background:#82aaff;color:#121212}.btn-group{display:flex;gap:10px;margin:10px 0 20px}.btn{flex:1;background:#2c2c2c;color:#c3e88d;border:1px solid #c3e88d;padding:10px;text-align:center;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px}.btn:hover{background:#c3e88d;color:#121212}.btn.download{border-color:#82aaff;color:#82aaff}.btn.download:hover{background:#82aaff;color:#121212}.btn.tg{border-color:#2AABEE;color:#2AABEE}.btn.tg:hover{background:#2AABEE;color:#fff}.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:999;justify-content:center;align-items:center;backdrop-filter:blur(3px)}.modal-content{background:#1e1e1e;padding:20px;border-radius:10px;border:1px solid #82aaff;text-align:center}#qrcode{background:#fff;padding:10px;border-radius:6px;margin-bottom:10px}.close-modal-btn{background:#c31e1e;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer}@media(max-width:600px){.config-label{width:100%;margin-bottom:2px}.config-code{min-width:100%;order:3}.btn-action{flex:1;order:2}}
 </style>
@@ -669,7 +669,7 @@ EOF
 # --- ЗАПИСЬ BODY (ДИНАМИЧЕСКИЕ ДАННЫЕ) ---
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 
-<h2>📂 Подписка</h2>
+<h2>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h2>
 <div class="config-row">
     <div class="config-label">Subscription</div>
     <div class="config-code" id="subLink">$subPageLink</div>
@@ -682,7 +682,7 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
     <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Get App</a>
 </div>
 
-<h2>🚀 Конфиги</h2>
+<h2>➡️ Конфиги</h2>
 EOF
 
 # Цикл генерации строк конфигов
@@ -710,10 +710,10 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
     <div class="config-label">Socks5 (TG)</div>
     <div class="config-code" id="sock">server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}</div>
     <button class="btn-action copy-btn" onclick="copyText('sock', this)">Copy</button>
-    <a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}" target="_blank" class="btn-action qr-btn" style="text-decoration:none">✈️</a>
+    <a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}" target="_blank" class="btn-action qr-btn" title="автодобавление в тг" style="text-decoration:none">✈️ Add to TG</a>
 </div>
 
-<h2>📦 Все сразу</h2>
+<h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
     <div class="config-code" id="cAll" style="max-height:60px;white-space:pre-wrap;word-break:break-all">$ALL_LINKS_TEXT</div>
     <button class="btn-action copy-btn" onclick="copyText('cAll', this)">All</button>
