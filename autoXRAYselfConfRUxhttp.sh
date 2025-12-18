@@ -655,6 +655,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
 <title>AutoXRAY configs</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
     body { font-family: monospace; background: #121212; color: #e0e0e0; padding: 10px; max-width: 800px; margin: 0 auto; }
     h3 { color: #82aaff; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 30px; }
@@ -686,7 +687,7 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
         scrollbar-color: #333 #121212;
     }
 
-    /* Блок всех конфигов (многострочный с прокруткой) */
+    /* Блок всех конфигов */
     #cAll {
         white-space: pre-wrap;
         word-break: break-all;
@@ -695,28 +696,37 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
         font-size: 12px;
     }
     
-    /* Кнопка копирования */
-    .copy-btn {
-        background: #2c2c2c;
-        color: #e0e0e0;
+    /* Кнопки */
+    .btn-action {
         border: 1px solid #555;
         padding: 10px 15px;
         border-radius: 6px;
         cursor: pointer;
         font-weight: bold;
         transition: all 0.2s;
-        min-width: 100px;
         height: 100%;
-        align-self: flex-start;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
     }
-    .copy-btn:hover {
-        background: #c3e88d;
-        color: #121212;
-        border-color: #c3e88d;
+    
+    /* Кнопка копирования */
+    .copy-btn {
+        background: #2c2c2c;
+        color: #e0e0e0;
+        min-width: 100px;
     }
-    .copy-btn:active {
-        transform: translateY(2px);
+    .copy-btn:hover { background: #c3e88d; color: #121212; border-color: #c3e88d; }
+    
+    /* Кнопка QR */
+    .qr-btn {
+        background: #2c2c2c;
+        color: #82aaff;
+        border-color: #82aaff;
+        min-width: 50px;
     }
+    .qr-btn:hover { background: #82aaff; color: #121212; }
 
     /* Кнопки ссылок (HAPP, TG) */
     .btn-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; margin-bottom: 25px; }
@@ -724,17 +734,62 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
     .btn:hover { background-color: #c3e88d; color: #121212; cursor: pointer; box-shadow: 0 0 10px rgba(195,232,141,.3); }
     .btn.download { border-color: #82aaff; color: #82aaff; }
     .btn.download:hover { background-color: #82aaff; color: #121212; box-shadow: 0 0 10px rgba(130,170,255,.3); }
-    
-    /* Спец цвет для телеграма */
     .btn.tg { border-color: #2AABEE; color: #2AABEE; }
     .btn.tg:hover { background-color: #2AABEE; color: #fff; box-shadow: 0 0 10px rgba(42,171,238,.3); }
+
+    /* Модальное окно для QR */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(5px);
+    }
+    .modal-content {
+        background: #1e1e1e;
+        padding: 25px;
+        border-radius: 12px;
+        border: 1px solid #82aaff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    #qrcode {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+    .close-modal-btn {
+        background: #c31e1e;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        width: 100%;
+    }
+    .close-modal-btn:hover { background: #ff5252; }
+
+    /* Адаптив для маленьких экранов */
+    @media (max-width: 500px) {
+        .config-row { flex-wrap: wrap; }
+        .config-code { width: 100%; margin-bottom: 5px; }
+        .btn-action { flex: 1; }
+    }
 </style>
 <script>
     function copyText(elementId, btnElement) {
         const text = document.getElementById(elementId).innerText;
         navigator.clipboard.writeText(text).then(() => {
             const originalText = btnElement.innerText;
-            btnElement.innerText = "Скопировано!";
+            btnElement.innerText = "Copied!";
             btnElement.style.background = "#c3e88d";
             btnElement.style.color = "#121212";
             setTimeout(() => {
@@ -746,62 +801,108 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
             console.error('Ошибка:', err);
         });
     }
+
+    function showQR(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        const modal = document.getElementById('qrModal');
+        const container = document.getElementById('qrcode');
+        
+        // Очищаем предыдущий QR
+        container.innerHTML = "";
+        
+        // Генерируем новый
+        new QRCode(container, {
+            text: text,
+            width: 256,
+            height: 256,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.L
+        });
+        
+        // Показываем модалку
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('qrModal').style.display = 'none';
+    }
+
+    // Закрытие по клику вне окна
+    window.onclick = function(event) {
+        const modal = document.getElementById('qrModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
 </script>
 </head>
 <body>
 
-<h2>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h2>
-<div class="config-row">
+<h2>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h2><div class="config-row">
     <div class="config-code" id="subLink">$subPageLink</div>
-    <button class="copy-btn" onclick="copyText('subLink', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('subLink', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('subLink')">QR</button>
 </div>
 
 <h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
 <p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включатся, если вы пользовались сторонними сервисами.</p>
 <div class="btn-group">
-    <a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a>
+    <a href="happ://add/$subPageLink" class="btn">⚡ Добавить в HAPP</a>
     <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Скачать HAPP</a>
 </div>
 
 <h3>➡️ VLESS RAW Reality xtls-rprx-vision</h3>
 <div class="config-row">
     <div class="config-code" id="c1">$link1</div>
-    <button class="copy-btn" onclick="copyText('c1', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('c1', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('c1')">QR</button>
 </div>
 
-<h3>➡️ VLESS XHTTP Reality EXTRA - конфиг для роутера</h3>
+<h3>➡️ VLESS XHTTP Reality EXTRA - для роутера</h3>
 <div class="config-row">
     <div class="config-code" id="c2">$link2</div>
-    <button class="copy-btn" onclick="copyText('c2', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('c2', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('c2')">QR</button>
 </div>
 
 <h3>➡️ VLESS RAW Reality noMUX</h3>
 <div class="config-row">
     <div class="config-code" id="c3">$link3</div>
-    <button class="copy-btn" onclick="copyText('c3', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('c3', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('c3')">QR</button>
 </div>
 
-<h3>➡️ Shadowsocks2022blake3 - новый и быстрый</h3>
+<h3>➡️ Shadowsocks2022blake3</h3>
 <div class="config-row">
     <div class="config-code" id="c4">$linkSS</div>
-    <button class="copy-btn" onclick="copyText('c4', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('c4', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('c4')">QR</button>
 </div>
 
 <h3>➡️ Socks5 proxy (используйте для ТГ)</h3>
-<!-- Поле для копирования данных -->
 <div class="config-row">
     <div class="config-code" id="sockCreds">server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}</div>
-    <button class="copy-btn" onclick="copyText('sockCreds', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('sockCreds', this)">Copy</button>
+    
 </div>
-<!-- Кнопка добавления -->
 <div class="btn-group">
-    <a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}" target="_blank" class="btn tg">✈️ Автодобавление в Telegram</a>
+    <a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}" target="_blank" class="btn tg">✈️ Добавить в Telegram</a>
 </div>
 
 <h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
     <div class="config-code" id="cAll">$link1<br>$link2<br>$link3<br>$linkSS</div>
-    <button class="copy-btn" onclick="copyText('cAll', this)">Копировать</button>
+    <button class="btn-action copy-btn" onclick="copyText('cAll', this)">Copy</button>
+	<button class="btn-action qr-btn" onclick="showQR('cAll')">QR</button>
+</div>
+
+<!-- Модальное окно для QR кода -->
+<div id="qrModal" class="modal-overlay">
+    <div class="modal-content">
+        <div id="qrcode"></div>
+        <button class="close-modal-btn" onclick="closeModal()">Close</button>
+    </div>
 </div>
 
 </body>
