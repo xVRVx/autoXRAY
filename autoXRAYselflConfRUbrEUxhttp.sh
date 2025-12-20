@@ -654,7 +654,10 @@ cat > "$WEB_PATH/$path_subpage.html" <<EOF
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="bingbot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><title>AutoXRAY RUbrEU configs</title></head>
 <body><div>$link1</div><br><br>
 <div>$subPageLink</div><br><br>
-<div><a href="happ://add/$subPageLink" class="btn">⚡ Автодобавление в HAPP</a></div></body></html>
+<div><a href="happ://add/$subPageLink" class="btn">⚡ Auto-add to HAPP</a></div><br><br>
+<div><a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Download Happ</a></div>
+
+</body></html>
 EOF
 
 
@@ -669,7 +672,7 @@ echo -e "
 Ваша страничка подписки:
 \033[32m$subPageLink\033[0m
 
-Ссылка на конфиг: 
+Ссылка на сохраненные конфиги:
 \033[32m$configListLink\033[0m
 
 Ваш конфиг для роутера:
