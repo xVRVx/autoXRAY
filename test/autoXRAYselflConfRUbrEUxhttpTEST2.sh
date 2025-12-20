@@ -254,7 +254,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "xver": 1,
+          "xver": 2,
           "target": "/dev/shm/nginx.sock",
           "spiderX": "/",
           "shortIds": [
