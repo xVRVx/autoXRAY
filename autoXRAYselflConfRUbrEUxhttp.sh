@@ -630,7 +630,173 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇪🇺 Konfig RUbrEU"
+  "remarks": "🇪🇺 Bridge RU-EU"
+},
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+	  "https://8.8.4.4/dns-query",
+	  "https://8.8.8.8/dns-query",
+	  "https://1.1.1.1/dns-query"
+    ],
+    "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:huawei",
+          "geosite:xiaomi",
+          "geosite:category-android-app-download",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:microsoft",
+          "geosite:win-update",
+          "geosite:win-extra",
+          "geosite:google-play",
+          "geosite:steam",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:!ru"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:discord",
+          "geosite:youtube",
+          "geosite:tiktok",
+          "geosite:signal"
+        ],
+        "outboundTag": "proxy"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "socks-sb",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 2080,
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809
+    }
+  ],
+  "outbounds": [
+    {
+      "mux": {
+        "concurrency": -1,
+        "enabled": false
+      },
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "$addressVL",
+            "port": ${portVL},
+            "users": [
+              {
+                "id": "${uuidVL}",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "$TYPE",
+        "xhttpSettings": {
+         "extra": {
+              "headers": {
+              },
+              "noGRPCHeader": false,
+              "scMaxEachPostBytes": 1500000,
+              "scMinPostsIntervalMs": 20,
+              "scStreamUpServerSecs": "60-240",
+              "xPaddingBytes": "400-800",
+              "xmux": {
+                  "cMaxReuseTimes": "1000-3000",
+                  "hKeepAlivePeriod": 0,
+                  "hMaxRequestTimes": "400-700",
+                  "hMaxReusableSecs": "1200-1800",
+                  "maxConcurrency": "3-5",
+                  "maxConnections": 0
+              }
+          },
+          "mode": "${mode}",
+		  "path": "${path_url}"
+        },
+        "security": "$SECURITY",
+        "realitySettings": {
+          "show": false,
+          "fingerprint": "$FP",
+          "serverName": "$SNI",
+		  "password": "$PBK",
+		  "shortId": "$SID",
+		  "mldsa65Verify": "",
+		  "spiderX": "$SPX"
+        }
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "remarks": "🇪🇺 Direct EU"
 }
 ]
 EOF
@@ -644,19 +810,82 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=${mode}&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#VlXhttpRtyRUbrEU"
+link1="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=${mode}&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlsXHTTPrtyRUbrEU"
 
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
-# Создаем html файл с конфигами
-cat > "$WEB_PATH/$path_subpage.html" <<EOF
-<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="bingbot" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><title>AutoXRAY RUbrEU configs</title></head>
-<body><div>$link1</div><br><br>
-<div>$subPageLink</div><br><br>
-<div><a href="happ://add/$subPageLink" class="btn">⚡ Auto-add to HAPP</a></div><br><br>
-<div><a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Download Happ</a></div>
+CONFIGS_ARRAY=(
+    "VLESS XHTTP Reality XTLS RUbrEU|$link1"
+    "Напрямую через EU|$vless_url"
+)
+ALL_LINKS_TEXT=""
 
+# --- ЗАПИСЬ HEAD (СТАТИКА, МИНИФИЦИРОВАННЫЕ СТИЛИ И JS) ---
+cat > "$WEB_PATH/$path_subpage.html" <<'EOF'
+<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow"><title>AutoXRAY configs</title><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+body{font-family:monospace;background:#121212;color:#e0e0e0;padding:10px;max-width:900px;margin:0 auto}h2{color:#c3e88d;border-top:2px solid #333;padding-top:20px;margin:15px 0 10px;font-size:18px}.config-row{background:#1e1e1e;border:1px solid #333;border-radius:6px;padding:5px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}.config-label{background:#2c2c2c;color:#82aaff;padding:6px 10px;border-radius:4px;font-weight:700;font-size:13px;white-space:nowrap;min-width:140px;text-align:center}.config-code{flex:1;white-space:nowrap;overflow-x:auto;padding:8px;background:#121212;border-radius:4px;color:#c3e88d;font-size:12px;scrollbar-width:none}.config-code::-webkit-scrollbar{display:none}.btn-action{border:1px solid #555;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;transition:all .2s;height:32px;display:flex;align-items:center;justify-content:center}.copy-btn{background:#333;color:#e0e0e0;min-width:60px}.copy-btn:hover{background:#c3e88d;color:#121212;border-color:#c3e88d}.qr-btn{background:#333;color:#82aaff;border-color:#82aaff;min-width:40px}.qr-btn:hover{background:#82aaff;color:#121212}.btn-group{display:flex;gap:10px;margin:10px 0 20px}.btn{flex:1;background:#2c2c2c;color:#c3e88d;border:1px solid #c3e88d;padding:10px;text-align:center;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px}.btn:hover{background:#c3e88d;color:#121212}.btn.download{border-color:#82aaff;color:#82aaff}.btn.download:hover{background:#82aaff;color:#121212}.btn.tg{border-color:#2AABEE;color:#2AABEE}.btn.tg:hover{background:#2AABEE;color:#fff}.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:999;justify-content:center;align-items:center;backdrop-filter:blur(3px)}.modal-content{background:#1e1e1e;padding:20px;border-radius:10px;border:1px solid #82aaff;text-align:center}#qrcode{background:#fff;padding:10px;border-radius:6px;margin-bottom:10px}.close-modal-btn{background:#c31e1e;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer}@media(max-width:600px){.config-label{width:100%;margin-bottom:2px}.config-code{min-width:100%;order:3}.btn-action{flex:1;order:2}}
+</style>
+<script>
+function copyText(e,t){navigator.clipboard.writeText(document.getElementById(e).innerText).then(()=>{let o=t.innerText;t.innerText="OK",t.style.cssText="background:#c3e88d;color:#121212",setTimeout(()=>{t.innerText=o,t.style.cssText=""},1500)}).catch(e=>console.error(e))}function showQR(e){let t=document.getElementById(e).innerText,o=document.getElementById("qrModal"),n=document.getElementById("qrcode");n.innerHTML="",new QRCode(n,{text:t,width:256,height:256,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.L}),o.style.display="flex"}function closeModal(){document.getElementById("qrModal").style.display="none"}window.onclick=function(e){e.target==document.getElementById("qrModal")&&closeModal()};
+</script>
+</head><body>
+EOF
+
+# --- ЗАПИСЬ BODY (ДИНАМИЧЕСКИЕ ДАННЫЕ) ---
+cat >> "$WEB_PATH/$path_subpage.html" <<EOF
+
+<h2>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h2>
+<div class="config-row">
+    <div class="config-label">Subscription</div>
+    <div class="config-code" id="subLink">$subPageLink</div>
+    <button class="btn-action copy-btn" onclick="copyText('subLink', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('subLink')">QR</button>
+</div>
+
+
+<h2>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h2>
+
+<div class="btn-group">
+    <a href="happ://add/$subPageLink" class="btn">⚡ Add to HAPP</a>
+    <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Download App</a>
+</div>
+<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включается, если вы пользовались сторонними сервисами.</p>
+
+
+<h2>➡️ Конфиги</h2>
+EOF
+
+# Цикл генерации строк конфигов
+idx=1
+for item in "${CONFIGS_ARRAY[@]}"; do
+    title="${item%%|*}"
+    link="${item#*|}"
+    
+    if [ -z "$ALL_LINKS_TEXT" ]; then ALL_LINKS_TEXT="$link"; else ALL_LINKS_TEXT="$ALL_LINKS_TEXT<br>$link"; fi
+    
+    cat >> "$WEB_PATH/$path_subpage.html" <<EOF
+<div class="config-row">
+    <div class="config-label">$title</div>
+    <div class="config-code" id="c$idx">$link</div>
+    <button class="btn-action copy-btn" onclick="copyText('c$idx', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('c$idx')">QR</button>
+</div>
+EOF
+    ((idx++))
+done
+
+# Дописываем Socks5, All links и подвал
+cat >> "$WEB_PATH/$path_subpage.html" <<EOF
+<h2>💠 Все конфиги вместе</h2>
+<div class="config-row">
+    <div class="config-code" id="cAll" style="max-height:60px;white-space:pre-wrap;word-break:break-all">$ALL_LINKS_TEXT</div>
+    <button class="btn-action copy-btn" onclick="copyText('cAll', this)">Copy ALL</button>
+    <button class="btn-action qr-btn" onclick="showQR('cAll')">QR</button>
+</div>
+
+<div id="qrModal" class="modal-overlay"><div class="modal-content"><div id="qrcode"></div><button class="close-modal-btn" onclick="closeModal()">Close</button></div></div>
 </body></html>
 EOF
 
