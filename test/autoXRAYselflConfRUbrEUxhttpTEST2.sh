@@ -741,7 +741,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "settings": {
         "vnext": [
           {
-            "address": "$DOMAIN",
+            "address": "$addressVL",
             "port": ${portVL},
             "users": [
               {
@@ -773,7 +773,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
               }
           },
           "mode": "${mode}",
-		  "path": "/${path_url}"
+		  "path": "${path_url}"
         },
         "security": "$SECURITY",
         "realitySettings": {
