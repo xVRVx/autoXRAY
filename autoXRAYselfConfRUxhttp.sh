@@ -404,9 +404,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 EOF
 
 # Создаем JSON конфигурацию клиента
-#!/bin/bash
-
-# 1. Функция-шаблон (содержит повторяющуюся часть: Log, DNS, Routing, Inbounds)
 print_config() {
   local PROXY_OUTBOUND="$1"
   local REMARK="$2"
@@ -465,21 +462,6 @@ print_config() {
           "geoip:private"
         ],
         "outboundTag": "direct"
-      },
-      {
-        "ip": [
-          "geoip:!ru"
-        ],
-        "outboundTag": "proxy"
-      },
-      {
-        "domain": [
-          "geosite:discord",
-          "geosite:youtube",
-          "geosite:tiktok",
-          "geosite:signal"
-        ],
-        "outboundTag": "proxy"
       }
     ]
   },
@@ -491,6 +473,14 @@ print_config() {
       "port": 10808,
       "settings": {
         "udp": true
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
       }
     },
     {
@@ -500,6 +490,14 @@ print_config() {
       "port": 2080,
       "settings": {
         "udp": true
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
       }
     },
     {
@@ -507,7 +505,15 @@ print_config() {
       "protocol": "http",
       "listen": "127.0.0.1",
       "port": 10809
-    }
+    },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
   ],
   "outbounds": [
       $PROXY_OUTBOUND,
@@ -524,8 +530,6 @@ print_config() {
 }
 TPL
 }
-
-# 2. Определяем уникальные настройки (Outbounds)
 
 # --- Config 1: VLESS Reality + Vision ---
 OUT_REALITY_VISION='{
@@ -639,7 +643,6 @@ OUT_SS='{
   }
 }'
 
-# 3. Сборка JSON массива и сохранение в файл
 (
   echo "["
   print_config "$OUT_REALITY_VISION" "🇪🇺 vlessRAWrealityXTLS"

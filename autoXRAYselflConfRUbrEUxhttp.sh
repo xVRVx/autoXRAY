@@ -483,22 +483,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
           "geoip:private"
         ],
         "outboundTag": "direct"
-      },
-      {
-        "type": "field",
-        "ip": [
-          "geoip:!ru"
-        ],
-        "outboundTag": "proxy"
-      },
-      {
-        "domain": [
-          "geosite:discord",
-          "geosite:youtube",
-          "geosite:tiktok",
-          "geosite:signal"
-        ],
-        "outboundTag": "proxy"
       }
     ]
   },
@@ -510,6 +494,14 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "port": 10808,
       "settings": {
         "udp": true
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
       }
     },
     {
@@ -519,13 +511,29 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "port": 2080,
       "settings": {
         "udp": true
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
       }
     },
     {
       "tag": "http-in",
       "protocol": "http",
       "listen": "127.0.0.1",
-      "port": 10809
+      "port": 10809,
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
     }
   ],
   "outbounds": [
