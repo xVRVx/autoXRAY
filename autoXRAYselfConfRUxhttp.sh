@@ -504,8 +504,7 @@ print_config() {
       "tag": "http-in",
       "protocol": "http",
       "listen": "127.0.0.1",
-      "port": 10809
-    },
+      "port": 10809,
       "sniffing": {
         "enabled": true,
         "destOverride": [
@@ -514,6 +513,7 @@ print_config() {
           "quic"
         ]
       }
+    }
   ],
   "outbounds": [
       $PROXY_OUTBOUND,
