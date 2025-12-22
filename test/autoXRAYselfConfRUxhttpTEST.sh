@@ -778,10 +778,10 @@ $link3
 $linkSS
 
 Ваша страничка подписки:
-\033[32m$subPageLink\033[0m
+\033[1;32m$subPageLink\033[0m
 
 Ссылка на сохраненные конфиги: 
-\033[32m$configListLink\033[0m
+\033[1;32m$configListLink\033[0m
 
 Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2RayTun или v2rayN
