@@ -31,9 +31,33 @@ apt install nginx -y
 
 systemctl enable --now nginx
 
+
+# Блок CERTBOT - START
 apt install certbot -y
 
-certbot certonly --webroot -w /var/www/html -d $DOMAIN -m mail@$DOMAIN --agree-tos --non-interactive --deploy-hook "systemctl reload nginx"
+certbot certonly --webroot -w /var/www/html \
+  -d $DOMAIN \
+  -m mail@$DOMAIN \
+  --agree-tos --non-interactive \
+  --deploy-hook "systemctl reload nginx"
+
+RET=$?
+
+if [ $RET -eq 0 ]; then
+  echo -e "\n\033[1;32m========================================"
+  echo    "✅  CERTBOT УСПЕШНО ВЫПОЛНЕН"
+  echo    "   Сертификат получен и установлен"
+  echo    "========================================\033[0m\n"
+else
+  echo -e "\n\033[1;31m========================================"
+  echo    "❌  CERTBOT ЗАВЕРШИЛСЯ С ОШИБКОЙ"
+  echo    "   Код возврата: $RET"
+  echo    "========================================\033[0m\n"
+  exit 1
+fi
+
+# Блок CERTBOT - END
+
 
 CONFIG_PATH="/etc/nginx/sites-available/default"
 
@@ -615,7 +639,7 @@ OUT_SS='{
 # 3. Сборка JSON массива и сохранение в файл
 (
   echo "["
-  print_config "$OUT_REALITY_VISION" "🇪🇺 VlessRAWrealityXTLS"
+  print_config "$OUT_REALITY_VISION" "🇪🇺 vlessRAWrealityXTLS"
   echo ","
   print_config "$OUT_REALITY_XHTTP"  "🇪🇺 vlessXHTTPrealityEXTRA"
   echo ","
@@ -647,16 +671,20 @@ linkSS="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 CONFIGS_ARRAY=(
-    "VLESS XTLS Vision|$link1"
-    "VLESS XHTTP (Router)|$link2"
-    "VLESS Reality NoMux|$link3"
+    "VLESS RAW Reality XTLS|$link1"
+    "VLESS XHTTP Reality (для моста)|$link2"
+    "VLESS RAW Reality NoMux|$link3"
     "Shadowsocks 2022|$linkSS"
 )
 ALL_LINKS_TEXT=""
 
 # --- ЗАПИСЬ HEAD (СТАТИКА, МИНИФИЦИРОВАННЫЕ СТИЛИ И JS) ---
 cat > "$WEB_PATH/$path_subpage.html" <<'EOF'
-<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex,nofollow"><title>AutoXRAY configs</title><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>autoXRAY configs</title>
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBCRkZGIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIxIDJsLTIgMm0tNy42MSA3LjYxYTUuNSA1LjUgMCAxIDEtNy43NzggNy43NzggNS41IDUuNSAwIDAgMSA3Ljc3Ny03Ljc3N3ptMCAwTDE1LjUgNy41bTAgMGwzIDNMMjIgN2wtMy0zbS0zLjUgMy41TDE5IDQiLz48L3N2Zz4='>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 body{font-family:monospace;background:#121212;color:#e0e0e0;padding:10px;max-width:900px;margin:0 auto}h2{color:#c3e88d;border-top:2px solid #333;padding-top:20px;margin:15px 0 10px;font-size:18px}.config-row{background:#1e1e1e;border:1px solid #333;border-radius:6px;padding:5px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}.config-label{background:#2c2c2c;color:#82aaff;padding:6px 10px;border-radius:4px;font-weight:700;font-size:13px;white-space:nowrap;min-width:140px;text-align:center}.config-code{flex:1;white-space:nowrap;overflow-x:auto;padding:8px;background:#121212;border-radius:4px;color:#c3e88d;font-size:12px;scrollbar-width:none}.config-code::-webkit-scrollbar{display:none}.btn-action{border:1px solid #555;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;transition:all .2s;height:32px;display:flex;align-items:center;justify-content:center}.copy-btn{background:#333;color:#e0e0e0;min-width:60px}.copy-btn:hover{background:#c3e88d;color:#121212;border-color:#c3e88d}.qr-btn{background:#333;color:#82aaff;border-color:#82aaff;min-width:40px}.qr-btn:hover{background:#82aaff;color:#121212}.btn-group{display:flex;gap:10px;margin:10px 0 20px}.btn{flex:1;background:#2c2c2c;color:#c3e88d;border:1px solid #c3e88d;padding:10px;text-align:center;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px}.btn:hover{background:#c3e88d;color:#121212}.btn.download{border-color:#82aaff;color:#82aaff}.btn.download:hover{background:#82aaff;color:#121212}.btn.tg{border-color:#2AABEE;color:#2AABEE}.btn.tg:hover{background:#2AABEE;color:#fff}.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:999;justify-content:center;align-items:center;backdrop-filter:blur(3px)}.modal-content{background:#1e1e1e;padding:20px;border-radius:10px;border:1px solid #82aaff;text-align:center}#qrcode{background:#fff;padding:10px;border-radius:6px;margin-bottom:10px}.close-modal-btn{background:#c31e1e;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer}@media(max-width:600px){.config-label{width:100%;margin-bottom:2px}.config-code{min-width:100%;order:3}.btn-action{flex:1;order:2}}
 </style>
@@ -677,15 +705,15 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
     <button class="btn-action qr-btn" onclick="showQR('subLink')">QR</button>
 </div>
 
-<div class="config-row">
-<h3>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h3>
+
+<h2>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h2>
 
 <div class="btn-group">
     <a href="happ://add/$subPageLink" class="btn">⚡ Add to HAPP</a>
     <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Download App</a>
 </div>
 <p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включается, если вы пользовались сторонними сервисами.</p>
-</div>
+
 
 <h2>➡️ Конфиги</h2>
 EOF
@@ -724,6 +752,8 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
     <button class="btn-action copy-btn" onclick="copyText('cAll', this)">Copy ALL</button>
     <button class="btn-action qr-btn" onclick="showQR('cAll')">QR</button>
 </div>
+
+<div><a style="color:white;margin:40px auto 20px;display:block;text-align:center;" href="https://github.com/xVRVx/autoXRAY">https://github.com/xVRVx/autoXRAY</a></div>
 
 <div id="qrModal" class="modal-overlay"><div class="modal-content"><div id="qrcode"></div><button class="close-modal-btn" onclick="closeModal()">Close</button></div></div>
 </body></html>
