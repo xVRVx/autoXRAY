@@ -615,7 +615,7 @@ OUT_SS='{
 # 3. Сборка JSON массива и сохранение в файл
 (
   echo "["
-  print_config "$OUT_REALITY_VISION" "🇪🇺 VlessRAWrealityXTLS"
+  print_config "$OUT_REALITY_VISION" "🇪🇺 vlessRAWrealityXTLS"
   echo ","
   print_config "$OUT_REALITY_XHTTP"  "🇪🇺 vlessXHTTPrealityEXTRA"
   echo ","
