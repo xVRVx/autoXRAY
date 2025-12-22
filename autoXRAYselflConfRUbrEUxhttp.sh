@@ -91,11 +91,11 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo "❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP)."
     echo "Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP"
     
-    read -p "Продолжить на ваш страх и риск? (y/N): " choice
-    if [[ ! "$choice" =~ ^[Yy]$ ]]; then
-        echo "Выполнение скрипта прервано."
-        exit 1
-    fi
+	read -p $'\033[1;31mПродолжить на ваш страх и риск? (y/N): \033[0m' choice
+	if [[ ! "$choice" =~ ^[Yy]$ ]]; then
+		echo -e "\033[31mВыполнение скрипта прервано.\033[0m"
+		exit 1
+	fi
     echo "Продолжение выполнения скрипта..."
 fi
 
@@ -104,9 +104,34 @@ apt install nginx -y
 
 systemctl enable --now nginx
 
+# Блок CERTBOT - START
 apt install certbot -y
 
-certbot certonly --webroot -w /var/www/html -d $DOMAIN -m mail@$DOMAIN --agree-tos --non-interactive --deploy-hook "systemctl reload nginx"
+certbot certonly --webroot -w /var/www/html \
+  -d $DOMAIN \
+  -m mail@$DOMAIN \
+  --agree-tos --non-interactive \
+  --deploy-hook "systemctl reload nginx"
+
+RET=$?
+
+if [ $RET -eq 0 ]; then
+  echo -e "\n\033[1;32m========================================"
+  echo    "✅  Команда certbot успешно выполнена"
+  echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
+  echo    "========================================"
+  echo -e "\033[0m"
+else
+  echo -e "\n\033[1;31m========================================"
+  echo    "❌  CERTBOT ЗАВЕРШИЛСЯ С ОШИБКОЙ"
+  echo    "❌  Сертификат https от letsencrypt НЕ ПОЛУЧЕН!"
+  echo    "❌  Смотрите выше логи процесса получения сертификата"
+  echo    "❌  Код возврата: $RET"
+  echo    "========================================"
+  echo -e "\033[0m"
+  exit 1
+fi
+# Блок CERTBOT - END
 
 CONFIG_PATH="/etc/nginx/sites-available/default"
 
@@ -844,10 +869,10 @@ echo -e "
 
 
 Ваша страничка подписки:
-\033[32m$subPageLink\033[0m
+\033[1;32m$subPageLink\033[0m
 
 Ссылка на сохраненные конфиги:
-\033[32m$configListLink\033[0m
+\033[1;32m$configListLink\033[0m
 
 Ваш конфиг для роутера:
 $link1
