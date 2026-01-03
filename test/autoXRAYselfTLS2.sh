@@ -507,7 +507,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
 	{
 	  "outboundTag": "direct",
-	  "domain": ["geosite:google-gemini","geosite:category-ru"]
+	  "domain": ["geosite:google-gemini","geosite:category-ru","habr.com"]
 	}
     ],
     "domainStrategy": "IPIfNonMatch"
@@ -549,6 +549,12 @@ print_config() {
           "bittorrent"
         ],
         "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "habr.com"
+        ],
+        "outboundTag": "proxy"
       },
       {
         "domain": [
