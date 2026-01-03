@@ -181,14 +181,14 @@ cd && bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
 ```json
 {
   "outboundTag": "direct",
-  "domain": ["geosite:google-gemini","geosite:category-ru"]
+  "domain": ["geosite:google-gemini","geosite:category-ru","habr.com"]
 }
 ```
 на
 ```json
 {
   "outboundTag": "warp",
-  "domain": ["geosite:google-gemini","geosite:category-ru"]
+  "domain": ["geosite:google-gemini","geosite:category-ru","habr.com"]
 }
 ```
 После изменений ядро надо перезапустить: **systemctl restart xray**
