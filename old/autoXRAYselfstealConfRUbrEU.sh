@@ -453,6 +453,12 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.html"
       },
       {
         "domain": [
+          "habr.com"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
           "geosite:private",
           "geosite:apple",
           "geosite:apple-pki",
