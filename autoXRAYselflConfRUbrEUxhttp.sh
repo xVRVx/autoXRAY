@@ -396,6 +396,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
       {
         "domain": [
+          "habr.com"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
           "testipv6.net",
           "geosite:apple",
           "geosite:apple-pki",
@@ -457,6 +463,12 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
           "bittorrent"
         ],
         "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "habr.com"
+        ],
+        "outboundTag": "proxy"
       },
       {
         "domain": [
@@ -631,6 +643,12 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
           "bittorrent"
         ],
         "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "habr.com"
+        ],
+        "outboundTag": "proxy"
       },
       {
         "domain": [
