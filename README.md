@@ -39,12 +39,13 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 
 ## Выбор сервера (подбирал промо тарифы)
 
-- [senko.digital](https://senko.digital/?ref=47670) - от 2€, есть днс-хостинг и домены для selfsteel, есть оплата СБП.
+- [XorekCloud](https://xorek.cloud/?from=28522) - промо тариф за 150 руб./мес. (полноценный за 250).
+- [WAICORE](https://waicore.com/?from=3063) - от 3€, есть оплата рублями.
 - [notbad](https://my.notbad.cloud/?from=188) - от 3$, есть оплата рублями, хороший курс и канал.
-- [WAICORE](https://waicore.com/?from=3063) - от 2€ промо, есть оплата рублями.
-- [XorekCloud](https://xorek.cloud/?from=28522) - тут есть новый промо тариф, за 150 руб./мес.
-- [hosting-russia](https://hosting-russia.ru/?p=57731) - ру сервера от 180 рублей, для моста ru-eu.
-- [cloudcore](https://cloudcore.ru/?affiliate_uuid=e9ad7432-7898-4de2-8606-38eb90e0c1a6) - ру сервера от 100 рублей, для моста ru-eu.
+- [senko.digital](https://senko.digital/?ref=47670) - от 2€, есть днс-хостинг и домены для selfsteel, есть оплата СБП.
+
+- [hosting-russia](https://hosting-russia.ru/?p=57731) - ru сервера от 250 рублей, для моста ru-eu.
+- [cloudcore](https://cloudcore.ru/?affiliate_uuid=e9ad7432-7898-4de2-8606-38eb90e0c1a6) - ru сервера от 100 рублей, для моста ru-eu.
 
 
 Имейте в виду, что подсети некоторых популярных хостинг-провайдеров, таких как аеза, pq(ufo), ishosting и др., заблокированы многими провайдерами(РКН). К ним порой даже невозможно подключиться по SSH (без VPN). Поэтому, пожалуйста, не используйте их или не жалуйтесь, что у вас не работает основной скрипт.
