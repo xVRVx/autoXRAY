@@ -298,7 +298,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       }
     },
     {
-      "tag": "vsTCPxtls",
+      "tag": "vsRAWtlsVISION",
       "port": 8443,
       "listen": "0.0.0.0",
       "protocol": "vless",
@@ -315,6 +315,10 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "path": "/${path_xhttp}22",
             "dest": "@vless-ws",
             "xver": 2
+          },
+          {
+            "path": "/ssws",
+            "dest": "4001"
           },
           {
 		    "alpn": "h2",
@@ -443,8 +447,33 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ]
       }
     },
+    {
+      "tag": "ss-2022-ws",
+      "listen": "127.0.0.1",
+      "port": 4001,
+      "protocol": "shadowsocks",
+      "settings": {
+        "method": "chacha20-ietf-poly1305",
+        "password": "${xray_sspasw_vrv}"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "none",
+        "wsSettings": {
+          "path": "/ssws"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    },
 	{
-      "tag": "ShadowSocks2022",
+      "tag": "ss-2022-tcp",
       "port": 4443,
       "listen": "0.0.0.0",
       "protocol": "shadowsocks",
@@ -753,6 +782,32 @@ OUT_SS='{
   }
 }'
 
+# --- Config 5
+OUT_SS_WS='{
+  "mux": { "concurrency": -1, "enabled": false },
+  "tag": "proxy",
+  "protocol": "shadowsocks",
+  "settings": {
+    "servers": [{
+      "port": 8443,
+      "method": "2022-blake3-chacha20-poly1305",
+      "address": "$DOMAIN",
+      "password": "${xray_sspasw_vrv}"
+    }]
+  },
+    "streamSettings": {
+      "network": "ws",
+      "wsSettings": {
+        "path": "/ssws?ed=fgUgGe"
+      },
+      "security": "tls",
+      "tlsSettings": {
+        "allowInsecure": false,
+        "fingerprint": "chrome"
+      }
+    }
+}'
+
 # --- 1. VLESS TCP XTLS-Vision (Основной, самый быстрый) ---
 OUT_VISION='{
   "tag": "proxy",
@@ -860,6 +915,8 @@ OUT_WS='{
   echo ","
   print_config "$OUT_SS"             "🇪🇺 ShadowS2022blake3"
   echo ","
+  print_config "$OUT_SS_WS"             "🇪🇺 ss-2022-ws"
+  echo ","
   print_config "$OUT_VISION"    "🇪🇺 VLESS RAW XTLS-Vision"
   echo ","
   print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA"
@@ -896,17 +953,19 @@ linkTLS4="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=grpc&headerTyp
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64 -w 0)
 linkSS="ss://$ENCODED_STRING@${DOMAIN}:4443#Shadowsocks2022-autoXRAY"
 
+linkSSws="ss://$ENCODED_STRING@${DOMAIN}:8443?security=tls&type=ws&headerType=&path=%2Fssws&host=&sni=$DOMAIN&fp=chrome&spx=%2F#ss2022ws-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 CONFIGS_ARRAY=(
     "VLESS RAW REALITY VISION|$linkRTY1"
     "VLESS XHTTP Reality (для моста)|$linkRTY2"
-    "Shadowsocks 2022|$linkSS"
+    "SS2022 TCP|$linkSS"
 	"VLESS RAW TLS VISION|$linkTLS1"
 	"VLESS XHTTP TLS|$linkTLS2"
 	"VLESS WS TLS|$linkTLS3"
 	"VLESS GRPC TLS|$linkTLS4"
+	"SS2022 WS TLS|$linkSSws"
 )
 ALL_LINKS_TEXT=""
 
@@ -1018,5 +1077,5 @@ $linkSS
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 
-103
+104
 "
