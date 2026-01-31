@@ -656,7 +656,7 @@ print_config() {
 TPL
 }
 
-# --- Config 1: VLESS Reality + Vision ---
+# --- Config 1
 OUT_REALITY_VISION='{
   "mux": { "concurrency": -1, "enabled": false },
   "tag": "proxy",
@@ -678,7 +678,7 @@ OUT_REALITY_VISION='{
   }
 }'
 
-# --- Config 2: VLESS Reality + XHTTP (с Extra настройками) ---
+# --- Config 2
 OUT_REALITY_XHTTP='{
   "mux": { "concurrency": -1, "enabled": false },
   "tag": "proxy",
@@ -723,7 +723,7 @@ OUT_REALITY_XHTTP='{
 
 
 
-# --- 1. VLESS TCP XTLS-Vision (Основной, самый быстрый) ---
+# --- Config 3
 OUT_VISION='{
   "tag": "proxy",
   "protocol": "vless",
@@ -744,7 +744,7 @@ OUT_VISION='{
   }
 }'
 
-# --- 2. VLESS XHTTP (Через Fallback Nginx) ---
+# --- Config 4
 OUT_XHTTP='{
   "tag": "proxy",
   "protocol": "vless",
@@ -781,7 +781,7 @@ OUT_XHTTP='{
   }
 }'
 
-# --- 3. VLESS gRPC (Через Fallback Nginx) ---
+# --- Config 5
 # Важно: alpn h2 обязателен для корректной работы через Nginx
 OUT_GRPC='{
   "tag": "proxy",
@@ -801,7 +801,7 @@ OUT_GRPC='{
   }
 }'
 
-# --- 4. VLESS WebSocket (Внутренний Fallback Xray path...22) ---
+# --- Config 6
 OUT_WS='{
   "tag": "proxy",
   "protocol": "vless",
@@ -847,11 +847,11 @@ echo -e "Готово!\n"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-linkRTY1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityXTLS-autoXRAY"
+linkRTY1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityVISION-autoXRAY"
 
 linkRTY2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
 
-linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&spx=%2F#vlessTCPxtlsVision-autoXRAY"
+linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&spx=%2F#vlessRAWtlsVision-autoXRAY"
 
 
 linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&spx=%2F#vlessXHTTPtls-autoXRAY"
@@ -980,5 +980,5 @@ $linkRTY2
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 
-108
+109
 "
