@@ -150,7 +150,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ```
 2) На ru VPS ставим новый скрипт (здесь нам понадобится vless XHTTP reality EXTRA конфиг №1):
 ```bash
-bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselflConfRUbrEUxhttp.sh)" -- поддомен2.вашДОМЕН.com "vless://вашКонфигXHTTP"
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRAYselfRUbrEUxhttp.sh.sh)" -- поддомен2.вашДОМЕН.com "vless://вашКонфигXHTTP"
 ```
 Установится прокси мост между серверами, итоговая цепочка: конфиг клиента -> ru VPS -> eu VPS -> зарубежный сайт
 
