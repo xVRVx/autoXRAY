@@ -35,11 +35,19 @@ systemctl enable --now nginx
 # Блок CERTBOT - START
 apt install certbot -y
 
+mkdir -p /var/lib/xray/cert/
+
+### Проверить
+cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
+cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
+chmod 744 /var/lib/xray/cert/privkey.pem
+chmod 744 /var/lib/xray/cert/fullchain.pem
+
 certbot certonly --webroot -w /var/www/html \
   -d $DOMAIN \
   -m mail@$DOMAIN \
   --agree-tos --non-interactive \
-  --deploy-hook "systemctl reload nginx"
+  --deploy-hook "systemctl reload nginx; cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem; cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/fullchain.pem; systemctl restart xray"
 
 RET=$?
 
@@ -59,11 +67,12 @@ else
   echo -e "\033[0m"
   exit 1
 fi
-
 # Блок CERTBOT - END
 
 
 CONFIG_PATH="/etc/nginx/sites-available/default"
+
+path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
 echo "✅ Записываем конфигурацию в $CONFIG_PATH для домена $DOMAIN"
 
@@ -71,6 +80,8 @@ bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
 	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
+	listen unix:/dev/shm/nginxTLS.sock proxy_protocol;
+	listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
     set_real_ip_from unix:;
     real_ip_header proxy_protocol;
 	
@@ -91,7 +102,13 @@ server {
 	add_header profile-title "base64:YXV0b1hSQVk=";
 	add_header routing "happ://routing/onadd/ewogICAgIk5hbWUiOiAiYXV0b1hSQVkiLAogICAgIkdsb2JhbFByb3h5IjogInRydWUiLAogICAgIlVzZUNodW5rRmlsZXMiOiAidHJ1ZSIsCiAgICAiUmVtb3RlRE5TVHlwZSI6ICJEb0giLAogICAgIlJlbW90ZUROU0RvbWFpbiI6ICIiLAogICAgIlJlbW90ZUROU0lQIjogIiIsCiAgICAiRG9tZXN0aWNETlNUeXBlIjogIkRvSCIsCiAgICAiRG9tZXN0aWNETlNEb21haW4iOiAiIiwKICAgICJEb21lc3RpY0ROU0lQIjogIiIsCiAgICAiR2VvaXB1cmwiOiAiIiwKICAgICJHZW9zaXRldXJsIjogIiIsCiAgICAiTGFzdFVwZGF0ZWQiOiAiIiwKICAgICJEbnNIb3N0cyI6IHt9LAogICAgIk9yZGVyUm91dGluZyI6ICJibG9jay1kaXJlY3QtcHJveHkiLAogICAgIkRpcmVjdFNpdGVzIjogWwogICAgICAgICJjYXRlZ29yeS1ydSIsCiAgICAgICAgImdlb3NpdGU6cHJpdmF0ZSIKICAgIF0sCiAgICAiRGlyZWN0SXAiOiBbCiAgICAgICAgImdlb2lwOnByaXZhdGUiCiAgICBdLAogICAgIlByb3h5U2l0ZXMiOiBbXSwKICAgICJQcm94eUlwIjogW10sCiAgICAiQmxvY2tTaXRlcyI6IFsKICAgICAgICAiZ2Vvc2l0ZTpjYXRlZ29yeS1hZHMiLAogICAgICAgICJnZW9zaXRlOndpbi1zcHkiCiAgICBdLAogICAgIkJsb2NrSXAiOiBbXSwKICAgICJEb21haW5TdHJhdGVneSI6ICJJUElmTm9uTWF0Y2giLAogICAgIkZha2VETlMiOiAiZmFsc2UiCn0=";
     add_header routing-enable 0;
-
+	
+    location /${path_xhttp} {
+        proxy_pass http://127.0.0.1:8400;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+    }
+	
     location ~ /\.ht {
         deny all;
     }
@@ -122,7 +139,7 @@ mkdir -p "$WEB_PATH"
 
 
 # Генерируем сайт маскировку
-bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page.sh)" -- $WEB_PATH
+bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- $WEB_PATH
 
 # Установка Xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -147,7 +164,6 @@ xray_sspasw_vrv=$(openssl rand -base64 32)
 
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
-path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
 # ipserv=$(hostname -I | awk '{print $1}')
 
@@ -191,11 +207,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ],
         "decryption": "none",
         "fallbacks": [
-          {
-			"path": "/${path_xhttp}44",
-            "dest": "4444",
-            "xver": 2
-          },
           {
             "dest": "3333",
             "xver": 2
@@ -271,43 +282,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         }
       }
     },
-    {
-      "tag": "vsRAWrty",
-      "port": 4444,
-      "listen": "127.0.0.1",
-      "protocol": "vless",
-      "settings": {
-        "clients": [
-          {
-            "id": "${xray_uuid_vrv}"
-          }
-        ],
-        "decryption": "none"
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ]
-      },
-      "streamSettings": {
-        "network": "raw",
-        "rawSettings": {
-          "acceptProxyProtocol": true,
-          "header": {
-            "type": "http",
-            "request": {
-              "path": [
-                "/${path_xhttp}44"
-              ]
-            }
-          }
-		},
-        "security": "none"
-      }
-    },	
 	{
       "tag": "ShadowSocks2022",
       "port": 8443,
@@ -591,39 +565,7 @@ OUT_REALITY_XHTTP='{
   }
 }'
 
-# --- Config 3: VLESS Reality usual MUX---
-OUT_REALITY_usual='{
-  "mux": { "concurrency": 8, "enabled": true,
-    "xudpConcurrency": 16,
-    "xudpProxyUDP443": "reject" },
-  "tag": "proxy",
-  "protocol": "vless",
-  "settings": {
-    "vnext": [{
-      "address": "$DOMAIN",
-      "port": 443,
-      "users": [{ "id": "${xray_uuid_vrv}", "flow": "", "encryption": "none" }]
-    }]
-  },
-  "streamSettings": {
-    "network": "raw",
-    "security": "reality",
-    "realitySettings": {
-      "show": false, "fingerprint": "chrome", "serverName": "$DOMAIN",
-      "password": "${xray_publicKey_vrv}", "shortId": "${xray_shortIds_vrv}", "spiderX": "/"
-    },
-	"rawSettings": {
-		"header": {
-			"request": {
-				"path": [
-					"/${path_xhttp}44"
-				]
-			},
-			"type": "http"
-		}
-	}
-  }
-}'
+
 
 # --- Config 4: Shadowsocks 2022 (Port 8443, Chacha20) ---
 OUT_SS='{
@@ -647,8 +589,6 @@ OUT_SS='{
   echo ","
   print_config "$OUT_REALITY_XHTTP"  "🇪🇺 vlessXHTTPrealityEXTRA"
   echo ","
-  print_config "$OUT_REALITY_usual"  "🇪🇺 vlessRAWrealityMUX"
-  echo ","
   print_config "$OUT_SS"             "🇪🇺 ShadowS2022blake3"
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
@@ -666,7 +606,6 @@ link1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType
 
 link2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
 
-link3="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=http&path=%2F${path_xhttp}44&host=&flow=&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityNOmux-autoXRAY"
 
 ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64 -w 0)
 linkSS="ss://$ENCODED_STRING@${DOMAIN}:8443#Shadowsocks2022-autoXRAY"
@@ -677,7 +616,6 @@ configListLink="https://$DOMAIN/$path_subpage.html"
 CONFIGS_ARRAY=(
     "VLESS RAW Reality XTLS|$link1"
     "VLESS XHTTP Reality (для моста)|$link2"
-    "VLESS RAW Reality NoMux|$link3"
     "Shadowsocks 2022|$linkSS"
 )
 ALL_LINKS_TEXT=""
@@ -770,9 +708,6 @@ $link1
 
 Ваш конфиг vless XHTTP reality EXTRA:
 $link2
-
-Ваш конфиг vless RAW reality noMUX:
-$link3
 
 Ваш конфиг Shadowsocks 2022-blake3-chacha20-poly1305:
 $linkSS
