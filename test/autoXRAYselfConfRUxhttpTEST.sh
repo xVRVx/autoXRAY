@@ -30,6 +30,10 @@ fi
 apt install nginx -y
 systemctl enable --now nginx
 
+# Создание директории сайта
+WEB_PATH="/var/www/$DOMAIN"
+mkdir -p "$WEB_PATH"
+
 # Генерируем сайт маскировку
 bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- $WEB_PATH
 
@@ -152,10 +156,6 @@ echo "✅ Конфигурация nginx обновлена."
 
 systemctl restart nginx
 
-
-# Создание директории
-WEB_PATH="/var/www/$DOMAIN"
-mkdir -p "$WEB_PATH"
 
 
 SCRIPT_DIR=/usr/local/etc/xray
@@ -980,5 +980,5 @@ $linkRTY2
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 
-107
+108
 "
