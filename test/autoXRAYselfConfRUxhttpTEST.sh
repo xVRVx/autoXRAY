@@ -865,8 +865,8 @@ linkTLS4="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=grpc&headerTyp
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 CONFIGS_ARRAY=(
-    "VLESS RAW REALITY VISION|$linkRTY1"
     "VLESS XHTTP Reality (для моста)|$linkRTY2"
+    "VLESS RAW REALITY VISION|$linkRTY1"
 	"VLESS RAW TLS VISION|$linkTLS1"
 	"VLESS XHTTP TLS|$linkTLS2"
 	"VLESS WS TLS|$linkTLS3"
@@ -957,11 +957,11 @@ EOF
 
 echo -e "
 
-VLESS RAW REALITY VISION
-$linkRTY1
-
 VLESS XHTTP REALITY EXTRA (для моста)
 $linkRTY2
+
+VLESS RAW REALITY VISION
+$linkRTY1
 
 VLESS XHTTP TLS EXTRA
 $linkRTY2
@@ -982,5 +982,5 @@ $linkRTY2
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 
-105
+106
 "
