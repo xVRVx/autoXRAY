@@ -447,50 +447,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ]
       }
     },
-    {
-      "tag": "ss-2022-ws",
-      "listen": "127.0.0.1",
-      "port": 4001,
-      "protocol": "shadowsocks",
-      "settings": {
-        "method": "chacha20-ietf-poly1305",
-        "password": "${xray_sspasw_vrv}"
-      },
-      "streamSettings": {
-        "network": "ws",
-        "security": "none",
-        "wsSettings": {
-          "path": "/ssws"
-        }
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ]
-      }
-    },
-	{
-      "tag": "ss-2022-tcp",
-      "port": 4443,
-      "listen": "0.0.0.0",
-      "protocol": "shadowsocks",
-      "settings": {
-        "method": "2022-blake3-chacha20-poly1305",
-        "password": "${xray_sspasw_vrv}",
-        "network": "tcp,udp"
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ]
-      }
-    },
 	{
       "tag": "socks5",
       "port": 10443,
@@ -767,46 +723,7 @@ OUT_REALITY_XHTTP='{
 
 
 
-# --- Config 4: Shadowsocks 2022 (Port 4443, Chacha20) ---
-OUT_SS='{
-  "mux": { "concurrency": -1, "enabled": false },
-  "tag": "proxy",
-  "protocol": "shadowsocks",
-  "settings": {
-    "servers": [{
-      "port": 4443,
-      "method": "2022-blake3-chacha20-poly1305",
-      "address": "$DOMAIN",
-      "password": "${xray_sspasw_vrv}"
-    }]
-  }
-}'
 
-# --- Config 5
-OUT_SS_WS='{
-  "mux": { "concurrency": -1, "enabled": false },
-  "tag": "proxy",
-  "protocol": "shadowsocks",
-  "settings": {
-    "servers": [{
-      "port": 8443,
-      "method": "2022-blake3-chacha20-poly1305",
-      "address": "$DOMAIN",
-      "password": "${xray_sspasw_vrv}"
-    }]
-  },
-    "streamSettings": {
-      "network": "ws",
-      "wsSettings": {
-        "path": "/ssws?ed=fgUgGe"
-      },
-      "security": "tls",
-      "tlsSettings": {
-        "allowInsecure": false,
-        "fingerprint": "chrome"
-      }
-    }
-}'
 
 # --- 1. VLESS TCP XTLS-Vision (Основной, самый быстрый) ---
 OUT_VISION='{
@@ -909,21 +826,17 @@ OUT_WS='{
 
 (
   echo "["
-  print_config "$OUT_REALITY_VISION" "🇪🇺 vlessRAWrealityXTLS"
+  print_config "$OUT_REALITY_VISION" "🇪🇺 VLESS RAW REALITY VISION"
   echo ","
-  print_config "$OUT_REALITY_XHTTP"  "🇪🇺 vlessXHTTPrealityEXTRA"
+  print_config "$OUT_REALITY_XHTTP"  "🇪🇺 VLESS XHTTP REALITY EXTRA"
   echo ","
-  print_config "$OUT_SS"             "🇪🇺 ShadowS2022blake3"
-  echo ","
-  print_config "$OUT_SS_WS"             "🇪🇺 ss-2022-ws"
-  echo ","
-  print_config "$OUT_VISION"    "🇪🇺 VLESS RAW XTLS-Vision"
+  print_config "$OUT_VISION"    "🇪🇺 VLESS RAW TLS VISION"
   echo ","
   print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA"
   echo ","
   print_config "$OUT_GRPC"      "🇪🇺 VLESS gRPC TLS"
   echo ","
-  print_config "$OUT_WS"        "🇪🇺 VLESS WebSocket TLS"
+  print_config "$OUT_WS"        "🇪🇺 VLESS WS TLS"
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
 
@@ -949,23 +862,15 @@ linkTLS3="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=ws&headerType=
 
 linkTLS4="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=grpc&headerType=&serviceName=${path_xhttp}11&host=&sni=$DOMAIN&fp=chrome&spx=%2F#vlessGRPCtls-autoXRAY"
 
-
-ENCODED_STRING=$(echo -n "2022-blake3-chacha20-poly1305:${xray_sspasw_vrv}" | base64 -w 0)
-linkSS="ss://$ENCODED_STRING@${DOMAIN}:4443#Shadowsocks2022-autoXRAY"
-
-linkSSws="ss://$ENCODED_STRING@${DOMAIN}:8443?security=tls&type=ws&headerType=&path=%2Fssws&host=&sni=$DOMAIN&fp=chrome&spx=%2F#ss2022ws-autoXRAY"
-
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 CONFIGS_ARRAY=(
     "VLESS RAW REALITY VISION|$linkRTY1"
     "VLESS XHTTP Reality (для моста)|$linkRTY2"
-    "SS2022 TCP|$linkSS"
 	"VLESS RAW TLS VISION|$linkTLS1"
 	"VLESS XHTTP TLS|$linkTLS2"
 	"VLESS WS TLS|$linkTLS3"
 	"VLESS GRPC TLS|$linkTLS4"
-	"SS2022 WS TLS|$linkSSws"
 )
 ALL_LINKS_TEXT=""
 
@@ -1052,14 +957,14 @@ EOF
 
 echo -e "
 
-Ваш конфиг VLESS RAW REALITY VISION
+VLESS RAW REALITY VISION
 $linkRTY1
 
-Ваш конфиг VLESS XHTTP REALITY EXTRA
+VLESS XHTTP REALITY EXTRA (для моста)
 $linkRTY2
 
-Ваш конфиг Shadowsocks2022
-$linkSS
+VLESS XHTTP TLS EXTRA
+$linkRTY2
 
 Ваша страничка подписки
 \033[1;32m$subPageLink\033[0m
@@ -1077,5 +982,5 @@ $linkSS
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 
-104
+105
 "
