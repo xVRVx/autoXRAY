@@ -164,7 +164,6 @@ xray_sspasw_vrv=$(openssl rand -base64 32)
 
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
-
 # ipserv=$(hostname -I | awk '{print $1}')
 
 socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
@@ -369,7 +368,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
 	{
 	  "outboundTag": "direct",
-	  "domain": ["geosite:google-gemini","geosite:category-ru"]
+	  "domain": ["geosite:google-gemini","geosite:category-ru","habr.com"]
 	}
     ],
     "domainStrategy": "IPIfNonMatch"
@@ -379,9 +378,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 EOF
 
 # Создаем JSON конфигурацию клиента
-#!/bin/bash
-
-# 1. Функция-шаблон (содержит повторяющуюся часть: Log, DNS, Routing, Inbounds)
 print_config() {
   local PROXY_OUTBOUND="$1"
   local REMARK="$2"
@@ -417,6 +413,12 @@ print_config() {
       },
       {
         "domain": [
+          "habr.com"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
           "geosite:private",
           "geosite:apple",
           "geosite:apple-pki",
@@ -440,21 +442,6 @@ print_config() {
           "geoip:private"
         ],
         "outboundTag": "direct"
-      },
-      {
-        "ip": [
-          "geoip:!ru"
-        ],
-        "outboundTag": "proxy"
-      },
-      {
-        "domain": [
-          "geosite:discord",
-          "geosite:youtube",
-          "geosite:tiktok",
-          "geosite:signal"
-        ],
-        "outboundTag": "proxy"
       }
     ]
   },
@@ -466,6 +453,14 @@ print_config() {
       "port": 10808,
       "settings": {
         "udp": true
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
       }
     },
     {
@@ -475,13 +470,29 @@ print_config() {
       "port": 2080,
       "settings": {
         "udp": true
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
       }
     },
     {
       "tag": "http-in",
       "protocol": "http",
       "listen": "127.0.0.1",
-      "port": 10809
+      "port": 10809,
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
     }
   ],
   "outbounds": [
@@ -499,8 +510,6 @@ print_config() {
 }
 TPL
 }
-
-# 2. Определяем уникальные настройки (Outbounds)
 
 # --- Config 1: VLESS Reality + Vision ---
 OUT_REALITY_VISION='{
@@ -582,7 +591,6 @@ OUT_SS='{
   }
 }'
 
-# 3. Сборка JSON массива и сохранение в файл
 (
   echo "["
   print_config "$OUT_REALITY_VISION" "🇪🇺 vlessRAWrealityXTLS"
@@ -727,4 +735,6 @@ $linkSS
 Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
+
+111
 "
