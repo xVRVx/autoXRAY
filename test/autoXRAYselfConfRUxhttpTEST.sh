@@ -28,9 +28,13 @@ fi
 
 
 apt install nginx -y
-
 systemctl enable --now nginx
 
+# Генерируем сайт маскировку
+bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- $WEB_PATH
+
+# Установка Xray
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
 # Блок CERTBOT - START
 apt install certbot -y
@@ -153,12 +157,6 @@ systemctl restart nginx
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
 
-
-# Генерируем сайт маскировку
-bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- $WEB_PATH
-
-# Установка Xray
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
 SCRIPT_DIR=/usr/local/etc/xray
 
@@ -826,9 +824,9 @@ OUT_WS='{
 
 (
   echo "["
-  print_config "$OUT_REALITY_VISION" "🇪🇺 VLESS RAW REALITY VISION"
-  echo ","
   print_config "$OUT_REALITY_XHTTP"  "🇪🇺 VLESS XHTTP REALITY EXTRA"
+  echo ","
+  print_config "$OUT_REALITY_VISION" "🇪🇺 VLESS RAW REALITY VISION"
   echo ","
   print_config "$OUT_VISION"    "🇪🇺 VLESS RAW TLS VISION"
   echo ","
@@ -982,5 +980,5 @@ $linkRTY2
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 
-106
+107
 "
