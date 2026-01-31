@@ -1,5 +1,17 @@
 # Старые скрипты (не актуально!)
 
+## Экспериментальный скрипт с GRPC XHTTP RAW WS XTLS/TLS
+
+```bash
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/autoXRAYselfTLS2.sh)" -- вашДОМЕН.com
+```
+
+## reality raw/xhttp, ss2022
+```bash
+
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/autoXRAYselfConfRUxhttp.sh)" -- вашДОМЕН.com
+```
+
 
 **Вы получите:**
 1. основной [VLESS RAW REALITY](https://gozargah.github.io/marzban/ru/docs/xray-inbounds) xtls-rprx-vision на 443 порту с рандомным сайтом маскировки.
@@ -81,4 +93,5 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/aut
 bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/autoXRAYselfstealConfChina.sh)" -- вашДОМЕН.com
 ```
 Разработан по китайским [мануалам](https://xtls.github.io/ru/document/level-0/ch08-xray-clients.html#_8-3-%D0%B4%D0%BE%D0%BF%D0%BE%D0%BB%D0%BD%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B5-%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-1-%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B8%D0%BA%D0%B0-xray-core-%D0%BD%D0%B0-%D0%BF%D0%BA-%D0%B2%D1%80%D1%83%D1%87%D0%BD%D1%83%D1%8E).
+
 
