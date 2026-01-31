@@ -191,7 +191,7 @@ WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
 
 # Генерируем сайт маскировку
-bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page.sh)" -- $WEB_PATH
+bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- $WEB_PATH
 
 
 
