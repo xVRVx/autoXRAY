@@ -79,7 +79,7 @@ echo "✅ Записываем конфигурацию в $CONFIG_PATH для �
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
-	listen unix:/dev/shm/nginxTLS.sock ssl http2 proxy_protocol;
+	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
 	listen unix:/dev/shm/nginxTLS.sock proxy_protocol;
 	listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
     set_real_ip_from unix:;
@@ -242,7 +242,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "realitySettings": {
           "show": false,
           "xver": 2,
-          "target": "/dev/shm/nginxTLS.sock",
+          "target": "/dev/shm/nginx.sock",
           "spiderX": "/",
           "shortIds": [
             "${xray_shortIds_vrv}"
@@ -1018,5 +1018,5 @@ $linkSS
 
 Поддержать автора: https://github.com/xVRVx/autoXRAY
 
-222
+103
 "
