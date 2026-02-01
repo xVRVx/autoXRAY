@@ -237,6 +237,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
   "log": {
     "dnsLog": false,
+    "access": "/var/log/xray/access.log",
+    "error": "/var/log/xray/error.log",
     "loglevel": "none"
   },
   "dns": {
