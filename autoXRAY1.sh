@@ -207,7 +207,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   },
   "inbounds": [
 	{
-      "tag": "vsRAWrtyXTLS",
+      "tag": "vsRAWrtyVISION",
       "port": 443,
       "listen": "0.0.0.0",
       "protocol": "vless",
@@ -286,7 +286,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-          "mode": "auto",
+          "mode": "stream-one",
 		  "path": "/${path_xhttp}"
         },
         "security": "none",
