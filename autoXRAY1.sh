@@ -8,7 +8,7 @@ if [ -z "$DOMAIN" ]; then
 fi
 
 echo "Обновление и установка необходимых пакетов..."
-apt update && apt install -y jq dnsutils
+apt update && apt install curl jq dnsutils -y
 
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
@@ -24,6 +24,18 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
 		exit 1
 	fi
     echo "Продолжение выполнения скрипта..."
+fi
+
+
+# Включаем BBR
+bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
+if [ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
+echo "BBR уже запущен"
+else
+echo "net.core.default_qdisc=fq" >> /etc/sysctl.d/99-autoXRAY.conf
+echo "net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.d/99-autoXRAY.conf
+sysctl --system
+echo "BBR активирован"
 fi
 
 
