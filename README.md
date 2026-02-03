@@ -44,7 +44,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 - [notbad](https://my.notbad.cloud/?from=188) - от 3$, есть оплата рублями, хороший курс и канал.
 - [senko.digital](https://senko.digital/?ref=47670) - от 2€, есть днс-хостинг и домены для selfsteel, есть оплата СБП.
 
-- [hosting-russia](https://hosting-russia.ru/?p=57731) - ru сервера от 250 рублей, для моста ru-eu.
+- [hosting-russia](https://hosting-russia.ru/?p=57731) - ru сервера от 250 рублей, для моста ru-eu (тут пока нет ТСПУ и ютуб работает без рекламы).
 - [cloudcore](https://cloudcore.ru/?affiliate_uuid=e9ad7432-7898-4de2-8606-38eb90e0c1a6) - ru сервера от 100 рублей, для моста ru-eu.
 
 
