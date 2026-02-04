@@ -1,4 +1,5 @@
 #!/bin/bash
+[[ $EUID -eq 0 ]] || { echo "❌ скрипту нужны root права"; exit 1; }
 
 DOMAIN=$1
 
@@ -72,7 +73,7 @@ SID="${params[sid]}"; echo "SID=$SID"
 
 
 echo "Обновление и установка необходимых пакетов..."
-apt update && apt install curl jq dnsutils -y
+apt update && apt install curl jq dnsutils openssl -y
 
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
