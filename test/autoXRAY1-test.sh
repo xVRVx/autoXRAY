@@ -210,10 +210,13 @@ socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 
-
-echo -e "${GRN}Установка Warp (автоматически)...${NC}"
-# Автоматизируем ответы: 1 (ENG), 1 (Socks5), 40000 (Порт)
-echo -e "1\n1\n40000" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
+# Установка WARP
+if ss -tuln | grep -q ":40000 "; then
+    echo -e "${GRN}WARP (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
+else
+    echo -e "${GRN}Установка WARP (автоматически)...${NC}"
+    echo -e "1\n1\n40000" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
+fi
 
 # Экспортируем переменные для envsubst
 export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw
@@ -985,7 +988,7 @@ EOF
 # --- ФИНАЛЬНАЯ ПРОВЕРКА ---
 echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
 
-# Проверка Warp (Socks5 порт 40000)
+# Проверка WARP (Socks5 порт 40000)
 if nc -z 127.0.0.1 40000; then
     echo -e "Warp (40000):  ${GRN}LISTENING${NC}"
 else
