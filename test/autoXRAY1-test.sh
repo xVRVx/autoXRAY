@@ -25,7 +25,7 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo -e "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
     echo -e "${YEL}Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP ${NC}"
     
-	read -p "${RED}Продолжить на ваш страх и риск? (y/N): ${NC}" choice
+	read -p "Продолжить на ваш страх и риск? (y/N):" choice
 
 	if [[ ! "$choice" =~ ^[Yy]$ ]]; then
 		echo -e "${RED}Выполнение скрипта прервано.${NC}"
@@ -40,7 +40,7 @@ bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
 if [ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
     echo -e "${GRN}BBR уже запущен${NC}"
 else
-    echo "net.core.default_qdisc=fq" >> /etc/sysctl.d/999-autoXRAY.conf
+    echo "net.core.default_qdisc=fq" > /etc/sysctl.d/999-autoXRAY.conf
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.d/999-autoXRAY.conf
     sysctl --system
     echo -e "${GRN}BBR активирован${NC}"
