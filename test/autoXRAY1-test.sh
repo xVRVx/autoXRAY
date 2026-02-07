@@ -16,7 +16,7 @@ if [ -z "$DOMAIN" ]; then
 fi
 
 echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
-apt update && apt install curl jq dnsutils openssl -y
+apt-get update && apt-get install curl gpg sudo jq dnsutils openssl -y
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
@@ -210,13 +210,20 @@ socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 
-# Установка WARP-cli
+# Установка чистого WARP-CF
+# https://pkg.cloudflareclient.com/#debian
 # Посмотреть порт(2408): grep -r "Endpoint" /etc/wireguard/
 if ss -tuln | grep -q ":40000 "; then
-    echo -e "${GRN}WARP-cli (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
+    echo -e "${GRN}WARP-CF (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
 else
-    echo -e "${GRN}Установка WARP-cli (автоматически)...${NC}"
-    echo -e "1\n1\n40000" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
+    echo -e "${GRN}Установка WARP-CF (автоматически)...${NC}"
+	curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+
+	echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+
+	sudo apt-get update && sudo apt-get install cloudflare-warp -y
+
+	warp-cli registration new && warp-cli mode proxy && warp-cli connect
 fi
 
 # Экспортируем переменные для envsubst
@@ -989,11 +996,11 @@ EOF
 # --- ФИНАЛЬНАЯ ПРОВЕРКА ---
 echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
 
-# Проверка WARP-cli (Socks5 порт 40000)
+# Проверка WARP-CF (Socks5 порт 40000)
 if nc -z 127.0.0.1 40000; then
-    echo -e "WARP-cli: ${GRN}LISTENING${NC}"
+    echo -e "WARP-CF: ${GRN}LISTENING${NC}"
 else
-    echo -e "WARP-cli: ${RED}NOT LISTENING${NC}"
+    echo -e "WARP-CF: ${RED}NOT LISTENING${NC}"
 fi
 
 # Проверка Nginx
