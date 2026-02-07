@@ -210,11 +210,11 @@ socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 
-# Установка WARP
+# Установка WARP-cli
 if ss -tuln | grep -q ":40000 "; then
-    echo -e "${GRN}WARP (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
+    echo -e "${GRN}WARP-cli (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
 else
-    echo -e "${GRN}Установка WARP (автоматически)...${NC}"
+    echo -e "${GRN}Установка WARP-cli (автоматически)...${NC}"
     echo -e "1\n1\n40000" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
 fi
 
@@ -988,11 +988,11 @@ EOF
 # --- ФИНАЛЬНАЯ ПРОВЕРКА ---
 echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
 
-# Проверка WARP (Socks5 порт 40000)
+# Проверка WARP-cli (Socks5 порт 40000)
 if nc -z 127.0.0.1 40000; then
-    echo -e "Warp (40000):  ${GRN}LISTENING${NC}"
+    echo -e "WARP-cli (40000):  ${GRN}LISTENING${NC}"
 else
-    echo -e "Warp (40000):  ${RED}NOT LISTENING${NC}"
+    echo -e "WARP-cli (40000):  ${RED}NOT LISTENING${NC}"
 fi
 
 # Проверка Nginx
