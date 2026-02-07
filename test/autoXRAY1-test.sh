@@ -1,7 +1,4 @@
 #!/bin/bash
-[[ $EUID -eq 0 ]] || { echo "❌ скрипту нужны root права"; exit 1; }
-
-DOMAIN=$1
 
 # Цвета для вывода
 GRN='\033[1;32m'
@@ -9,42 +6,44 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
+[[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
+
+DOMAIN=$1
+
 if [ -z "$DOMAIN" ]; then
-    echo "${RED}❌ Ошибка: домен не задан.${NC}"
+    echo -e "${RED}❌ Ошибка: домен не задан.${NC}"
     exit 1
 fi
 
-
-
-echo "${YEL}Обновление и установка необходимых пакетов...${NC}"
+echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
 apt update && apt install curl jq dnsutils openssl -y
-
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
 
 if [ "$LOCAL_IP" != "$DNS_IP" ]; then
-    echo "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
-    echo "${YEL}Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP${NC}"
+    echo -e "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
+    echo -e "${YEL}Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP ${NC}"
     
-	read -p $'${RED}Продолжить на ваш страх и риск? (y/N): ${NC}' choice
+	read -p "${RED}Продолжить на ваш страх и риск? (y/N): ${NC}" choice
+
 	if [[ ! "$choice" =~ ^[Yy]$ ]]; then
 		echo -e "${RED}Выполнение скрипта прервано.${NC}"
 		exit 1
 	fi
-    echo "${YEL}Продолжение выполнения скрипта...${NC}"
+    echo -e "${YEL}Продолжение выполнения скрипта...${NC}"
 fi
 
 
 # Включаем BBR
 bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
 if [ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
-    echo "${GRN}BBR уже запущен${NC}"
+    echo -e "${GRN}BBR уже запущен${NC}"
 else
     echo "net.core.default_qdisc=fq" >> /etc/sysctl.d/999-autoXRAY.conf
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.d/999-autoXRAY.conf
     sysctl --system
-    echo "${GRN}BBR активирован${NC}"
+    echo -e "${GRN}BBR активирован${NC}"
 fi
 
 
@@ -57,7 +56,7 @@ root            hard    nofile          65535
 EOF
 
 ulimit -n 65535
-echo "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
+echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
 
 apt install nginx -y
@@ -184,7 +183,7 @@ server {
 EOF
 
 systemctl restart nginx
-echo "${GRN}✅ Конфигурация nginx обновлена.${NC}"
+echo -e "${GRN}✅ Конфигурация nginx обновлена.${NC}"
 
 
 SCRIPT_DIR=/usr/local/etc/xray
@@ -214,7 +213,7 @@ socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 
 
-echo -e "${GRN}[10/10] Установка Warp (автоматически)...${NC}"
+echo -e "${GRN}Установка Warp (автоматически)...${NC}"
 # Автоматизируем ответы: 1 (ENG), 1 (Socks5), 40000 (Порт)
 echo -e "1\n1\n40000" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
 
@@ -872,10 +871,8 @@ OUT_WS='{
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
 
-# Перезапуск Xray
-echo "Перезапуск Xray..."
 systemctl restart xray
-echo -e "Готово!\n"
+echo -e "Перезапуск XRAY"
 
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
@@ -1014,22 +1011,19 @@ fi
 
 echo -e "
 
-
-
-
-VLESS XHTTP REALITY EXTRA (для моста)
+${YEL}VLESS XHTTP REALITY EXTRA (для моста){NC}
 $linkRTY2
 
-VLESS RAW REALITY VISION
+${YEL}VLESS RAW REALITY VISION{NC}
 $linkRTY1
 
-VLESS XHTTP TLS EXTRA
+${YEL}VLESS XHTTP TLS EXTRA{NC}
 $linkRTY2
 
-Ваша страничка подписки
-${GRN}$subPageLink${NC}
+${YEL}Ваша json страничка подписки{NC}
+$subPageLink
 
-Ссылка на сохраненные конфиги 
+${YEL}Ссылка на сохраненные конфиги{NC}
 ${GRN}$configListLink${NC}
 
 Скопируйте подписку в специализированное приложение:
@@ -1040,6 +1034,6 @@ ${GRN}$configListLink${NC}
 
 Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
 
-Поддержать автора: https://github.com/xVRVx/autoXRAY
+${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
 
 "
