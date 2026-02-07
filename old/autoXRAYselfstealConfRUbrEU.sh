@@ -97,12 +97,20 @@ bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
 if [ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
     echo "BBR уже запущен"
 else
-    echo "net.core.default_qdisc=fq" >> /etc/sysctl.d/999-autoXRAY.conf
+    echo "net.core.default_qdisc=fq" > /etc/sysctl.d/999-autoXRAY.conf
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.d/999-autoXRAY.conf
     sysctl --system
     echo "BBR активирован"
 fi
 
+cat <<EOF > /etc/security/limits.d/99-autoXRAY.conf
+*               soft    nofile          65535
+*               hard    nofile          65535
+root            soft    nofile          65535
+root            hard    nofile          65535
+EOF
+ulimit -n 65535
+echo -e "Лимиты применены. Текущий ulimit -n: $(ulimit -n)"
 
 apt install nginx -y
 
