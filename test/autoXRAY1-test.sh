@@ -47,14 +47,12 @@ else
 fi
 
 
-echo -e "${GRN} Настройка лимитов (limits.conf)...${NC}"
 cat <<EOF > /etc/security/limits.d/99-autoXRAY.conf
 *               soft    nofile          65535
 *               hard    nofile          65535
 root            soft    nofile          65535
 root            hard    nofile          65535
 EOF
-
 ulimit -n 65535
 echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
@@ -1011,20 +1009,20 @@ fi
 
 echo -e "
 
-${YEL}VLESS XHTTP REALITY EXTRA (для моста){NC}
+${YEL}VLESS XHTTP REALITY EXTRA (для моста) ${NC}
 $linkRTY2
 
-${YEL}VLESS RAW REALITY VISION{NC}
+${YEL}VLESS RAW REALITY VISION ${NC}
 $linkRTY1
 
-${YEL}VLESS XHTTP TLS EXTRA{NC}
+${YEL}VLESS XHTTP TLS EXTRA ${NC}
 $linkRTY2
 
-${YEL}Ваша json страничка подписки{NC}
+${YEL}Ваша json страничка подписки ${NC}
 $subPageLink
 
-${YEL}Ссылка на сохраненные конфиги{NC}
-${GRN}$configListLink${NC}
+${YEL}Ссылка на сохраненные конфиги ${NC}
+${GRN}$configListLink ${NC}
 
 Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2RayTun или v2rayN
