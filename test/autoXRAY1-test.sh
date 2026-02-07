@@ -991,23 +991,23 @@ echo -e "\n${YEL}=== Финальная проверка статусов ===${N
 
 # Проверка WARP-cli (Socks5 порт 40000)
 if nc -z 127.0.0.1 40000; then
-    echo -e "WARP-cli (40000):  ${GRN}LISTENING${NC}"
+    echo -e "WARP-cli: ${GRN}LISTENING${NC}"
 else
-    echo -e "WARP-cli (40000):  ${RED}NOT LISTENING${NC}"
+    echo -e "WARP-cli: ${RED}NOT LISTENING${NC}"
 fi
 
 # Проверка Nginx
 if systemctl is-active --quiet nginx; then
-    echo -e "Nginx:         ${GRN}RUNNING${NC}"
+    echo -e "Nginx: ${GRN}RUNNING${NC}"
 else
-    echo -e "Nginx:         ${RED}STOPPED/ERROR${NC}"
+    echo -e "Nginx: ${RED}STOPPED/ERROR${NC}"
 fi
 
 # Проверка XRAY
 if systemctl is-active --quiet xray; then
-    echo -e "XRAY:         ${GRN}RUNNING${NC}"
+    echo -e "XRAY: ${GRN}RUNNING${NC}"
 else
-    echo -e "XRAY:         ${RED}STOPPED/ERROR${NC}"
+    echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"
 fi
 
 
