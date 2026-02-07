@@ -226,7 +226,7 @@ else
 
 	sudo apt-get update && sudo apt-get install cloudflare-warp -y
 
-	sleep 5
+	sleep 10
 	warp-cli registration new && warp-cli mode proxy && warp-cli connect
 	sleep 1
 fi
