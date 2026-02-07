@@ -16,7 +16,9 @@ if [ -z "$DOMAIN" ]; then
 fi
 
 echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
-apt-get update && apt-get install curl gpg sudo jq dnsutils openssl -y
+apt-get update && apt-get install curl gpg sudo jq dnsutils openssl nginx certbot -y
+systemctl enable --now nginx
+
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
@@ -57,8 +59,7 @@ ulimit -n 65535
 echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
 
-apt install nginx -y
-systemctl enable --now nginx
+
 
 # Создание директории сайта
 WEB_PATH="/var/www/$DOMAIN"
@@ -71,7 +72,6 @@ bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/ge
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
 # Блок CERTBOT - START
-apt install certbot -y
 
 mkdir -p /var/lib/xray/cert/
 
@@ -181,7 +181,9 @@ server {
 EOF
 
 systemctl restart nginx
-echo -e "${GRN}✅ Конфигурация nginx обновлена.${NC}"
+echo -e "${GRN}✅ Конфигурация nginx обновлена.${NC}
+
+"
 
 
 SCRIPT_DIR=/usr/local/etc/xray
@@ -212,7 +214,8 @@ socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 # Установка чистого WARP-CF
 # https://pkg.cloudflareclient.com/#debian
-# Посмотреть порт(2408): grep -r "Endpoint" /etc/wireguard/
+# ss -unap | grep warp; ss -tulnp | grep warp
+
 if ss -tuln | grep -q ":40000 "; then
     echo -e "${GRN}WARP-CF (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
 else
@@ -223,7 +226,9 @@ else
 
 	sudo apt-get update && sudo apt-get install cloudflare-warp -y
 
+	sleep 5
 	warp-cli registration new && warp-cli mode proxy && warp-cli connect
+	sleep 1
 fi
 
 # Экспортируем переменные для envsubst
