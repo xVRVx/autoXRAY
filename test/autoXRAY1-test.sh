@@ -211,6 +211,7 @@ socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 
 # Установка WARP-cli
+# Посмотреть порт(2408): grep -r "Endpoint" /etc/wireguard/
 if ss -tuln | grep -q ":40000 "; then
     echo -e "${GRN}WARP-cli (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
 else
