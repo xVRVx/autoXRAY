@@ -16,7 +16,8 @@ if [ -z "$DOMAIN" ]; then
 fi
 
 echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
-apt update && apt install curl jq dnsutils openssl -y
+apt-get update && apt-get install curl jq dnsutils openssl nginx certbot -y
+systemctl enable --now nginx
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
@@ -57,9 +58,6 @@ ulimit -n 65535
 echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
 
-apt install nginx -y
-systemctl enable --now nginx
-
 # Создание директории сайта
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
@@ -71,7 +69,6 @@ bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/ge
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
 # Блок CERTBOT - START
-apt install certbot -y
 
 mkdir -p /var/lib/xray/cert/
 
