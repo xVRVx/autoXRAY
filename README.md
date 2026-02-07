@@ -1,16 +1,15 @@
 # autoXRAY - личный ВПН сервер
 Bash-скрипт для автоматической настройки ядра [Xray](https://github.com/XTLS/Xray-core). Предназначен для удобного получения актуальных конфигураций VPN для семейного/личного использования, настраивает selfsteal VLESS [XHTTP](https://github.com/XTLS/Xray-core/discussions/4113#discussioncomment-11468947) / [RAW](https://github.com/XTLS/REALITY/blob/main/README.en.md) REALITY.
 
-**UPD4: Основной и Экспериментальный скрипты объединены, ss2022 удален.** 
+**UPD4: Основной скрипт автоматически ставит WARP-cli.** 
 
-**UPD3: Обходим блокировку Gemini на серых IP через [WARP-cli](#%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BA%D0%B0-warp-cli-%D0%B4%D0%BB%D1%8F-%D0%BE%D0%B1%D1%85%D0%BE%D0%B4%D0%B0-%D1%81%D0%B5%D1%80%D1%8B%D1%85-ip)**
+**UPD3: Основной и Экспериментальный скрипты объединены, ss2022 удален.** 
 
 **UPD2: Описание неактуальных скриптов перемещено в [oldScriptReadme.md](https://github.com/xVRVx/autoXRAY/blob/main/old/oldScriptReadme.md).**
 
 **UPD1: Добавлен новый раздел — [построение моста RU -> EU](#%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%B0%D0%B8%D0%B2%D0%B0%D0%B5%D0%BC-%D0%BC%D0%BE%D1%81%D1%82-ru---eu).**
 
-Рекомендуемая система: чистый Debian 12 / Ubuntu 24 с root правами.
-
+Тестируется на: чистом Debian 12 с root правами от [XorekCloud](https://xorek.cloud/?from=28522)
 
 ===========================================================================
 
@@ -110,12 +109,24 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ```bash
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 ```
+**Обновить WARP-cli**
+```bash
+bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) v
+```
 
 ## Как удалить скрипт
-Удаляете nginx, certbot стандартным способом.
+**Удаляем nginx & certbot**
+```
+systemctl disable nginx certbot; systemctl stop nginx certbot; apt remove nginx certbot -y
+```
 
-Удаление xray скриптом
-```bash
+**Удаляем WARP-cli**
+```
+echo -e "y" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) u
+```
+
+**Удаляем XRAY**
+```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
 ```
 
@@ -176,31 +187,22 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/aut
 
 ===========================================================================
 
-## Установка WARP-cli для обхода серых IP
-WARP-cli нужен когда VPS выдают серые IP и доступ к некоторым нужным сервисам закрыт.
-В этом примере мы обойдем геоблокировку гугл для Gemini.
-Установите ПО:
+## Отключение или рекдактирование маршрутов WARP-cli
+В конфиге /usr/local/etc/xray/config.json находим 
 ```bash
-cd && bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
+	{
+	  "outboundTag": "warp",
+	  "domain": ["2ip.io","habr.com","geosite:google-gemini","geosite:canva","geosite:openai","geosite:whatsapp","geosite:category-ru"]
+	}
 ```
-Ответы на вопросы: 1, 1, 40000, 1
+**Чтобы отключить**: меняем "outboundTag": "warp" на "outboundTag": "direct"
 
-В конфиге xray **/usr/local/etc/xray/config.json** 
-поменяйте в конце
-```json
-{
-  "outboundTag": "direct",
-  "domain": ["geosite:google-gemini","geosite:category-ru","habr.com","geosite:tiktok"]
-}
-```
-на
-```json
-{
-  "outboundTag": "warp",
-  "domain": ["geosite:google-gemini","geosite:category-ru","habr.com","geosite:tiktok"]
-}
-```
+
+**Чтобы рекдактировать**: меняем строку "domain"
+
 После изменений ядро надо перезапустить: **systemctl restart xray**
+
+После этого можно удалить WARP-cli, если это необходимо.
 
 ===========================================================================
 
