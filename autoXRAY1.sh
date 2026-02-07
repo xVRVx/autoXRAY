@@ -1,43 +1,60 @@
 #!/bin/bash
-[[ $EUID -eq 0 ]] || { echo "❌ скрипту нужны root права"; exit 1; }
+
+# Цвета для вывода
+GRN='\033[1;32m'
+RED='\033[1;31m'
+YEL='\033[1;33m'
+NC='\033[0m' # No Color
+
+[[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
 DOMAIN=$1
 
 if [ -z "$DOMAIN" ]; then
-    echo "❌ Ошибка: домен не задан."
+    echo -e "${RED}❌ Ошибка: домен не задан.${NC}"
     exit 1
 fi
 
-echo "Обновление и установка необходимых пакетов..."
+echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
 apt update && apt install curl jq dnsutils openssl -y
-
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
 
 if [ "$LOCAL_IP" != "$DNS_IP" ]; then
-    echo "❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP)."
-    echo "Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP"
+    echo -e "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
+    echo -e "${YEL}Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP ${NC}"
     
-	read -p $'\033[1;31mПродолжить на ваш страх и риск? (y/N): \033[0m' choice
+	read -p "Продолжить на ваш страх и риск? (y/N):" choice
+
 	if [[ ! "$choice" =~ ^[Yy]$ ]]; then
-		echo -e "\033[31mВыполнение скрипта прервано.\033[0m"
+		echo -e "${RED}Выполнение скрипта прервано.${NC}"
 		exit 1
 	fi
-    echo "Продолжение выполнения скрипта..."
+    echo -e "${YEL}Продолжение выполнения скрипта...${NC}"
 fi
 
 
 # Включаем BBR
 bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
 if [ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
-    echo "BBR уже запущен"
+    echo -e "${GRN}BBR уже запущен${NC}"
 else
-    echo "net.core.default_qdisc=fq" >> /etc/sysctl.d/999-autoXRAY.conf
+    echo "net.core.default_qdisc=fq" > /etc/sysctl.d/999-autoXRAY.conf
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.d/999-autoXRAY.conf
     sysctl --system
-    echo "BBR активирован"
+    echo -e "${GRN}BBR активирован${NC}"
 fi
+
+
+cat <<EOF > /etc/security/limits.d/99-autoXRAY.conf
+*               soft    nofile          65535
+*               hard    nofile          65535
+root            soft    nofile          65535
+root            hard    nofile          65535
+EOF
+ulimit -n 65535
+echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
 
 apt install nginx -y
@@ -73,29 +90,27 @@ certbot certonly --webroot -w /var/www/html \
 RET=$?
 
 if [ $RET -eq 0 ]; then
-  echo -e "\n\033[1;32m========================================"
+  echo -e "\n${GRN}========================================"
   echo    "✅  Команда certbot успешно выполнена"
   echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
   echo    "========================================"
-  echo -e "\033[0m"
+  echo -e "${NC}"
 else
-  echo -e "\n\033[1;31m========================================"
+  echo -e "\n${RED}========================================"
   echo    "❌  CERTBOT ЗАВЕРШИЛСЯ С ОШИБКОЙ"
   echo    "❌  Сертификат https от letsencrypt НЕ ПОЛУЧЕН!"
   echo    "❌  Смотрите выше логи процесса получения сертификата"
   echo    "❌  Код возврата: $RET"
   echo    "========================================"
-  echo -e "\033[0m"
+  echo -e "${NC}"
   exit 1
 fi
 # Блок CERTBOT - END
 
-
+# конфиг nginx
 CONFIG_PATH="/etc/nginx/sites-available/default"
 
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
-
-echo "✅ Записываем конфигурацию в $CONFIG_PATH для домена $DOMAIN"
 
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
@@ -165,10 +180,8 @@ server {
 }
 EOF
 
-echo "✅ Конфигурация nginx обновлена."
-
 systemctl restart nginx
-
+echo -e "${GRN}✅ Конфигурация nginx обновлена.${NC}"
 
 
 SCRIPT_DIR=/usr/local/etc/xray
@@ -196,6 +209,15 @@ path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
+
+# Установка WARP-cli
+# Посмотреть порт(2408): grep -r "Endpoint" /etc/wireguard/
+if ss -tuln | grep -q ":40000 "; then
+    echo -e "${GRN}WARP-cli (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
+else
+    echo -e "${GRN}Установка WARP-cli (автоматически)...${NC}"
+    echo -e "1\n1\n40000" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
+fi
 
 # Экспортируем переменные для envsubst
 export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw
@@ -525,8 +547,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "outboundTag": "block"
       },
 	{
-	  "outboundTag": "direct",
-	  "domain": ["geosite:google-gemini","geosite:category-ru","habr.com"]
+	  "outboundTag": "warp",
+	  "domain": ["2ip.io","habr.com","geosite:google-gemini","geosite:canva","geosite:openai","geosite:whatsapp","geosite:category-ru"]
 	}
     ],
     "domainStrategy": "IPIfNonMatch"
@@ -851,10 +873,8 @@ OUT_WS='{
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
 
-# Перезапуск Xray
-echo "Перезапуск Xray..."
 systemctl restart xray
-echo -e "Готово!\n"
+echo -e "Перезапуск XRAY"
 
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
@@ -966,22 +986,47 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </body></html>
 EOF
 
+# --- ФИНАЛЬНАЯ ПРОВЕРКА ---
+echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
+
+# Проверка WARP-cli (Socks5 порт 40000)
+if nc -z 127.0.0.1 40000; then
+    echo -e "WARP-cli: ${GRN}LISTENING${NC}"
+else
+    echo -e "WARP-cli: ${RED}NOT LISTENING${NC}"
+fi
+
+# Проверка Nginx
+if systemctl is-active --quiet nginx; then
+    echo -e "Nginx: ${GRN}RUNNING${NC}"
+else
+    echo -e "Nginx: ${RED}STOPPED/ERROR${NC}"
+fi
+
+# Проверка XRAY
+if systemctl is-active --quiet xray; then
+    echo -e "XRAY: ${GRN}RUNNING${NC}"
+else
+    echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"
+fi
+
+
 echo -e "
 
-VLESS XHTTP REALITY EXTRA (для моста)
+${YEL}VLESS XHTTP REALITY EXTRA (для моста) ${NC}
 $linkRTY2
 
-VLESS RAW REALITY VISION
+${YEL}VLESS RAW REALITY VISION ${NC}
 $linkRTY1
 
-VLESS XHTTP TLS EXTRA
+${YEL}VLESS XHTTP TLS EXTRA ${NC}
 $linkRTY2
 
-Ваша страничка подписки
-\033[1;32m$subPageLink\033[0m
+${YEL}Ваша json страничка подписки ${NC}
+$subPageLink
 
-Ссылка на сохраненные конфиги 
-\033[1;32m$configListLink\033[0m
+${YEL}Ссылка на сохраненные конфиги ${NC}
+${GRN}$configListLink ${NC}
 
 Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2RayTun или v2rayN
@@ -991,6 +1036,6 @@ $linkRTY2
 
 Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
 
-Поддержать автора: https://github.com/xVRVx/autoXRAY
+${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
 
 "
