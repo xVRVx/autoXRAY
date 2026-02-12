@@ -59,14 +59,14 @@ done
 
 
 # Вывод:
-echo "${YEL}== Основное ==${NC}"
+echo -e "${YEL}== Основное ==${NC}"
 echo "UUID: $uuidVL"
 echo "Address: $addressVL"
 echo "Port: $portVL"
 echo "Node Name: $node_nameVL"
 
 echo ""
-echo "${YEL}== Параметры ==${NC}"
+echo -e "${YEL}== Параметры ==${NC}"
 SECURITY="${params[security]}"; echo "SECURITY=$SECURITY"
 TYPE="${params[type]}"; echo "TYPE=$TYPE"
 headerType="${params[headerType]}"; echo "headerType=$headerType"
@@ -256,7 +256,7 @@ socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH TYPE FP SNI SPX PBK SECURITY FLOW SID mode uuidVL addressVL portVL path_xhttp path_url socksUser socksPasw
+export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH TYPE FP SNI SPX PBK SECURITY FLOW SID mode uuidVL addressVL portVL path_xhttp path_url extra socksUser socksPasw
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
@@ -374,23 +374,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "streamSettings": {
         "network": "$TYPE",
         "xhttpSettings": {
-         "extra": {
-              "headers": {
-              },
-              "noGRPCHeader": false,
-              "scMaxEachPostBytes": 1500000,
-              "scMinPostsIntervalMs": 20,
-              "scStreamUpServerSecs": "60-240",
-              "xPaddingBytes": "400-800",
-              "xmux": {
-                  "cMaxReuseTimes": "1000-3000",
-                  "hKeepAlivePeriod": 0,
-                  "hMaxRequestTimes": "400-700",
-                  "hMaxReusableSecs": "1200-1800",
-                  "maxConcurrency": "3-5",
-                  "maxConnections": 0
-              }
-          },
+         "extra": ${extra},
           "mode": "${mode}",
 		  "path": "${path_url}"
         },
@@ -625,23 +609,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "streamSettings": {
         "network": "$TYPE",
         "xhttpSettings": {
-         "extra": {
-              "headers": {
-              },
-              "noGRPCHeader": false,
-              "scMaxEachPostBytes": 1500000,
-              "scMinPostsIntervalMs": 20,
-              "scStreamUpServerSecs": "60-240",
-              "xPaddingBytes": "400-800",
-              "xmux": {
-                  "cMaxReuseTimes": "1000-3000",
-                  "hKeepAlivePeriod": 0,
-                  "hMaxRequestTimes": "400-700",
-                  "hMaxReusableSecs": "1200-1800",
-                  "maxConcurrency": "3-5",
-                  "maxConnections": 0
-              }
-          },
+         "extra": ${extra},
           "mode": "${mode}",
 		  "path": "/${path_xhttp}"
         },
@@ -797,23 +765,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "streamSettings": {
         "network": "$TYPE",
         "xhttpSettings": {
-         "extra": {
-              "headers": {
-              },
-              "noGRPCHeader": false,
-              "scMaxEachPostBytes": 1500000,
-              "scMinPostsIntervalMs": 20,
-              "scStreamUpServerSecs": "60-240",
-              "xPaddingBytes": "400-800",
-              "xmux": {
-                  "cMaxReuseTimes": "1000-3000",
-                  "hKeepAlivePeriod": 0,
-                  "hMaxRequestTimes": "400-700",
-                  "hMaxReusableSecs": "1200-1800",
-                  "maxConcurrency": "3-5",
-                  "maxConnections": 0
-              }
-          },
+         "extra": ${extra},
           "mode": "${mode}",
 		  "path": "${path_url}"
         },
@@ -969,6 +921,7 @@ $subPageLink
 
 ${YEL}Ссылка на сохраненные конфиги ${NC}
 ${GRN}$configListLink ${NC}
+
 Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2RayTun или v2rayN
 - Android: Happ или v2RayTun или v2rayNG
