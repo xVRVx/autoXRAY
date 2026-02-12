@@ -1,22 +1,29 @@
 #!/bin/bash
-[[ $EUID -eq 0 ]] || { echo "❌ скрипту нужны root права"; exit 1; }
+
+# Цвета для вывода
+GRN='\033[1;32m'
+RED='\033[1;31m'
+YEL='\033[1;33m'
+NC='\033[0m' # No Color
+
+[[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
 DOMAIN=$1
 
 vless_url=$2
 
 if [ -z "$DOMAIN" ]; then
-    echo "❌ Ошибка: домен не задан."
+    echo -e "${RED}❌ Ошибка: домен не задан.${NC}"
     exit 1
 fi
 
 if [ -z "$vless_url" ]; then
-    echo "❌ Ошибка: конфиг vless не задан."
+    echo "${RED}❌ Ошибка: конфиг vless не задан.${NC}"
     exit 1
 fi
 
 if [[ "$vless_url" != vless://* ]]; then
-    echo "❌ Ошибка: Неверный формат vless-ссылки."
+    echo "${RED}❌ Ошибка: Неверный формат vless-ссылки.${NC}"
     exit 1
 fi
 
@@ -52,14 +59,14 @@ done
 
 
 # Вывод:
-echo "== Основное =="
+echo -e "${YEL}== Основное ==${NC}"
 echo "UUID: $uuidVL"
 echo "Address: $addressVL"
 echo "Port: $portVL"
 echo "Node Name: $node_nameVL"
 
 echo ""
-echo "== Параметры =="
+echo -e "${YEL}== Параметры ==${NC}"
 SECURITY="${params[security]}"; echo "SECURITY=$SECURITY"
 TYPE="${params[type]}"; echo "TYPE=$TYPE"
 headerType="${params[headerType]}"; echo "headerType=$headerType"
@@ -79,37 +86,36 @@ SPX="${params[spx]}"; echo "SPX=$SPX"
 
 
 
-
-
-echo "Обновление и установка необходимых пакетов..."
-apt update && apt install curl jq dnsutils openssl -y
-
+echo "${YEL}Обновление и установка необходимых пакетов...${NC}"
+apt-get update && apt-get install curl jq dnsutils openssl nginx certbot -y
+systemctl enable --now nginx
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
 
 if [ "$LOCAL_IP" != "$DNS_IP" ]; then
-    echo "❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP)."
-    echo "Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP"
+    echo -e "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
+    echo -e "${YEL}Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP ${NC}"
     
-	read -p $'\033[1;31mПродолжить на ваш страх и риск? (y/N): \033[0m' choice
+	read -p "Продолжить на ваш страх и риск? (y/N):" choice
+
 	if [[ ! "$choice" =~ ^[Yy]$ ]]; then
-		echo -e "\033[31mВыполнение скрипта прервано.\033[0m"
+		echo -e "${RED}Выполнение скрипта прервано.${NC}"
 		exit 1
 	fi
-    echo "Продолжение выполнения скрипта..."
+    echo -e "${YEL}Продолжение выполнения скрипта...${NC}"
 fi
 
 
 # Включаем BBR
 bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
 if [ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
-    echo "BBR уже запущен"
+    echo -e "${GRN}BBR уже запущен${NC}"
 else
     echo "net.core.default_qdisc=fq" > /etc/sysctl.d/999-autoXRAY.conf
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.d/999-autoXRAY.conf
     sysctl --system
-    echo "BBR активирован"
+    echo -e "${GRN}BBR активирован${NC}"
 fi
 
 cat <<EOF > /etc/security/limits.d/99-autoXRAY.conf
@@ -119,15 +125,11 @@ root            soft    nofile          65535
 root            hard    nofile          65535
 EOF
 ulimit -n 65535
-echo -e "Лимиты применены. Текущий ulimit -n: $(ulimit -n)"
+echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
-apt install nginx -y
 
-systemctl enable --now nginx
 
 # Блок CERTBOT - START
-apt install certbot -y
-
 certbot certonly --webroot -w /var/www/html \
   -d $DOMAIN \
   -m mail@$DOMAIN \
@@ -137,26 +139,25 @@ certbot certonly --webroot -w /var/www/html \
 RET=$?
 
 if [ $RET -eq 0 ]; then
-  echo -e "\n\033[1;32m========================================"
+  echo -e "\n${GRN}========================================"
   echo    "✅  Команда certbot успешно выполнена"
   echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
   echo    "========================================"
-  echo -e "\033[0m"
+  echo -e "${NC}"
 else
-  echo -e "\n\033[1;31m========================================"
+  echo -e "\n${RED}========================================"
   echo    "❌  CERTBOT ЗАВЕРШИЛСЯ С ОШИБКОЙ"
   echo    "❌  Сертификат https от letsencrypt НЕ ПОЛУЧЕН!"
   echo    "❌  Смотрите выше логи процесса получения сертификата"
   echo    "❌  Код возврата: $RET"
   echo    "========================================"
-  echo -e "\033[0m"
+  echo -e "${NC}"
   exit 1
 fi
 # Блок CERTBOT - END
 
+# конфиг nginx
 CONFIG_PATH="/etc/nginx/sites-available/default"
-
-echo "✅ Записываем конфигурацию в $CONFIG_PATH для домена $DOMAIN"
 
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
@@ -202,9 +203,13 @@ server {
 }
 EOF
 
-echo "✅ Конфигурация nginx обновлена."
-
 systemctl restart nginx
+
+echo -e "${GRN}✅ Конфигурация nginx обновлена.${NC}
+
+"
+
+
 
 
 # Создание директории
@@ -212,9 +217,7 @@ WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
 
 # Генерируем сайт маскировку
-bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/old/gen_page.sh)" -- $WEB_PATH
-
-
+bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- $WEB_PATH
 
 # Установка Xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -246,12 +249,14 @@ path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
-ipserv=$(hostname -I | awk '{print $1}')
+# ipserv=$(hostname -I | awk '{print $1}')
 
+socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
+socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH TYPE FP SNI SPX PBK SECURITY FLOW SID mode uuidVL addressVL portVL path_xhttp path_url
+export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH TYPE FP SNI SPX PBK SECURITY FLOW SID mode uuidVL addressVL portVL path_xhttp path_url extra socksUser socksPasw
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
@@ -324,6 +329,24 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           }
         }
       }
+    },
+	{
+      "tag": "RUsocks5",
+      "port": 10443,
+      "listen": "0.0.0.0",
+      "protocol": "mixed",
+      "settings": {
+        "ip": "0.0.0.0",
+        "udp": true,
+        "auth": "password",
+        "accounts": [
+          {
+			"user": "${socksUser}",
+            "pass": "${socksPasw}"
+            
+          }
+        ]
+      }
     }
   ],
   "outbounds": [
@@ -351,23 +374,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "streamSettings": {
         "network": "$TYPE",
         "xhttpSettings": {
-         "extra": {
-              "headers": {
-              },
-              "noGRPCHeader": false,
-              "scMaxEachPostBytes": 1500000,
-              "scMinPostsIntervalMs": 20,
-              "scStreamUpServerSecs": "60-240",
-              "xPaddingBytes": "400-800",
-              "xmux": {
-                  "cMaxReuseTimes": "1000-3000",
-                  "hKeepAlivePeriod": 0,
-                  "hMaxRequestTimes": "400-700",
-                  "hMaxReusableSecs": "1200-1800",
-                  "maxConcurrency": "3-5",
-                  "maxConnections": 0
-              }
-          },
+         "extra": ${extra},
           "mode": "${mode}",
 		  "path": "${path_url}"
         },
@@ -446,6 +453,12 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       {
         "inboundTag": [
           "RUbrEU"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "inboundTag": [
+          "RUsocks5"
         ],
         "outboundTag": "proxy"
       }
@@ -596,23 +609,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "streamSettings": {
         "network": "$TYPE",
         "xhttpSettings": {
-         "extra": {
-              "headers": {
-              },
-              "noGRPCHeader": false,
-              "scMaxEachPostBytes": 1500000,
-              "scMinPostsIntervalMs": 20,
-              "scStreamUpServerSecs": "60-240",
-              "xPaddingBytes": "400-800",
-              "xmux": {
-                  "cMaxReuseTimes": "1000-3000",
-                  "hKeepAlivePeriod": 0,
-                  "hMaxRequestTimes": "400-700",
-                  "hMaxReusableSecs": "1200-1800",
-                  "maxConcurrency": "3-5",
-                  "maxConnections": 0
-              }
-          },
+         "extra": ${extra},
           "mode": "${mode}",
 		  "path": "/${path_xhttp}"
         },
@@ -768,23 +765,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "streamSettings": {
         "network": "$TYPE",
         "xhttpSettings": {
-         "extra": {
-              "headers": {
-              },
-              "noGRPCHeader": false,
-              "scMaxEachPostBytes": 1500000,
-              "scMinPostsIntervalMs": 20,
-              "scStreamUpServerSecs": "60-240",
-              "xPaddingBytes": "400-800",
-              "xmux": {
-                  "cMaxReuseTimes": "1000-3000",
-                  "hKeepAlivePeriod": 0,
-                  "hMaxRequestTimes": "400-700",
-                  "hMaxReusableSecs": "1200-1800",
-                  "maxConcurrency": "3-5",
-                  "maxConnections": 0
-              }
-          },
+         "extra": ${extra},
           "mode": "${mode}",
 		  "path": "${path_url}"
         },
@@ -814,10 +795,8 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
 ]
 EOF
 
-# Перезапуск Xray
-echo "Перезапуск Xray..."
 systemctl restart xray
-echo -e "Готово!\n"
+echo -e "Перезапуск XRAY"
 
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
@@ -838,7 +817,7 @@ ALL_LINKS_TEXT=""
 cat > "$WEB_PATH/$path_subpage.html" <<'EOF'
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
-<title>autoXRAY configs</title>
+<title>autoXRAY bridge configs</title>
 <link rel="icon" type="image/svg+xml" href='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBCRkZGIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIxIDJsLTIgMm0tNy42MSA3LjYxYTUuNSA1LjUgMCAxIDEtNy43NzggNy43NzggNS41IDUuNSAwIDAgMSA3Ljc3Ny03Ljc3N3ptMCAwTDE1LjUgNy41bTAgMGwzIDNMMjIgN2wtMy0zbS0zLjUgMy41TDE5IDQiLz48L3N2Zz4='>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -895,6 +874,13 @@ done
 
 # Дописываем Socks5, All links и подвал
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
+<div class="config-row">
+    <div class="config-label">Мост Socks5 (TG)</div>
+    <div class="config-code" id="sock">server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}</div>
+    <button class="btn-action copy-btn" onclick="copyText('sock', this)">Copy</button>
+    <a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}" target="_blank" class="btn-action qr-btn" title="автодобавление моста в тг" style="text-decoration:none">✈️ Add to TG</a>
+</div>
+
 <h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
     <div class="config-code" id="cAll" style="max-height:60px;white-space:pre-wrap;word-break:break-all">$ALL_LINKS_TEXT</div>
@@ -908,25 +894,42 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </body></html>
 EOF
 
+# --- ФИНАЛЬНАЯ ПРОВЕРКА ---
+echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
+
+# Проверка Nginx
+if systemctl is-active --quiet nginx; then
+    echo -e "Nginx: ${GRN}RUNNING${NC}"
+else
+    echo -e "Nginx: ${RED}STOPPED/ERROR${NC}"
+fi
+
+# Проверка XRAY
+if systemctl is-active --quiet xray; then
+    echo -e "XRAY: ${GRN}RUNNING${NC}"
+else
+    echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"
+fi
+
 
 echo -e "
+${YEL}VLESS XHTTP REALITY EXTRA (мост RU->EU) ${NC}
+$link1
+
+${YEL}Ваша json страничка подписки ${NC}
+$subPageLink
+
+${YEL}Ссылка на сохраненные конфиги ${NC}
+${GRN}$configListLink ${NC}
+
 Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2RayTun или v2rayN
 - Android: Happ или v2RayTun или v2rayNG
 - Windows: конфиги Happ или winLoadXRAY или v2rayN
 	для vless v2RayTun или Throne
 
-
-Ваша страничка подписки:
-\033[1;32m$subPageLink\033[0m
-
-Ссылка на сохраненные конфиги:
-\033[1;32m$configListLink\033[0m
-
-Ваш конфиг для роутера:
-$link1
-
 Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
 
-Поддержать автора: https://github.com/xVRVx/autoXRAY
+${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
+
 "
