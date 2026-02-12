@@ -87,7 +87,7 @@ SPX="${params[spx]}"; echo "SPX=$SPX"
 
 
 echo "${YEL}Обновление и установка необходимых пакетов...${NC}"
-apt-get update && apt-get install curl jq dnsutils openssl nginx certbot-y
+apt-get update && apt-get install curl jq dnsutils openssl nginx certbot -y
 systemctl enable --now nginx
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
