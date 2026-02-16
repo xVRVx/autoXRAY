@@ -358,9 +358,13 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "network": "xhttp",
         "xhttpSettings": {
           "mode": "${mode}",
-		  "path": "/${path_xhttp}"
+		  "path": "/${path_xhttp}",
+          "acceptProxyProtocol": false
         },
-        "security": "reality"
+        "security": "none",
+        "sockopt": {
+          "acceptProxyProtocol": true
+        }
       }
     },
 	{
@@ -627,7 +631,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
             "users": [
               {
                 "id": "${xray_uuid_vrv}",
-                "flow": "xtls-rprx-vision",
                 "encryption": "none"
               }
             ]
@@ -635,7 +638,12 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
         ]
       },
       "streamSettings": {
-        "network": "raw",
+        "network": "$TYPE",
+        "xhttpSettings": {
+         "extra": ${extra},
+          "mode": "${mode}",
+		  "path": "/${path_xhttp}"
+        },
         "security": "reality",
         "realitySettings": {
           "show": false,
@@ -657,7 +665,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇷🇺 Bridge RU-EU vlsRAWrtyXTLS"
+  "remarks": "🇷🇺 Bridge RU-EU vlsXHTTPrty"
 },
 {
   "log": {
@@ -787,6 +795,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
             "users": [
               {
                 "id": "${xray_uuid_vrv}",
+                "flow": "xtls-rprx-vision",
                 "encryption": "none"
               }
             ]
@@ -794,12 +803,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
         ]
       },
       "streamSettings": {
-        "network": "$TYPE",
-        "xhttpSettings": {
-         "extra": ${extra},
-          "mode": "${mode}",
-		  "path": "/${path_xhttp}"
-        },
+        "network": "raw",
         "security": "reality",
         "realitySettings": {
           "show": false,
@@ -821,7 +825,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇷🇺 Bridge RU-EU vlsXHTTPrty"
+  "remarks": "🇷🇺 Bridge RU-EU vlsRAWrtyXTLS"
 },
 {
   "log": {
