@@ -277,18 +277,25 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "queryStrategy": "UseIPv4"
   },
   "inbounds": [
-    {
-      "tag": "RUbrEU",
+	{
+      "tag": "RUbrEUraw",
       "port": ${portVL},
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
         "clients": [
           {
+            "flow": "xtls-rprx-vision",
             "id": "${xray_uuid_vrv}"
           }
         ],
-        "decryption": "none"
+        "decryption": "none",
+        "fallbacks": [
+          {
+            "dest": "3333",
+            "xver": 2
+          }
+        ]
       },
       "sniffing": {
         "enabled": true,
@@ -299,11 +306,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ]
       },
       "streamSettings": {
-        "network": "xhttp",
-        "xhttpSettings": {
-          "mode": "${mode}",
-		  "path": "/${path_xhttp}"
-        },
+        "network": "raw",
         "security": "reality",
         "realitySettings": {
           "show": false,
@@ -327,6 +330,40 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "bytesPerSec": 262144,
             "burstBytesPerSec": 2097152
           }
+        }
+      }
+    },
+    {
+      "tag": "RUbrEUxhttp",
+      "port": 3333,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${xray_uuid_vrv}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "mode": "${mode}",
+		  "path": "/${path_xhttp}",
+          "acceptProxyProtocol": false
+        },
+        "security": "none",
+        "sockopt": {
+          "acceptProxyProtocol": true
         }
       }
     },
@@ -452,13 +489,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
       {
         "inboundTag": [
-          "RUbrEU"
-        ],
-        "outboundTag": "proxy"
-      },
-      {
-        "inboundTag": [
-          "RUsocks5"
+          "RUbrEUraw","RUbrEUxhttp","RUsocks5"
         ],
         "outboundTag": "proxy"
       }
@@ -634,7 +665,167 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       "protocol": "blackhole"
     }
   ],
-  "remarks": "🇪🇺 Bridge RU-EU vlsXHTTPrty"
+  "remarks": "🇷🇺 Bridge RU-EU vlsXHTTPrty"
+},
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+	  "https://8.8.4.4/dns-query",
+	  "https://8.8.8.8/dns-query",
+	  "https://1.1.1.1/dns-query"
+    ],
+    "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "habr.com"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:huawei",
+          "geosite:xiaomi",
+          "geosite:category-android-app-download",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:microsoft",
+          "geosite:win-update",
+          "geosite:win-extra",
+          "geosite:google-play",
+          "geosite:steam",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "settings": {
+        "udp": true
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    },
+    {
+      "tag": "socks-sb",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 2080,
+      "settings": {
+        "udp": true
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    },
+    {
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809,
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "mux": {
+        "concurrency": -1,
+        "enabled": false
+      },
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "$DOMAIN",
+            "port": ${portVL},
+            "users": [
+              {
+                "id": "${xray_uuid_vrv}",
+                "flow": "xtls-rprx-vision",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "raw",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "fingerprint": "chrome",
+          "serverName": "$DOMAIN",
+          "password": "${xray_publicKey_vrv}",
+          "shortId": "${xray_shortIds_vrv}",
+          "mldsa65Verify": "",
+          "spiderX": "/"
+        }
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "remarks": "🇷🇺 Bridge RU-EU vlsRAWrtyXTLS"
 },
 {
   "log": {
@@ -804,11 +995,14 @@ subPageLink="https://$DOMAIN/$path_subpage.json"
 # Формирование ссылок
 link1="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=${mode}&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlsXHTTPrtyRUbrEU"
 
+link2="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlsRAWrtyXTLSRUbrEU"
+
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 CONFIGS_ARRAY=(
-    "VLESS XHTTP Reality XTLS RUbrEU|$link1"
+    "VLESS XHTTP REALITY RUbrEU|$link1"
+    "VLESS RAW REALITY XTLS RUbrEU|$link2"
     "Напрямую через EU|$vless_url"
 )
 ALL_LINKS_TEXT=""
@@ -915,6 +1109,9 @@ fi
 echo -e "
 ${YEL}VLESS XHTTP REALITY EXTRA (мост RU->EU) ${NC}
 $link1
+
+${YEL}VLESS RAW REALITY XTLS (мост RU->EU) ${NC}
+$link2
 
 ${YEL}Ваша json страничка подписки ${NC}
 $subPageLink
