@@ -726,7 +726,7 @@ OUT_REALITY_XHTTP='{
     "network": "xhttp",
     "security": "reality",
     "xhttpSettings": {
-      "mode": "auto",
+      "mode": "stream-one",
       "path": "/${path_xhttp}",
       "extra": {
         "noGRPCHeader": false,
