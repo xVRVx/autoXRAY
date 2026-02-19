@@ -493,7 +493,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
       {
         "domain": [
-          "habr.com"
+          "habr.com", "apkmirror.com"
         ],
         "outboundTag": "proxy"
       },
@@ -563,7 +563,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       },
       {
         "domain": [
-          "habr.com"
+          "habr.com", "apkmirror.com"
         ],
         "outboundTag": "proxy"
       },
@@ -727,7 +727,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       },
       {
         "domain": [
-          "habr.com"
+          "habr.com", "apkmirror.com"
         ],
         "outboundTag": "proxy"
       },
@@ -887,7 +887,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       },
       {
         "domain": [
-          "habr.com"
+          "habr.com", "apkmirror.com"
         ],
         "outboundTag": "proxy"
       },
@@ -916,22 +916,6 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
           "geoip:private"
         ],
         "outboundTag": "direct"
-      },
-      {
-        "type": "field",
-        "ip": [
-          "geoip:!ru"
-        ],
-        "outboundTag": "proxy"
-      },
-      {
-        "domain": [
-          "geosite:discord",
-          "geosite:youtube",
-          "geosite:tiktok",
-          "geosite:signal"
-        ],
-        "outboundTag": "proxy"
       }
     ]
   },

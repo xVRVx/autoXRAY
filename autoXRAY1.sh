@@ -621,7 +621,7 @@ print_config() {
       },
       {
         "domain": [
-          "habr.com"
+          "habr.com", "apkmirror.com"
         ],
         "outboundTag": "proxy"
       },
