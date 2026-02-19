@@ -16,9 +16,8 @@ if [ -z "$DOMAIN" ]; then
 fi
 
 echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
-apt-get update && apt-get install curl gpg sudo jq dnsutils openssl nginx certbot -y
+apt-get update && apt-get install curl jq dnsutils openssl nginx certbot -y
 systemctl enable --now nginx
-
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
@@ -59,8 +58,6 @@ ulimit -n 65535
 echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
 
-
-
 # Создание директории сайта
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
@@ -72,6 +69,40 @@ bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/ge
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
 # Блок CERTBOT - START
+
+# Определяем путь к конфигу nginx
+if [ -f /etc/nginx/sites-available/default ]; then
+    CONFIG_PATH="/etc/nginx/sites-available/default"
+elif [ -f /etc/nginx/conf.d/default.conf ]; then
+    CONFIG_PATH="/etc/nginx/conf.d/default.conf"
+
+	echo -e "${YEL}Обнаружена нестандартная сборка nginx. Предварительная настройка NGINX для CERTBOT (${CONFIG_PATH}) ${NC}"
+
+	# Создаем директорию для challenge
+	mkdir -p /var/www/html
+
+# Записываем временный конфиг
+cat <<EOF > "$CONFIG_PATH"
+server {
+	listen 80 default_server;
+	server_name _;
+
+	location /.well-known/acme-challenge/ {
+		root /var/www/html;
+		allow all;
+	}
+
+	location / {
+		return 301 https://\$host\$request_uri;
+	}
+}
+EOF
+	systemctl reload nginx
+else
+    echo -e "${RED}Не найден ни один default конфиг nginx${NC}"
+    exit 1
+fi
+
 
 mkdir -p /var/lib/xray/cert/
 
@@ -108,7 +139,6 @@ fi
 # Блок CERTBOT - END
 
 # конфиг nginx
-CONFIG_PATH="/etc/nginx/sites-available/default"
 
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
@@ -181,9 +211,7 @@ server {
 EOF
 
 systemctl restart nginx
-echo -e "${GRN}✅ Конфигурация nginx обновлена.${NC}
-
-"
+echo -e "${GRN}✅ Конфигурация nginx обновлена.${NC}"
 
 
 SCRIPT_DIR=/usr/local/etc/xray
@@ -212,23 +240,13 @@ socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 
-# Установка чистого WARP-CF
-# https://pkg.cloudflareclient.com/#debian
-# ss -unap | grep warp; ss -tulnp | grep warp
-
+# Установка WARP-cli
+# Посмотреть порт(2408): grep -r "Endpoint" /etc/wireguard/
 if ss -tuln | grep -q ":40000 "; then
-    echo -e "${GRN}WARP-CF (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
+    echo -e "${GRN}WARP-cli (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
 else
-    echo -e "${GRN}Установка WARP-CF (автоматически)...${NC}"
-	curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-
-	echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
-
-	sudo apt-get update && sudo apt-get install cloudflare-warp -y
-
-	sleep 10
-	warp-cli registration new && warp-cli mode proxy && warp-cli connect
-	sleep 1
+    echo -e "${GRN}Установка WARP-cli (автоматически)...${NC}"
+    echo -e "1\n1\n40000" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
 fi
 
 # Экспортируем переменные для envsubst
@@ -741,7 +759,7 @@ OUT_REALITY_XHTTP='{
     "network": "xhttp",
     "security": "reality",
     "xhttpSettings": {
-      "mode": "auto",
+      "mode": "stream-one",
       "path": "/${path_xhttp}",
       "extra": {
         "noGRPCHeader": false,
@@ -1001,11 +1019,11 @@ EOF
 # --- ФИНАЛЬНАЯ ПРОВЕРКА ---
 echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
 
-# Проверка WARP-CF (Socks5 порт 40000)
+# Проверка WARP-cli (Socks5 порт 40000)
 if nc -z 127.0.0.1 40000; then
-    echo -e "WARP-CF: ${GRN}LISTENING${NC}"
+    echo -e "WARP-cli: ${GRN}LISTENING${NC}"
 else
-    echo -e "WARP-CF: ${RED}NOT LISTENING${NC}"
+    echo -e "WARP-cli: ${RED}NOT LISTENING${NC}"
 fi
 
 # Проверка Nginx
