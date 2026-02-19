@@ -130,6 +130,38 @@ echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulim
 
 
 # Блок CERTBOT - START
+
+# Определяем путь к конфигу nginx
+if [ -f /etc/nginx/sites-available/default ]; then
+    CONFIG_PATH="/etc/nginx/sites-available/default"
+	echo -e "${GRN}Обнаружена стандартная сборка nginx. ${NC}"
+elif [ -f /etc/nginx/conf.d/default.conf ]; then
+    CONFIG_PATH="/etc/nginx/conf.d/default.conf"
+	echo -e "${YEL}Обнаружена нестандартная сборка nginx. Предварительная настройка NGINX для CERTBOT ${NC}"
+	mkdir -p /var/www/html
+
+# Записываем временный конфиг
+cat <<EOF > "$CONFIG_PATH"
+server {
+	listen 80 default_server;
+	server_name _;
+
+	location /.well-known/acme-challenge/ {
+		root /var/www/html;
+		allow all;
+	}
+
+	location / {
+		return 301 https://\$host\$request_uri;
+	}
+}
+EOF
+	systemctl reload nginx
+else
+    echo -e "${RED}Не найден ни один default конфиг nginx${NC}"
+    exit 1
+fi
+
 certbot certonly --webroot -w /var/www/html \
   -d $DOMAIN \
   -m mail@$DOMAIN \
@@ -157,8 +189,6 @@ fi
 # Блок CERTBOT - END
 
 # конфиг nginx
-CONFIG_PATH="/etc/nginx/sites-available/default"
-
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
