@@ -39,6 +39,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ## Выбор сервера (подбирал промо тарифы)
 
 - [XorekCloud](https://xorek.cloud/?from=28522) - промо тариф за 149 руб./мес. (полноценный за 249).
+- [intezio](https://intezio.net/?ref=3d2bf6736da6) - промо от 179 руб.
 - [WAICORE](https://waicore.com/?from=3063) - от 3€, есть оплата рублями.
 - [notbad](https://my.notbad.cloud/?from=188) - от 3$, есть оплата рублями, хороший курс и канал.
 - [senko.digital](https://senko.digital/?ref=47670) - от 2€, есть днс-хостинг и домены для selfsteel, есть оплата СБП.
