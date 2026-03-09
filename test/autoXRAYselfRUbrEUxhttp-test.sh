@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 780 ${NC}"
+# echo -e "${GRN}Версия: 11_1 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -34,7 +34,7 @@ echo -e "${GRN}Обнаружено $COUNT vless ссылок для моста!
 
 # Массивы для хранения параметров каждой ноды
 declare -a NODE_UUID NODE_ADDR NODE_PORT NODE_NAME NODE_TYPE NODE_SEC NODE_FP NODE_SNI NODE_PBK NODE_SID NODE_SPX NODE_MODE NODE_PATH NODE_EXTRA
-# Уникальные UUID для сервера-моста (RU), чтобы направлять трафик на нужную EU ноду
+# Уникальные UUID для сервера-моста (RU)
 declare -a BRIDGE_UUID
 
 for (( i=0; i<COUNT; i++ )); do
@@ -58,7 +58,7 @@ for (( i=0; i<COUNT; i++ )); do
 
     query_string="${restVL#*\?}"
 
-    # Очищаем массив params, чтобы параметры предыдущей ссылки не перетекали в текущую
+    # Очищаем массив params
     unset params
     declare -A params
     IFS='&' read -ra pairs <<< "$query_string"
@@ -79,11 +79,11 @@ for (( i=0; i<COUNT; i++ )); do
     NODE_SID[$i]="${params[sid]}"
     NODE_SPX[$i]="${params[spx]}"
 
-    # Генерируем уникальный UUID клиента для доступа к этому конкретному маршруту
+    # Генерируем уникальный UUID
     BRIDGE_UUID[$i]=$(openssl rand -hex 16 | sed 's/\(........\)\(....\)\(....\)\(....\)\(............\)/\1-\2-\3-\4-\5/')
 done
 
-# Порт прослушивания сервера-моста (используем порт первой переданной ноды, обычно 443)
+# Порт прослушивания сервера-моста
 SERVER_PORT=${NODE_PORT[0]}
 
 echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
@@ -255,7 +255,7 @@ path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
-# ==================== СОЗДАНИЕ КОНФИГА СЕРВЕРА В ЦИКЛЕ ====================
+# ====СОЗДАНИЕ КОНФИГА СЕРВЕРА В ЦИКЛЕ ====
 
 CLIENTS_RAW=""
 CLIENTS_XHTTP=""
@@ -273,9 +273,9 @@ EOF
 EOF
 )"
 
-    # Наполняем правила маршрутизации
+    # Наполняем правила маршрутизации для прямых подключений
     ROUTING_RULES+="$(cat <<EOF
-      { "type": "field", "user":[ "node_$i" ], "outboundTag": "proxy_$i" },
+      { "user":[ "node_$i" ], "outboundTag": "proxy_$i" },
 EOF
 )"
 
@@ -326,6 +326,9 @@ EOF
     fi
 done
 
+# Удаляем запятую в конце
+ROUTING_RULES="${ROUTING_RULES%,}"
+
 cat << EOF > "$SCRIPT_DIR/config.json"
 {
   "log": {
@@ -333,6 +336,12 @@ cat << EOF > "$SCRIPT_DIR/config.json"
     "access": "/var/log/xray/access.log",
     "error": "/var/log/xray/error.log",
     "loglevel": "none"
+  },
+  "observatory": {
+    "subjectSelector": [ "proxy_" ],
+    "probeURL": "https://www.gstatic.com/generate_204",
+    "probeInterval": "1m",
+    "enableConcurrent": true
   },
   "dns": {
     "servers":[ "https+local://8.8.4.4/dns-query", "https+local://8.8.8.8/dns-query", "https+local://1.1.1.1/dns-query", "localhost" ],
@@ -410,12 +419,19 @@ $OUTBOUNDS
     { "tag": "block", "protocol": "blackhole" }
   ],
   "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "balancers":[
+      {
+        "tag": "proxy_balancer",
+        "selector": [ "proxy_" ],
+        "strategy": { "type": "leastPing" }
+      }
+    ],
     "rules":[
-$ROUTING_RULES
       { "ip":[ "geoip:private" ], "outboundTag": "block" },
       { "protocol":[ "bittorrent" ], "outboundTag": "block" },
       { "domain":[ "geosite:category-ads", "geosite:win-spy", "geosite:private" ], "outboundTag": "block" },
-      { "domain":[ "habr.com", "apkmirror.com" ], "outboundTag": "proxy_0" },
+      { "domain":[ "habr.com", "apkmirror.com" ], "balancerTag": "proxy_balancer" },
       {
         "domain":[
           "testipv6.net", "geosite:apple", "geosite:apple-pki", "geosite:huawei", "geosite:xiaomi",
@@ -424,14 +440,15 @@ $ROUTING_RULES
           "geosite:steam", "geosite:category-ru"
         ],
         "outboundTag": "direct"
-      }
-    ],
-    "domainStrategy": "IPIfNonMatch"
+      },
+      { "inboundTag": [ "RUsocks5" ], "balancerTag": "proxy_balancer" },
+$ROUTING_RULES
+    ]
   }
 }
 EOF
 
-# ==================== СОЗДАНИЕ КОНФИГА ПОДПИСКИ КЛИЕНТА ====================
+# ==== СОЗДАНИЕ КОНФИГА ПОДПИСКИ КЛИЕНТА ====
 
 print_config() {
   local PROXY_OUTBOUND="$1"
@@ -796,8 +813,10 @@ ${GRN}$configListLink ${NC}
 - iOS: Happ или v2RayTun или v2rayN
 - Android: Happ или v2RayTun или v2rayNG
 - Windows: конфиги Happ или winLoadXRAY или v2rayN
+	для vless v2RayTun или Throne
 
 Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
+
 "
