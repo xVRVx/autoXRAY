@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-# echo -e "${GRN}Версия: 11_1 ${NC}"
+# echo -e "${GRN}Версия: 555 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -36,6 +36,15 @@ echo -e "${GRN}Обнаружено $COUNT vless ссылок для моста!
 declare -a NODE_UUID NODE_ADDR NODE_PORT NODE_NAME NODE_TYPE NODE_SEC NODE_FP NODE_SNI NODE_PBK NODE_SID NODE_SPX NODE_MODE NODE_PATH NODE_EXTRA
 # Уникальные UUID для сервера-моста (RU)
 declare -a BRIDGE_UUID
+
+# Генерируем базовый UUID сервера для всех подключений (будет один клиент в конфиге сервера)
+SERVER_UUID=$(openssl rand -hex 16 | sed 's/\(........\)\(....\)\(....\)\(....\)\(............\)/\1-\2-\3-\4-\5/')
+# Разбиваем UUID на группы для удобной подмены 3-й группы (7 и 8 байты)
+g1="${SERVER_UUID:0:8}"
+g2="${SERVER_UUID:9:4}"
+g3="${SERVER_UUID:14:4}"
+g4="${SERVER_UUID:19:4}"
+g5="${SERVER_UUID:24:12}"
 
 for (( i=0; i<COUNT; i++ )); do
     url="${VLESS_URLS[$i]}"
@@ -79,12 +88,14 @@ for (( i=0; i<COUNT; i++ )); do
     NODE_SID[$i]="${params[sid]}"
     NODE_SPX[$i]="${params[spx]}"
 
-    # Генерируем уникальный UUID
-    BRIDGE_UUID[$i]=$(openssl rand -hex 16 | sed 's/\(........\)\(....\)\(....\)\(....\)\(............\)/\1-\2-\3-\4-\5/')
+    # Встраиваем Vless Route ID (начиная с 1) в 3-ю группу UUID (7 и 8 байты) для клиента
+    ROUTE_ID=$((i + 1))
+    HEX_ROUTE_ID=$(printf "%04x" $ROUTE_ID)
+    BRIDGE_UUID[$i]="${g1}-${g2}-${HEX_ROUTE_ID}-${g4}-${g5}"
 done
 
-# Порт прослушивания сервера-моста
-SERVER_PORT=${NODE_PORT[0]}
+# Порт прослушивания сервера-моста (единый для Inbound, обычно 443 для Reality)
+SERVER_PORT=443
 
 echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
 apt-get update && apt-get install curl jq dnsutils openssl nginx certbot -y
@@ -257,25 +268,15 @@ socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 # ====СОЗДАНИЕ КОНФИГА СЕРВЕРА В ЦИКЛЕ ====
 
-CLIENTS_RAW=""
-CLIENTS_XHTTP=""
 ROUTING_RULES=""
 OUTBOUNDS=""
 
 for (( i=0; i<COUNT; i++ )); do
-    # Наполняем inbounds клиентами (маршрутизация основана на email)
-    CLIENTS_RAW+="$(cat <<EOF
-          { "flow": "xtls-rprx-vision", "id": "${BRIDGE_UUID[$i]}", "email": "node_$i" }
-EOF
-)"
-    CLIENTS_XHTTP+="$(cat <<EOF
-          { "id": "${BRIDGE_UUID[$i]}", "email": "node_$i" }
-EOF
-)"
+    ROUTE_ID=$((i + 1))
 
-    # Наполняем правила маршрутизации для прямых подключений
+    # Наполняем правила маршрутизации с использованием vlessRoute (проверка 7 и 8 байта UUID)
     ROUTING_RULES+="$(cat <<EOF
-      { "user":[ "node_$i" ], "outboundTag": "proxy_$i" },
+      { "vlessRoute": "$ROUTE_ID", "outboundTag": "proxy_$i" },
 EOF
 )"
 
@@ -283,7 +284,7 @@ EOF
     EXTRA_VAL="${NODE_EXTRA[$i]}"
     if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
-    # Наполняем outbounds (к конечным EU нодам)
+    # Наполняем outbounds (к конечным EU нодам) — используем ИХ родные порты
     OUTBOUNDS+="$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
@@ -319,11 +320,6 @@ EOF
     },
 EOF
 )"
-
-    if [ $i -lt $((COUNT-1)) ]; then
-        CLIENTS_RAW+=","
-        CLIENTS_XHTTP+=","
-    fi
 done
 
 # Удаляем запятую в конце
@@ -355,7 +351,7 @@ cat << EOF > "$SCRIPT_DIR/config.json"
       "protocol": "vless",
       "settings": {
         "clients":[
-$CLIENTS_RAW
+          { "flow": "xtls-rprx-vision", "id": "$SERVER_UUID" }
         ],
         "decryption": "none",
         "fallbacks":[ { "dest": "3333", "xver": 2 } ]
@@ -384,7 +380,7 @@ $CLIENTS_RAW
       "protocol": "vless",
       "settings": {
         "clients":[
-$CLIENTS_XHTTP
+          { "id": "$SERVER_UUID" }
         ],
         "decryption": "none"
       },
@@ -441,7 +437,7 @@ $OUTBOUNDS
         ],
         "outboundTag": "direct"
       },
-      { "inboundTag": [ "RUsocks5" ], "balancerTag": "proxy_balancer" },
+      { "inboundTag":[ "RUsocks5" ], "balancerTag": "proxy_balancer" },
 $ROUTING_RULES
     ]
   }
@@ -580,7 +576,7 @@ for (( i=0; i<COUNT; i++ )); do
     REMARK_BASE="${NODE_NAME[$i]}"
     if [ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
 
-    # --- Config: Bridge XHTTP ---
+    # --- Config: Bridge XHTTP (идет на мост, порт $SERVER_PORT) ---
     OUT_REALITY_XHTTP=$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
@@ -624,7 +620,7 @@ for (( i=0; i<COUNT; i++ )); do
 EOF
 )
 
-    # --- Config: Bridge RAW Vision ---
+    # --- Config: Bridge RAW Vision (идет на мост, порт $SERVER_PORT) ---
     OUT_REALITY_VISION=$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
@@ -652,7 +648,7 @@ EOF
     EXTRA_VAL="${NODE_EXTRA[$i]}"
     if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
-    # --- Config: Direct EU ---
+    # --- Config: Direct EU (идет напрямую на целевую ноду, её родной порт) ---
     OUT_DIRECT_EU=$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
@@ -698,7 +694,7 @@ EOF
         CLIENT_CONFIGS+=","
     fi
 
-    # --- Генерируем ссылки vless:// для HTML странички ---
+    # --- Генерируем ссылки vless:// для HTML странички (с портом моста) ---
     link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:$SERVER_PORT?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=stream-one&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#RU%3EEU_xhttp_$REMARK_BASE"
 
     link_raw="vless://${BRIDGE_UUID[$i]}@$DOMAIN:$SERVER_PORT?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#RU%3EEU_raw_$REMARK_BASE"
@@ -815,7 +811,8 @@ ${GRN}$configListLink ${NC}
 - Windows: конфиги Happ или winLoadXRAY или v2rayN
 	для vless v2RayTun или Throne
 
-Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
+Открыт локальный socks5 на порту 10443.
+Внутри клиента: socks5 на 10808, 2080 и http на 10809.
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
 
