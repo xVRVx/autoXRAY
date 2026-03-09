@@ -12,7 +12,7 @@ DOMAIN=$1
 shift # Сдвигаем аргументы, теперь все оставшиеся аргументы ($@) — это vless ссылки
 VLESS_URLS=("$@")
 
-if[ -z "$DOMAIN" ]; then
+if [ -z "$DOMAIN" ]; then
     echo -e "${RED}❌ Ошибка: домен не задан.${NC}"
     exit 1
 fi
@@ -125,10 +125,10 @@ echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulim
 
 # Блок CERTBOT - START
 # Определяем путь к конфигу nginx
-if[ -f /etc/nginx/sites-available/default ]; then
+if [ -f /etc/nginx/sites-available/default ]; then
     CONFIG_PATH="/etc/nginx/sites-available/default"
 	echo -e "${GRN}Обнаружена стандартная сборка nginx. ${NC}"
-elif [ -f /etc/nginx/conf.d/default.conf ]; then
+elif[ -f /etc/nginx/conf.d/default.conf ]; then
     CONFIG_PATH="/etc/nginx/conf.d/default.conf"
 	echo -e "${YEL}Обнаружена нестандартная сборка nginx. Предварительная настройка NGINX для CERTBOT ${NC}"
 	mkdir -p /var/www/html
@@ -163,7 +163,7 @@ certbot certonly --webroot -w /var/www/html \
 
 RET=$?
 
-if [ $RET -eq 0 ]; then
+if[ $RET -eq 0 ]; then
   echo -e "\n${GRN}========================================"
   echo    "✅  Команда certbot успешно выполнена"
   echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
@@ -278,7 +278,7 @@ EOF
 
     # Если параметр extra пустой, подставляем null
     EXTRA_VAL="${NODE_EXTRA[$i]}"
-    if[ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
+    if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
     # Наполняем outbounds (к конечным EU нодам)
     OUTBOUNDS+="$(cat <<EOF
@@ -317,7 +317,7 @@ EOF
 EOF
 )"
 
-    if [ $i -lt $((COUNT-1)) ]; then
+    if[ $i -lt $((COUNT-1)) ]; then
         CLIENTS_RAW+=","
         CLIENTS_XHTTP+=","
     fi
@@ -359,7 +359,7 @@ $CLIENTS_RAW
           "spiderX": "/",
           "shortIds":[ "$xray_shortIds_vrv" ],
           "privateKey": "$xray_privateKey_vrv",
-          "serverNames": [ "$DOMAIN" ],
+          "serverNames":[ "$DOMAIN" ],
           "limitFallbackUpload": { "afterBytes": 0, "bytesPerSec": 65536, "burstBytesPerSec": 0 },
           "limitFallbackDownload": { "afterBytes": 5242880, "bytesPerSec": 262144, "burstBytesPerSec": 2097152 }
         }
@@ -371,7 +371,7 @@ $CLIENTS_RAW
       "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
-        "clients": [
+        "clients":[
 $CLIENTS_XHTTP
         ],
         "decryption": "none"
@@ -411,7 +411,7 @@ $OUTBOUNDS
 $ROUTING_RULES
       { "ip": [ "geoip:private" ], "outboundTag": "block" },
       { "protocol": [ "bittorrent" ], "outboundTag": "block" },
-      { "domain": [ "geosite:category-ads", "geosite:win-spy", "geosite:private" ], "outboundTag": "block" },
+      { "domain":[ "geosite:category-ads", "geosite:win-spy", "geosite:private" ], "outboundTag": "block" },
       { "domain":[ "habr.com", "apkmirror.com" ], "outboundTag": "proxy_0" },
       {
         "domain":[
@@ -459,7 +459,7 @@ print_config() {
         "outboundTag": "block"
       },
       {
-        "protocol": [
+        "protocol":[
           "bittorrent"
         ],
         "outboundTag": "direct"
@@ -509,7 +509,7 @@ print_config() {
       },
       "sniffing": {
         "enabled": true,
-        "destOverride": [ "http", "tls", "quic" ]
+        "destOverride":[ "http", "tls", "quic" ]
       }
     },
     {
@@ -522,7 +522,7 @@ print_config() {
       },
       "sniffing": {
         "enabled": true,
-        "destOverride": [ "http", "tls", "quic" ]
+        "destOverride":[ "http", "tls", "quic" ]
       }
     },
     {
@@ -559,7 +559,7 @@ ALL_LINKS_TEXT=""
 # Цикл генерации клиентов по каждой ссылке
 for (( i=0; i<COUNT; i++ )); do
     REMARK_BASE="${NODE_NAME[$i]}"
-    if[ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
+    if [ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
 
     # --- Config: Bridge XHTTP ---
     OUT_REALITY_XHTTP=$(cat <<EOF
@@ -640,7 +640,7 @@ EOF
       "tag": "proxy",
       "protocol": "vless",
       "settings": {
-        "vnext": [{
+        "vnext":[{
           "address": "${NODE_ADDR[$i]}",
           "port": ${NODE_PORT[$i]},
           "users": [{ "id": "${NODE_UUID[$i]}", "encryption": "none" }]
@@ -800,4 +800,6 @@ ${GRN}$configListLink ${NC}
 Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
+
+222
 "
