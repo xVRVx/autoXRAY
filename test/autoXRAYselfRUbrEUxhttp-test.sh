@@ -28,7 +28,7 @@ urldecode() {
 }
 
 COUNT=${#VLESS_URLS[@]}
-echo -e "${GRN}Обнаружено $COUNT vless ссылок для моста!${NC}"
+echo -e "555 ${GRN}Обнаружено $COUNT vless ссылок для моста!${NC}"
 
 # Массивы для хранения параметров каждой ноды
 declare -a NODE_UUID NODE_ADDR NODE_PORT NODE_NAME NODE_TYPE NODE_SEC NODE_FP NODE_SNI NODE_PBK NODE_SID NODE_SPX NODE_MODE NODE_PATH NODE_EXTRA
@@ -105,7 +105,7 @@ fi
 
 # Включаем BBR
 bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
-if [ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
+if[ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
     echo -e "${GRN}BBR уже запущен${NC}"
 else
     echo "net.core.default_qdisc=fq" > /etc/sysctl.d/999-autoXRAY.conf
@@ -163,7 +163,7 @@ certbot certonly --webroot -w /var/www/html \
 
 RET=$?
 
-if [ $RET -eq 0 ]; then
+if[ $RET -eq 0 ]; then
   echo -e "\n${GRN}========================================"
   echo    "✅  Команда certbot успешно выполнена"
   echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
@@ -615,7 +615,7 @@ EOF
         "vnext":[{
           "address": "$DOMAIN",
           "port": $SERVER_PORT,
-          "users": [{ "id": "${BRIDGE_UUID[$i]}", "flow": "xtls-rprx-vision", "encryption": "none" }]
+          "users":[{ "id": "${BRIDGE_UUID[$i]}", "flow": "xtls-rprx-vision", "encryption": "none" }]
         }]
       },
       "streamSettings": {
@@ -800,6 +800,4 @@ ${GRN}$configListLink ${NC}
 Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
-
-333
 "
