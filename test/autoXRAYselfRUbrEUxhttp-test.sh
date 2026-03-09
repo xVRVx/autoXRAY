@@ -82,7 +82,7 @@ done
 # Порт прослушивания сервера-моста (используем порт первой переданной ноды, обычно 443)
 SERVER_PORT=${NODE_PORT[0]}
 
-echo "${YEL}Обновление и установка необходимых пакетов...${NC}"
+echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
 apt-get update && apt-get install curl jq dnsutils openssl nginx certbot -y
 systemctl enable --now nginx
 
@@ -105,7 +105,7 @@ fi
 
 # Включаем BBR
 bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
-if[ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
+if [ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
     echo -e "${GRN}BBR уже запущен${NC}"
 else
     echo "net.core.default_qdisc=fq" > /etc/sysctl.d/999-autoXRAY.conf
@@ -163,7 +163,7 @@ certbot certonly --webroot -w /var/www/html \
 
 RET=$?
 
-if[ $RET -eq 0 ]; then
+if [ $RET -eq 0 ]; then
   echo -e "\n${GRN}========================================"
   echo    "✅  Команда certbot успешно выполнена"
   echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
@@ -317,7 +317,7 @@ EOF
 EOF
 )"
 
-    if[ $i -lt $((COUNT-1)) ]; then
+    if [ $i -lt $((COUNT-1)) ]; then
         CLIENTS_RAW+=","
         CLIENTS_XHTTP+=","
     fi
@@ -409,7 +409,7 @@ $OUTBOUNDS
   "routing": {
     "rules":[
 $ROUTING_RULES
-      { "ip": [ "geoip:private" ], "outboundTag": "block" },
+      { "ip":[ "geoip:private" ], "outboundTag": "block" },
       { "protocol": [ "bittorrent" ], "outboundTag": "block" },
       { "domain":[ "geosite:category-ads", "geosite:win-spy", "geosite:private" ], "outboundTag": "block" },
       { "domain":[ "habr.com", "apkmirror.com" ], "outboundTag": "proxy_0" },
@@ -491,7 +491,7 @@ print_config() {
         "outboundTag": "direct"
       },
       {
-        "ip": [
+        "ip":[
           "geoip:private"
         ],
         "outboundTag": "direct"
@@ -801,5 +801,5 @@ ${GRN}$configListLink ${NC}
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
 
-222
+333
 "
