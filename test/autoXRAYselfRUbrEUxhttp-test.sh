@@ -1,4 +1,5 @@
 #!/bin/bash
+echo -e "666"
 
 # Цвета для вывода
 GRN='\033[1;32m'
@@ -28,7 +29,7 @@ urldecode() {
 }
 
 COUNT=${#VLESS_URLS[@]}
-echo -e "555 ${GRN}Обнаружено $COUNT vless ссылок для моста!${NC}"
+echo -e "${GRN}Обнаружено $COUNT vless ссылок для моста!${NC}"
 
 # Массивы для хранения параметров каждой ноды
 declare -a NODE_UUID NODE_ADDR NODE_PORT NODE_NAME NODE_TYPE NODE_SEC NODE_FP NODE_SNI NODE_PBK NODE_SID NODE_SPX NODE_MODE NODE_PATH NODE_EXTRA
@@ -317,7 +318,7 @@ EOF
 EOF
 )"
 
-    if [ $i -lt $((COUNT-1)) ]; then
+    if[ $i -lt $((COUNT-1)) ]; then
         CLIENTS_RAW+=","
         CLIENTS_XHTTP+=","
     fi
@@ -559,7 +560,7 @@ ALL_LINKS_TEXT=""
 # Цикл генерации клиентов по каждой ссылке
 for (( i=0; i<COUNT; i++ )); do
     REMARK_BASE="${NODE_NAME[$i]}"
-    if [ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
+    if[ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
 
     # --- Config: Bridge XHTTP ---
     OUT_REALITY_XHTTP=$(cat <<EOF
@@ -571,7 +572,7 @@ for (( i=0; i<COUNT; i++ )); do
         "vnext":[{
           "address": "$DOMAIN",
           "port": $SERVER_PORT,
-          "users": [{ "id": "${BRIDGE_UUID[$i]}", "encryption": "none" }]
+          "users":[{ "id": "${BRIDGE_UUID[$i]}", "encryption": "none" }]
         }]
       },
       "streamSettings": {
@@ -631,7 +632,7 @@ EOF
 )
 
     EXTRA_VAL="${NODE_EXTRA[$i]}"
-    if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
+    if[ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
     # --- Config: Direct EU ---
     OUT_DIRECT_EU=$(cat <<EOF
@@ -643,7 +644,7 @@ EOF
         "vnext":[{
           "address": "${NODE_ADDR[$i]}",
           "port": ${NODE_PORT[$i]},
-          "users": [{ "id": "${NODE_UUID[$i]}", "encryption": "none" }]
+          "users":[{ "id": "${NODE_UUID[$i]}", "encryption": "none" }]
         }]
       },
       "streamSettings": {
@@ -675,7 +676,7 @@ EOF
     CLIENT_CONFIGS+=","
     CLIENT_CONFIGS+="$(print_config "$OUT_DIRECT_EU" "🇪🇺 EU dir | $REMARK_BASE")"
 
-    if[ $i -lt $((COUNT-1)) ]; then
+    if [ $i -lt $((COUNT-1)) ]; then
         CLIENT_CONFIGS+=","
     fi
 
@@ -742,7 +743,7 @@ for item in "${CONFIGS_ARRAY[@]}"; do
     title="${item%%|*}"
     link="${item#*|}"
     
-    if[ -z "$ALL_LINKS_TEXT" ]; then ALL_LINKS_TEXT="$link"; else ALL_LINKS_TEXT="$ALL_LINKS_TEXT<br>$link"; fi
+    if [ -z "$ALL_LINKS_TEXT" ]; then ALL_LINKS_TEXT="$link"; else ALL_LINKS_TEXT="$ALL_LINKS_TEXT<br>$link"; fi
     
     cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
