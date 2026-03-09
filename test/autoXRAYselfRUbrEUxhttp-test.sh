@@ -1,11 +1,12 @@
 #!/bin/bash
-echo -e "666"
 
 # Цвета для вывода
 GRN='\033[1;32m'
 RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
+
+echo -e "${GRN}Версия: 778 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -18,7 +19,7 @@ if [ -z "$DOMAIN" ]; then
     exit 1
 fi
 
-if [ ${#VLESS_URLS[@]} -eq 0 ]; then
+if[ ${#VLESS_URLS[@]} -eq 0 ]; then
     echo -e "${RED}❌ Ошибка: конфиги vless не заданы. Укажите хотя бы одну vless:// ссылку.${NC}"
     exit 1
 fi
@@ -57,6 +58,8 @@ for (( i=0; i<COUNT; i++ )); do
 
     query_string="${restVL#*\?}"
 
+    # Очищаем массив params от значений предыдущей итерации
+    unset params
     declare -A params
     IFS='&' read -ra pairs <<< "$query_string"
     for pair in "${pairs[@]}"; do
@@ -88,9 +91,9 @@ apt-get update && apt-get install curl jq dnsutils openssl nginx certbot -y
 systemctl enable --now nginx
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
-DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
+DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]' | head -n 1)
 
-if [ "$LOCAL_IP" != "$DNS_IP" ]; then
+if[ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo -e "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
     echo -e "${YEL}Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP ${NC}"
     
@@ -103,10 +106,9 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo -e "${YEL}Продолжение выполнения скрипта...${NC}"
 fi
 
-
 # Включаем BBR
-bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
-if[ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
+bbr=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null)
+if [ "$bbr" = "bbr" ]; then
     echo -e "${GRN}BBR уже запущен${NC}"
 else
     echo "net.core.default_qdisc=fq" > /etc/sysctl.d/999-autoXRAY.conf
@@ -126,7 +128,7 @@ echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulim
 
 # Блок CERTBOT - START
 # Определяем путь к конфигу nginx
-if [ -f /etc/nginx/sites-available/default ]; then
+if[ -f /etc/nginx/sites-available/default ]; then
     CONFIG_PATH="/etc/nginx/sites-available/default"
 	echo -e "${GRN}Обнаружена стандартная сборка nginx. ${NC}"
 elif[ -f /etc/nginx/conf.d/default.conf ]; then
@@ -164,7 +166,7 @@ certbot certonly --webroot -w /var/www/html \
 
 RET=$?
 
-if[ $RET -eq 0 ]; then
+if [ $RET -eq 0 ]; then
   echo -e "\n${GRN}========================================"
   echo    "✅  Команда certbot успешно выполнена"
   echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
@@ -183,7 +185,7 @@ fi
 # Блок CERTBOT - END
 
 # конфиг nginx
-bash -c "cat > $CONFIG_PATH" <<EOF
+cat <<EOF > "$CONFIG_PATH"
 server {
     server_name $DOMAIN;
 	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;	
@@ -235,7 +237,7 @@ WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
 
 # Генерируем сайт маскировку
-bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- $WEB_PATH
+bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- "$WEB_PATH"
 
 # Установка Xray
 bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -244,8 +246,8 @@ SCRIPT_DIR=/usr/local/etc/xray
 
 # Генерируем глобальные ключи для сервера-моста
 key_output=$(xray x25519)
-xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/PrivateKey/ {print $2}')
-xray_publicKey_vrv=$(echo "$key_output" | awk -F': ' '/Password/ {print $2}')
+xray_privateKey_vrv=$(echo "$key_output" | awk '/Private/ {print $NF}')
+xray_publicKey_vrv=$(echo "$key_output" | awk '/Public/ {print $NF}')
 xray_shortIds_vrv=$(openssl rand -hex 8)
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
@@ -279,7 +281,7 @@ EOF
 
     # Если параметр extra пустой, подставляем null
     EXTRA_VAL="${NODE_EXTRA[$i]}"
-    if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
+    if[ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
     # Наполняем outbounds (к конечным EU нодам)
     OUTBOUNDS+="$(cat <<EOF
@@ -308,7 +310,7 @@ EOF
           "show": false,
           "fingerprint": "${NODE_FP[$i]}",
           "serverName": "${NODE_SNI[$i]}",
-          "password": "${NODE_PBK[$i]}",
+          "publicKey": "${NODE_PBK[$i]}",
           "shortId": "${NODE_SID[$i]}",
           "mldsa65Verify": "",
           "spiderX": "${NODE_SPX[$i]}"
@@ -318,7 +320,7 @@ EOF
 EOF
 )"
 
-    if[ $i -lt $((COUNT-1)) ]; then
+    if [ $i -lt $((COUNT-1)) ]; then
         CLIENTS_RAW+=","
         CLIENTS_XHTTP+=","
     fi
@@ -356,7 +358,7 @@ $CLIENTS_RAW
         "realitySettings": {
           "show": false,
           "xver": 2,
-          "target": "/dev/shm/nginx.sock",
+          "dest": "/dev/shm/nginx.sock",
           "spiderX": "/",
           "shortIds":[ "$xray_shortIds_vrv" ],
           "privateKey": "$xray_privateKey_vrv",
@@ -411,7 +413,7 @@ $OUTBOUNDS
     "rules":[
 $ROUTING_RULES
       { "ip":[ "geoip:private" ], "outboundTag": "block" },
-      { "protocol": [ "bittorrent" ], "outboundTag": "block" },
+      { "protocol":[ "bittorrent" ], "outboundTag": "block" },
       { "domain":[ "geosite:category-ads", "geosite:win-spy", "geosite:private" ], "outboundTag": "block" },
       { "domain":[ "habr.com", "apkmirror.com" ], "outboundTag": "proxy_0" },
       {
@@ -429,8 +431,7 @@ $ROUTING_RULES
 }
 EOF
 
-
-# ==================== СОЗДАНИЕ КОНФИГА ПОДПИСКИ КЛИЕНТА (С ИСПОЛЬЗОВАНИЕМ ФУНКЦИИ ИЗ ЗАДАНИЯ) ====================
+# ==================== СОЗДАНИЕ КОНФИГА ПОДПИСКИ КЛИЕНТА ====================
 
 print_config() {
   local PROXY_OUTBOUND="$1"
@@ -533,7 +534,7 @@ print_config() {
       "port": 10809,
       "sniffing": {
         "enabled": true,
-        "destOverride": [ "http", "tls", "quic" ]
+        "destOverride":[ "http", "tls", "quic" ]
       }
     }
   ],
@@ -560,7 +561,7 @@ ALL_LINKS_TEXT=""
 # Цикл генерации клиентов по каждой ссылке
 for (( i=0; i<COUNT; i++ )); do
     REMARK_BASE="${NODE_NAME[$i]}"
-    if[ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
+    if [ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
 
     # --- Config: Bridge XHTTP ---
     OUT_REALITY_XHTTP=$(cat <<EOF
@@ -599,7 +600,7 @@ for (( i=0; i<COUNT; i++ )); do
         },
         "realitySettings": {
           "show": false, "fingerprint": "chrome", "serverName": "$DOMAIN",
-          "password": "$xray_publicKey_vrv", "shortId": "$xray_shortIds_vrv", "spiderX": "/"
+          "publicKey": "$xray_publicKey_vrv", "shortId": "$xray_shortIds_vrv", "spiderX": "/"
         }
       }
     }
@@ -624,7 +625,7 @@ EOF
         "security": "reality",
         "realitySettings": {
           "show": false, "fingerprint": "chrome", "serverName": "$DOMAIN",
-          "password": "$xray_publicKey_vrv", "shortId": "$xray_shortIds_vrv", "spiderX": "/"
+          "publicKey": "$xray_publicKey_vrv", "shortId": "$xray_shortIds_vrv", "spiderX": "/"
         }
       }
     }
@@ -632,7 +633,7 @@ EOF
 )
 
     EXTRA_VAL="${NODE_EXTRA[$i]}"
-    if[ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
+    if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
     # --- Config: Direct EU ---
     OUT_DIRECT_EU=$(cat <<EOF
@@ -659,7 +660,7 @@ EOF
           "show": false,
           "fingerprint": "${NODE_FP[$i]}",
           "serverName": "${NODE_SNI[$i]}",
-          "password": "${NODE_PBK[$i]}",
+          "publicKey": "${NODE_PBK[$i]}",
           "shortId": "${NODE_SID[$i]}",
           "mldsa65Verify": "",
           "spiderX": "${NODE_SPX[$i]}"
@@ -676,7 +677,7 @@ EOF
     CLIENT_CONFIGS+=","
     CLIENT_CONFIGS+="$(print_config "$OUT_DIRECT_EU" "🇪🇺 EU dir | $REMARK_BASE")"
 
-    if [ $i -lt $((COUNT-1)) ]; then
+    if[ $i -lt $((COUNT-1)) ]; then
         CLIENT_CONFIGS+=","
     fi
 
@@ -692,7 +693,6 @@ done
 
 # Записываем массив в файл подписки
 echo "[$CLIENT_CONFIGS]" > "$WEB_PATH/$path_subpage.json"
-
 
 systemctl restart xray
 echo -e "Перезапуск XRAY"
@@ -725,7 +725,6 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
     <button class="btn-action copy-btn" onclick="copyText('subLink', this)">Copy</button>
     <button class="btn-action qr-btn" onclick="showQR('subLink')">QR</button>
 </div>
-
 
 <h2>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h2>
 <div class="btn-group">
