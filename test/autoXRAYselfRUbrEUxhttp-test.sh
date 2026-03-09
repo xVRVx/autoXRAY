@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 779 ${NC}"
+echo -e "${GRN}Версия: 780 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -93,7 +93,7 @@ systemctl enable --now nginx
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]' | head -n 1)
 
-if[ "$LOCAL_IP" != "$DNS_IP" ]; then
+if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo -e "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
     echo -e "${YEL}Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP ${NC}"
     
@@ -131,7 +131,7 @@ echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulim
 if [ -f /etc/nginx/sites-available/default ]; then
     CONFIG_PATH="/etc/nginx/sites-available/default"
 	echo -e "${GRN}Обнаружена стандартная сборка nginx. ${NC}"
-elif[ -f /etc/nginx/conf.d/default.conf ]; then
+elif [ -f /etc/nginx/conf.d/default.conf ]; then
     CONFIG_PATH="/etc/nginx/conf.d/default.conf"
 	echo -e "${YEL}Обнаружена нестандартная сборка nginx. Предварительная настройка NGINX для CERTBOT ${NC}"
 	mkdir -p /var/www/html
@@ -166,7 +166,7 @@ certbot certonly --webroot -w /var/www/html \
 
 RET=$?
 
-if[ $RET -eq 0 ]; then
+if [ $RET -eq 0 ]; then
   echo -e "\n${GRN}========================================"
   echo    "✅  Команда certbot успешно выполнена"
   echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
@@ -320,7 +320,7 @@ EOF
 EOF
 )"
 
-    if[ $i -lt $((COUNT-1)) ]; then
+    if [ $i -lt $((COUNT-1)) ]; then
         CLIENTS_RAW+=","
         CLIENTS_XHTTP+=","
     fi
@@ -561,7 +561,7 @@ ALL_LINKS_TEXT=""
 # Цикл генерации клиентов по каждой ссылке
 for (( i=0; i<COUNT; i++ )); do
     REMARK_BASE="${NODE_NAME[$i]}"
-    if[ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
+    if [ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
 
     # --- Config: Bridge XHTTP ---
     OUT_REALITY_XHTTP=$(cat <<EOF
