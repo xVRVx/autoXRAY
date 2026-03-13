@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-# echo -e "${GRN}Версия: 555 ${NC}"
+echo -e "${GRN}Версия: 566 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -276,7 +276,7 @@ for (( i=0; i<COUNT; i++ )); do
 
     # Наполняем правила маршрутизации с использованием vlessRoute (проверка 7 и 8 байта UUID)
     ROUTING_RULES+="$(cat <<EOF
-      { "vlessRoute": "$ROUTE_ID", "outboundTag": "proxy_$i" },
+      { "vlessRoute": "$ROUTE_ID", "outboundTag": "proxy-$i" },
 EOF
 )"
 
@@ -333,12 +333,16 @@ cat << EOF > "$SCRIPT_DIR/config.json"
     "error": "/var/log/xray/error.log",
     "loglevel": "none"
   },
-  "observatory": {
-    "subjectSelector": [ "proxy_" ],
-    "probeURL": "https://www.gstatic.com/generate_204",
-    "probeInterval": "1m",
-    "enableConcurrent": true
-  },
+	"burstObservatory": {
+		"pingConfig": {
+			"timeout": "3s",
+			"interval": "40s",
+			"sampling": 1,
+			"destination": "https://www.gstatic.com/generate_204",
+			"connectivity": ""
+		},
+		"subjectSelector": ["proxy"]
+	},
   "dns": {
     "servers":[ "https+local://8.8.4.4/dns-query", "https+local://8.8.8.8/dns-query", "https+local://1.1.1.1/dns-query", "localhost" ],
     "queryStrategy": "UseIPv4"
@@ -416,18 +420,27 @@ $OUTBOUNDS
   ],
   "routing": {
     "domainStrategy": "IPIfNonMatch",
-    "balancers":[
-      {
-        "tag": "proxy_balancer",
-        "selector": [ "proxy_" ],
-        "strategy": { "type": "leastPing" }
-      }
-    ],
+            "balancers": [
+                {
+                    "tag": "Super_Balancer",
+                    "selector": ["proxy"],
+                    "strategy": {
+                        "type": "leastLoad",
+                        "settings": {
+                            "maxRTT": "1s",
+                            "expected": $COUNT,
+                            "baselines": ["1s"],
+                            "tolerance": 0.01
+                        }
+                    },
+                    "fallbackTag": "direct"
+                }
+            ],
     "rules":[
       { "ip":[ "geoip:private" ], "outboundTag": "block" },
       { "protocol":[ "bittorrent" ], "outboundTag": "block" },
       { "domain":[ "geosite:category-ads", "geosite:win-spy", "geosite:private" ], "outboundTag": "block" },
-      { "domain":[ "habr.com", "apkmirror.com" ], "balancerTag": "proxy_balancer" },
+      { "domain":[ "habr.com", "apkmirror.com" ], "balancerTag": "Super_Balancer" },
       {
         "domain":[
           "testipv6.net", "geosite:apple", "geosite:apple-pki", "geosite:huawei", "geosite:xiaomi",
@@ -437,7 +450,7 @@ $OUTBOUNDS
         ],
         "outboundTag": "direct"
       },
-      { "inboundTag":[ "RUsocks5" ], "balancerTag": "proxy_balancer" },
+      { "inboundTag":[ "RUsocks5" ], "balancerTag": "Super_Balancer" },
 $ROUTING_RULES
     ]
   }
@@ -746,7 +759,7 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </div>
 <p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включается, если вы пользовались сторонними сервисами.</p>
 
-<h2>➡️ Конфиги ($COUNT серверов x 3 протокола)</h2>
+<h2>➡️ Конфиги ($COUNT VPS x 3 протокола)</h2>
 EOF
 
 # Вывод строк конфигов
