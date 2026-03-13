@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 566 ${NC}"
+echo -e "${GRN}Версия: 777 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -288,7 +288,7 @@ EOF
     OUTBOUNDS+="$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
-      "tag": "proxy_$i",
+      "tag": "proxy-$i",
       "protocol": "vless",
       "settings": {
         "vnext":[
@@ -419,6 +419,7 @@ $OUTBOUNDS
     { "tag": "block", "protocol": "blackhole" }
   ],
   "routing": {
+    "domainMatcher": "hybrid",
     "domainStrategy": "IPIfNonMatch",
             "balancers": [
                 {
@@ -477,6 +478,7 @@ print_config() {
     "queryStrategy": "UseIPv4"
   },
   "routing": {
+    "domainMatcher": "hybrid",
     "domainStrategy": "IPIfNonMatch",
     "rules":[
       {
