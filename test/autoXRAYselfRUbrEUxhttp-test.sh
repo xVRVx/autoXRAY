@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 878 ${NC}"
+echo -e "${GRN}Версия: 888 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -825,14 +825,14 @@ if systemctl is-active --quiet xray; then echo -e "XRAY: ${GRN}RUNNING${NC}"; el
 echo -e "
 ${YEL}✅ Сгенерировано мостов: ${GRN}$COUNT${NC}
 
-${YEL}Ваша json страничка подписки: ${NC}
+${YEL}Ваша json страничка подписки ${NC}
 ${GRN}$subPageLink${NC}
 
-${YEL}Ссылка на сохраненные конфиги (Web UI): ${NC}
+${YEL}Ссылка на сохраненные конфиги (Web UI) ${NC}
 ${GRN}$configListLink ${NC}
 
 ${YEL}MTProto FakeTLS для ТГ${NC}
-$MTProto
+${GRN}$MTProto ${NC}
 
 Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2RayTun или v2rayN

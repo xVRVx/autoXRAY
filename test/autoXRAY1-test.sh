@@ -1008,7 +1008,7 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </div>
 
 <div class="config-row">
-    <div class="config-label">Мост MTProtoFakeTLS (TG)</div>
+    <div class="config-label">MTProtoFakeTLS (TG)</div>
     <div class="config-code" id="mtproto">${MTProto}</div>
     <button class="btn-action copy-btn" onclick="copyText('mtproto', this)">Copy</button>
     <a href="${MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление моста в тг" style="text-decoration:none">✈️ Add to TG</a>
