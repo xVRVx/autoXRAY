@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 788 ${NC}"
+echo -e "${GRN}Версия: 877 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -797,9 +797,9 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 
 <div class="config-row">
     <div class="config-label">Мост MTProtoFakeTLS (TG)</div>
-    <div class="config-code" id="mtproto">{$MTProto}</div>
+    <div class="config-code" id="mtproto">${MTProto}</div>
     <button class="btn-action copy-btn" onclick="copyText('mtproto', this)">Copy</button>
-    <a href="{$MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление моста в тг" style="text-decoration:none">✈️ Add to TG</a>
+    <a href="${MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление моста в тг" style="text-decoration:none">✈️ Add to TG</a>
 </div>
 
 <h2>💠 Все конфиги вместе</h2>
