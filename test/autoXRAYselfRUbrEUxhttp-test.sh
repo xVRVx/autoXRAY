@@ -98,7 +98,7 @@ done
 SERVER_PORT=443
 
 echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
-apt-get update && apt-get install curl jq dnsutils openssl nginx certbot -y
+apt-get update && apt-get install curl jq dnsutils openssl nginx certbot wget tar -y
 systemctl enable --now nginx
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
@@ -350,8 +350,8 @@ cat << EOF > "$SCRIPT_DIR/config.json"
   "inbounds":[
     {
       "tag": "RUbrEUraw",
-      "port": $SERVER_PORT,
-      "listen": "0.0.0.0",
+      "port": 500,
+      "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
         "clients":[
@@ -728,7 +728,10 @@ echo -e "Перезапуск XRAY"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 configListLink="https://$DOMAIN/$path_subpage.html"
 
-# --- ЗАПИСЬ HEAD HTML ---
+echo -e "\n\n${GRN}Устанавливаем MTProto FakeTLS ${NC}"
+source <(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/telemt-test.sh)
+
+echo -e "\n\n${GRN}Создаем страницу подписки ${NC}"
 cat > "$WEB_PATH/$path_subpage.html" <<'EOF'
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
@@ -783,13 +786,20 @@ EOF
     ((idx++))
 done
 
-# Дописываем Socks5, All links и подвал
+# Дописываем Socks5, MTProto, All links и подвал
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
     <div class="config-label">Мост Socks5 (TG)</div>
     <div class="config-code" id="sock">server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}</div>
     <button class="btn-action copy-btn" onclick="copyText('sock', this)">Copy</button>
     <a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}" target="_blank" class="btn-action qr-btn" title="автодобавление моста в тг" style="text-decoration:none">✈️ Add to TG</a>
+</div>
+
+<div class="config-row">
+    <div class="config-label">Мост MTProtoFakeTLS (TG)</div>
+    <div class="config-code" id="mtproto">{$MTProto}</div>
+    <button class="btn-action copy-btn" onclick="copyText('mtproto', this)">Copy</button>
+    <a href="{$MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление моста в тг" style="text-decoration:none">✈️ Add to TG</a>
 </div>
 
 <h2>💠 Все конфиги вместе</h2>
