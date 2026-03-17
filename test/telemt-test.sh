@@ -1,3 +1,5 @@
+echo -e "${GRN}Версия телемт: 111 ${NC}"
+
 wget -qO- "https://github.com/telemt/telemt/releases/latest/download/telemt-$(uname -m)-linux-$(ldd --version 2>&1 | grep -iq musl && echo musl || echo gnu).tar.gz" | tar -xz
 mv telemt /bin
 chmod +x /bin/telemt
