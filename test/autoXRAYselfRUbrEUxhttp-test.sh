@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 888 ${NC}"
+echo -e "${GRN}Версия: 889 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -786,13 +786,15 @@ EOF
     ((idx++))
 done
 
+SOCKS5_url="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}"
+
 # Дописываем Socks5, MTProto, All links и подвал
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
     <div class="config-label">Мост Socks5 (TG)</div>
-    <div class="config-code" id="sock">server=$DOMAIN port=10443 user=${socksUser} pass=${socksPasw}</div>
+    <div class="config-code" id="sock">${SOCKS5_url}</div>
     <button class="btn-action copy-btn" onclick="copyText('sock', this)">Copy</button>
-    <a href="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}" target="_blank" class="btn-action qr-btn" title="автодобавление моста в тг" style="text-decoration:none">✈️ Add to TG</a>
+    <a href="${SOCKS5_url}" target="_blank" class="btn-action qr-btn" title="автодобавление моста в тг" style="text-decoration:none">✈️ Add to TG</a>
 </div>
 
 <div class="config-row">
