@@ -1,6 +1,6 @@
-echo -e "${GRN}Версия телемт: 223 ${NC}"
+echo -e "${GRN}Версия телемт: 333 ${NC}"
 
-systemctl stop telemt
+systemctl stop telemt 2>/dev/null
 
 wget -qO- "https://github.com/telemt/telemt/releases/latest/download/telemt-$(uname -m)-linux-$(ldd --version 2>&1 | grep -iq musl && echo musl || echo gnu).tar.gz" | tar -xz
 mv telemt /bin
