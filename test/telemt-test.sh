@@ -1,4 +1,4 @@
-echo -e "${GRN}Версия телемт: 333 ${NC}"
+echo -e "${GRN}Версия телемт: 444 ${NC}"
 
 systemctl stop telemt 2>/dev/null
 
@@ -45,6 +45,10 @@ mask = true
 mask_port = 500
 mask_host = "127.0.0.1"
 fake_cert_len = 2048
+
+[access]
+replay_check_len = 65536
+ignore_time_skew = false
 
 [access.users]
 hello = "$telemtHEX16"
