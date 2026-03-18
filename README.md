@@ -1,6 +1,8 @@
 # autoXRAY - личный ВПН сервер
 Bash-скрипт для автоматической настройки ядра [Xray](https://github.com/XTLS/Xray-core). Предназначен для удобного получения актуальных конфигураций VPN для семейного/личного использования, настраивает selfsteal VLESS [XHTTP](https://github.com/XTLS/Xray-core/discussions/4113#discussioncomment-11468947) / [RAW](https://github.com/XTLS/REALITY/blob/main/README.en.md) REALITY.
 
+**UPD5: Добавлена тестовая сборка для подключения MTProto proxy FakeTLS - [readme-test.md](https://github.com/xVRVx/autoXRAY/blob/main/test/readme-test.md)** 
+
 **UPD4: Основной скрипт автоматически ставит WARP-cli.** 
 
 **UPD3: Основной и Экспериментальный скрипты объединены, ss2022 удален.** 
