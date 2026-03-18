@@ -14,7 +14,9 @@ bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/au
 ```
 bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/autoXRAYselfRUbrEUxhttp-test.sh)" -- поддомен2.Домен.Ком "vless://xhttp"
 ```
-Также теперь можно использовать несколько xhttp конфигов, все они будут добавлены в мост. "vless://xhttp1" "vless://xhttp2" "vless://xhttp3"
+Также теперь можно использовать несколько xhttp конфигов, все они будут добавлены в мост.
+
+ -- поддомен2.Домен.Ком "vless://xhttp1" "vless://xhttp2" "vless://xhttp3"
 
 **Как удалить Telemt**
 ```
