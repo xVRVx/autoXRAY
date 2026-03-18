@@ -1,4 +1,4 @@
-echo -e "${GRN}Версия телемт: 444 ${NC}"
+echo -e "${GRN}Версия телемт: 111 ${NC}"
 
 systemctl stop telemt 2>/dev/null
 
@@ -44,6 +44,7 @@ tls_domain = "$DOMAIN"
 mask = true
 mask_port = 500
 mask_host = "127.0.0.1"
+# mask_proxy_protocol = true
 fake_cert_len = 2048
 
 [access]
@@ -95,4 +96,4 @@ systemctl enable telemt
 sleep 3
 telemtSecret=$(curl -s http://127.0.0.1:9091/v1/users | jq -r '.data[0].links.tls[0] | split("secret=")[1]')
 
-MTProto="https://t.me/proxy?server=$DOMAIN&port=443&secret=$telemtSecret"
+MTProto="tg://proxy?server=$DOMAIN&port=443&secret=$telemtSecret"

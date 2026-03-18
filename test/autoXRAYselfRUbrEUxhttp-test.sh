@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 889 ${NC}"
+echo -e "${GRN}Версия: 111 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -786,7 +786,7 @@ EOF
     ((idx++))
 done
 
-SOCKS5_url="https://t.me/socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}"
+SOCKS5_url="tg://socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}"
 
 # Дописываем Socks5, MTProto, All links и подвал
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
