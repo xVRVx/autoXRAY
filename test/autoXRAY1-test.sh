@@ -579,7 +579,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
 	{
 	  "outboundTag": "warp",
-	  "domain": ["2ip.io","habr.com","geosite:google-gemini","geosite:canva","geosite:openai","geosite:whatsapp"]
+	  "domain": ["ifconfig.me","checkip.amazonaws.com","pify.org","2ip.io","habr.com","geosite:google-gemini","geosite:canva","geosite:openai","geosite:whatsapp"]
 	}
     ],
     "domainStrategy": "IPIfNonMatch"
