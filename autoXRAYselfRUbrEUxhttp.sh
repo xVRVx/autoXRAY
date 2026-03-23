@@ -500,6 +500,9 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
       {
         "domain": [
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
           "testipv6.net",
           "geosite:apple",
           "geosite:apple-pki",
@@ -571,6 +574,9 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       {
         "domain": [
           "geosite:private",
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:huawei",
@@ -735,6 +741,9 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       {
         "domain": [
           "geosite:private",
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:huawei",
@@ -895,6 +904,9 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
       {
         "domain": [
           "geosite:private",
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:huawei",
