@@ -444,10 +444,7 @@ $OUTBOUNDS
       { "domain":[ "habr.com", "apkmirror.com" ], "balancerTag": "Super_Balancer" },
       {
         "domain":[
-          "testipv6.net", "geosite:apple", "geosite:apple-pki", "geosite:huawei", "geosite:xiaomi",
-          "geosite:category-android-app-download", "geosite:f-droid", "geosite:yandex", "geosite:vk",
-          "geosite:microsoft", "geosite:win-update", "geosite:win-extra", "geosite:google-play",
-          "geosite:steam", "geosite:category-ru"
+          "ifconfig.me", "checkip.amazonaws.com", "pify.org", "testipv6.net", "geosite:apple", "geosite:apple-pki", "geosite:huawei", "geosite:xiaomi", "geosite:category-android-app-download", "geosite:f-droid", "geosite:yandex", "geosite:vk", "geosite:microsoft", "geosite:win-update", "geosite:win-extra", "geosite:google-play", "geosite:steam", "geosite:category-ru"
         ],
         "outboundTag": "direct"
       },
@@ -503,6 +500,9 @@ print_config() {
       {
         "domain":[
           "geosite:private",
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:huawei",
