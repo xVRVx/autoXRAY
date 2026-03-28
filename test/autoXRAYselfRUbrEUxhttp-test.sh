@@ -439,6 +439,10 @@ $OUTBOUNDS
             ],
     "rules":[
       { "ip":[ "geoip:private" ], "outboundTag": "block" },
+	  {
+        "port": "25",
+        "outboundTag": "block"
+      },
       { "protocol":[ "bittorrent" ], "outboundTag": "block" },
       { "domain":[ "geosite:category-ads", "geosite:win-spy", "geosite:private" ], "outboundTag": "block" },
       { "domain":[ "habr.com", "apkmirror.com" ], "balancerTag": "Super_Balancer" },

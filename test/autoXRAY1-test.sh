@@ -563,6 +563,10 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ],
         "outboundTag": "block"
       },
+	  {
+        "port": "25",
+        "outboundTag": "block"
+      },
       {
         "protocol": [
           "bittorrent"
