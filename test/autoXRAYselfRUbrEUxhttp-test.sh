@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 222 ${NC}"
+echo -e "${GRN}Версия: 121 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -534,7 +534,7 @@ $OUTBOUNDS
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
-          "geosite:category-ip-geo-detect",
+          "geosite:category-ip-geo-detect"
         ],
         "balancerTag": "Super_Balancer"
       },
