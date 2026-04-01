@@ -503,7 +503,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
-          "geosite:category-ip-geo-detect",
+          "geosite:category-ip-geo-detect"
         ],
         "outboundTag": "proxy"
       },
