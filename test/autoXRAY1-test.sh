@@ -583,7 +583,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
 	{
 	  "outboundTag": "warp",
-	  "domain": ["ifconfig.me","checkip.amazonaws.com","pify.org","2ip.io","habr.com","geosite:google-gemini","geosite:canva","geosite:openai","geosite:whatsapp"]
+	  "domain": ["ifconfig.me","checkip.amazonaws.com","pify.org","2ip.io","habr.com","geosite:category-ip-geo-detect","geosite:google-gemini","geosite:canva","geosite:openai","geosite:whatsapp"]
 	}
     ],
     "domainStrategy": "IPIfNonMatch"
@@ -635,6 +635,10 @@ print_config() {
       {
         "domain": [
           "geosite:private",
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
+          "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:huawei",

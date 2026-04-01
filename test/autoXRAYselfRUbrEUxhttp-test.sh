@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 111 ${NC}"
+echo -e "${GRN}Версия: 222 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -325,6 +325,8 @@ done
 # Удаляем запятую в конце
 ROUTING_RULES="${ROUTING_RULES%,}"
 
+
+# Создаем JSON конфигурацию сервера
 cat << EOF > "$SCRIPT_DIR/config.json"
 {
   "log": {
@@ -333,34 +335,56 @@ cat << EOF > "$SCRIPT_DIR/config.json"
     "error": "/var/log/xray/error.log",
     "loglevel": "none"
   },
-	"burstObservatory": {
-		"pingConfig": {
-			"timeout": "3s",
-			"interval": "40s",
-			"sampling": 1,
-			"destination": "https://www.gstatic.com/generate_204",
-			"connectivity": ""
-		},
-		"subjectSelector": ["proxy"]
-	},
+  "burstObservatory": {
+    "pingConfig": {
+      "timeout": "3s",
+      "interval": "40s",
+      "sampling": 1,
+      "destination": "https://www.gstatic.com/generate_204",
+      "connectivity": ""
+    },
+    "subjectSelector": [
+      "proxy"
+    ]
+  },
   "dns": {
-    "servers":[ "https+local://8.8.4.4/dns-query", "https+local://8.8.8.8/dns-query", "https+local://1.1.1.1/dns-query", "localhost" ],
+    "servers": [
+      "https+local://8.8.4.4/dns-query",
+      "https+local://8.8.8.8/dns-query",
+      "https+local://1.1.1.1/dns-query",
+      "localhost"
+    ],
     "queryStrategy": "UseIPv4"
   },
-  "inbounds":[
+  "inbounds": [
     {
       "tag": "RUbrEUraw",
       "port": 500,
       "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
-        "clients":[
-          { "flow": "xtls-rprx-vision", "id": "$SERVER_UUID" }
+        "clients": [
+          {
+            "flow": "xtls-rprx-vision",
+            "id": "$SERVER_UUID"
+          }
         ],
         "decryption": "none",
-        "fallbacks":[ { "dest": "3333", "xver": 2 } ]
+        "fallbacks": [
+          {
+            "dest": "3333",
+            "xver": 2
+          }
+        ]
       },
-      "sniffing": { "enabled": true, "destOverride":[ "http", "tls", "quic" ] },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
       "streamSettings": {
         "network": "raw",
         "security": "reality",
@@ -369,11 +393,23 @@ cat << EOF > "$SCRIPT_DIR/config.json"
           "xver": 2,
           "target": "/dev/shm/nginx.sock",
           "spiderX": "/",
-          "shortIds":[ "$xray_shortIds_vrv" ],
+          "shortIds": [
+            "$xray_shortIds_vrv"
+          ],
           "privateKey": "$xray_privateKey_vrv",
-          "serverNames":[ "$DOMAIN" ],
-          "limitFallbackUpload": { "afterBytes": 0, "bytesPerSec": 65536, "burstBytesPerSec": 0 },
-          "limitFallbackDownload": { "afterBytes": 5242880, "bytesPerSec": 262144, "burstBytesPerSec": 2097152 }
+          "serverNames": [
+            "$DOMAIN"
+          ],
+          "limitFallbackUpload": {
+            "afterBytes": 0,
+            "bytesPerSec": 65536,
+            "burstBytesPerSec": 0
+          },
+          "limitFallbackDownload": {
+            "afterBytes": 5242880,
+            "bytesPerSec": 262144,
+            "burstBytesPerSec": 2097152
+          }
         }
       }
     },
@@ -383,12 +419,21 @@ cat << EOF > "$SCRIPT_DIR/config.json"
       "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
-        "clients":[
-          { "id": "$SERVER_UUID" }
+        "clients": [
+          {
+            "id": "$SERVER_UUID"
+          }
         ],
         "decryption": "none"
       },
-      "sniffing": { "enabled": true, "destOverride":[ "http", "tls", "quic" ] },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
@@ -397,7 +442,9 @@ cat << EOF > "$SCRIPT_DIR/config.json"
           "acceptProxyProtocol": false
         },
         "security": "none",
-        "sockopt": { "acceptProxyProtocol": true }
+        "sockopt": {
+          "acceptProxyProtocol": true
+        }
       }
     },
     {
@@ -409,58 +456,121 @@ cat << EOF > "$SCRIPT_DIR/config.json"
         "ip": "0.0.0.0",
         "udp": true,
         "auth": "password",
-        "accounts":[ { "user": "$socksUser", "pass": "$socksPasw" } ]
+        "accounts": [
+          {
+            "user": "$socksUser",
+            "pass": "$socksPasw"
+          }
+        ]
       }
     }
   ],
-  "outbounds":[
+  "outbounds": [
 $OUTBOUNDS
-    { "tag": "direct", "protocol": "freedom", "settings": { "domainStrategy": "ForceIPv4" } },
-    { "tag": "block", "protocol": "blackhole" }
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "ForceIPv4"
+      }
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
   ],
   "routing": {
     "domainMatcher": "hybrid",
     "domainStrategy": "IPIfNonMatch",
-            "balancers": [
-                {
-                    "tag": "Super_Balancer",
-                    "selector": ["proxy"],
-                    "strategy": {
-                        "type": "leastLoad",
-                        "settings": {
-                            "maxRTT": "1s",
-                            "expected": $COUNT,
-                            "baselines": ["1s"],
-                            "tolerance": 0.01
-                        }
-                    },
-                    "fallbackTag": "direct"
-                }
+    "balancers": [
+      {
+        "tag": "Super_Balancer",
+        "selector": [
+          "proxy"
+        ],
+        "strategy": {
+          "type": "leastLoad",
+          "settings": {
+            "maxRTT": "1s",
+            "expected": $COUNT,
+            "baselines": [
+              "1s"
             ],
-    "rules":[
-      { "ip":[ "geoip:private" ], "outboundTag": "block" },
-	  {
+            "tolerance": 0.01
+          }
+        },
+        "fallbackTag": "direct"
+      }
+    ],
+    "rules": [
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "block"
+      },
+      {
         "port": "25",
         "outboundTag": "block"
       },
-      { "protocol":[ "bittorrent" ], "outboundTag": "block" },
-      { "domain":[ "geosite:category-ads", "geosite:win-spy", "geosite:private" ], "outboundTag": "block" },
-      { "domain":[ "habr.com", "apkmirror.com" ], "balancerTag": "Super_Balancer" },
       {
-        "domain":[
-          "ifconfig.me", "checkip.amazonaws.com", "pify.org", "testipv6.net", "geosite:apple", "geosite:apple-pki", "geosite:huawei", "geosite:xiaomi", "geosite:category-android-app-download", "geosite:f-droid", "geosite:yandex", "geosite:vk", "geosite:microsoft", "geosite:win-update", "geosite:win-extra", "geosite:google-play", "geosite:steam", "geosite:category-ru"
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy",
+          "geosite:private"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "domain": [
+          "habr.com",
+          "apkmirror.com",
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
+          "geosite:category-ip-geo-detect",
+        ],
+        "balancerTag": "Super_Balancer"
+      },
+      {
+        "domain": [
+          "testipv6.net",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:huawei",
+          "geosite:xiaomi",
+          "geosite:category-android-app-download",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:microsoft",
+          "geosite:win-update",
+          "geosite:win-extra",
+          "geosite:google-play",
+          "geosite:steam",
+          "geosite:category-ru"
         ],
         "outboundTag": "direct"
       },
-      { "inboundTag":[ "RUsocks5" ], "balancerTag": "Super_Balancer" },
+      {
+        "inboundTag": [
+          "RUsocks5"
+        ],
+        "balancerTag": "Super_Balancer"
+      },
 $ROUTING_RULES
     ]
   }
 }
 EOF
 
-# ==== СОЗДАНИЕ КОНФИГА ПОДПИСКИ КЛИЕНТА ====
-
+# Создаем JSON конфигурацию клиента
 print_config() {
   local PROXY_OUTBOUND="$1"
   local REMARK="$2"
@@ -507,6 +617,7 @@ print_config() {
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
+		  "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:huawei",
