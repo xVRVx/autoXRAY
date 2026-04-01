@@ -498,15 +498,17 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
       {
         "domain": [
-          "habr.com", "apkmirror.com"
+          "habr.com",
+		  "apkmirror.com",
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
+          "geosite:category-ip-geo-detect",
         ],
         "outboundTag": "proxy"
       },
       {
         "domain": [
-          "ifconfig.me",
-          "checkip.amazonaws.com",
-          "pify.org",
           "testipv6.net",
           "geosite:apple",
           "geosite:apple-pki",
@@ -581,6 +583,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
+		  "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:huawei",
@@ -748,6 +751,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
+		  "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:huawei",
@@ -911,6 +915,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
+		  "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:huawei",
