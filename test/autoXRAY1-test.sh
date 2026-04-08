@@ -1041,7 +1041,7 @@ EOF
 echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
 
 # Проверка WARP-cli (Socks5 порт 40000)
-if nc -z 127.0.0.1 40000; then
+if ss -nlt | grep -q ":40000\b"; then
     echo -e "WARP-cli: ${GRN}LISTENING${NC}"
 else
     echo -e "WARP-cli: ${RED}NOT LISTENING${NC}"
