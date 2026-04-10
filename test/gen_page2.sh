@@ -126,6 +126,9 @@ cat > "$TARGET_DIR/index.html" <<EOF
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
     <title>$HEADER</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=$FONT_URL_PART&display=swap" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="$FAVICON">
     <style>
         :root {
@@ -369,11 +372,69 @@ cat > "$TARGET_DIR/index.html" <<EOF
 
     </div>
 
-    <script>
-!function(){const e=["$ERROR_TEXT","Verifying...","Authenticating...","Handshake failed","Unexpected 502","Connection established"],t=e=>document.querySelector(e),n=e=>new Promise((t=>setTimeout(t,e)));t("#fp").value=btoa(navigator.userAgent+Date.now());const s={init:function(){t("#vform").addEventListener("submit",this.handleSubmit.bind(this)),console.log("%c [System] Secure Gateway Initialized","color: #22c55e; font-weight:bold")},handleSubmit:async function(s){s.preventDefault();const a=t("#act-btn"),i=t("#btn-txt"),o=t("#sys-msg"),c=i.innerText;o.classList.add("hidden"),a.disabled=!0,a.classList.add("opacity-80","cursor-wait"),i.innerHTML='<div class="loader"></div>',console.log("[Net] Sending handshake packet..."),await n(600),i.innerHTML='<div class="loader"></div> <span class="ml-2">'+e[1]+"</span>",await n(800),console.log("[Auth] Token exchange in progress..."),a.disabled=!1,a.classList.remove("opacity-80","cursor-wait"),i.innerText=c;const d=t("#auth-container");o.querySelector("#msg-content").innerText=e[0],o.classList.remove("hidden"),o.classList.add("fade-enter-active"),d.classList.add("shake"),console.error("[Err] "+e[3]),t("#sec").value="",t("#sec").focus(),setTimeout((()=>d.classList.remove("shake")),500)}};document.addEventListener("DOMContentLoaded",(()=>s.init()))}();
+<script>
+!function(){
+    const errors=["$ERROR_TEXT","Verifying...","Authenticating...","Connection established"];
+    const t=e=>document.querySelector(e);
+    
+    t("#fp").value=btoa(navigator.userAgent+Date.now());
+    
+    document.addEventListener("DOMContentLoaded",()=>{
+        t("#vform").addEventListener("submit",async function(s){
+            s.preventDefault();
+            const btn=t("#act-btn"), txt=t("#btn-txt"), msg=t("#sys-msg");
+            const origTxt=txt.innerText;
+            
+            msg.classList.add("hidden");
+            btn.disabled=true;
+            btn.classList.add("opacity-80","cursor-wait");
+            txt.innerHTML='<div class="loader"></div> <span class="ml-2">'+errors[1]+'</span>';
+            
+            try {
+                // ДЕЛАЕМ РЕАЛЬНЫЙ СЕТЕВОЙ ЗАПРОС (чтобы обмануть DPI ботов)
+                const formData = new FormData();
+                formData.append('u', t("#uid").value);
+                formData.append('p', t("#sec").value);
+                formData.append('csrf', t("input[name='csrf_token']").value);
+
+                // Запрос улетит в никуда (вернет 404 или 403), но в логах браузера он будет!
+                await fetch('/api/v1/authenticate', {
+                    method: 'POST',
+                    body: formData
+                });
+            } catch(e) {
+                // Игнорируем сетевую ошибку, мы все равно покажем фейковую
+            }
+
+            // Рандомная задержка от 500ms до 1500ms для имитации работы сервера
+            await new Promise(r=>setTimeout(r, 500 + Math.random() * 1000));
+            
+            btn.disabled=false;
+            btn.classList.remove("opacity-80","cursor-wait");
+            txt.innerText=origTxt;
+            
+            const cont=t("#auth-container");
+            msg.querySelector("#msg-content").innerText=errors[0];
+            msg.classList.remove("hidden");
+            cont.classList.add("shake");
+            
+            t("#sec").value="";
+            t("#sec").focus();
+            setTimeout(()=>cont.classList.remove("shake"),500);
+        });
+    });
+}();
     </script>
 </body>
 </html>
 EOF
+
+cat > "$TARGET_DIR/robots.txt" <<EOF
+User-agent: *
+Disallow: /api/
+Disallow: /admin/
+Allow: /
+EOF
+echo "Generated robots.txt"
 
 echo "Generated in $TARGET_DIR"
