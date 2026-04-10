@@ -391,22 +391,17 @@ cat > "$TARGET_DIR/index.html" <<EOF
             txt.innerHTML='<div class="loader"></div> <span class="ml-2">'+errors[1]+'</span>';
             
             try {
-                // ДЕЛАЕМ РЕАЛЬНЫЙ СЕТЕВОЙ ЗАПРОС (чтобы обмануть DPI ботов)
                 const formData = new FormData();
                 formData.append('u', t("#uid").value);
                 formData.append('p', t("#sec").value);
                 formData.append('csrf', t("input[name='csrf_token']").value);
 
-                // Запрос улетит в никуда (вернет 404 или 403), но в логах браузера он будет!
                 await fetch('/api/v1/authenticate', {
                     method: 'POST',
                     body: formData
                 });
-            } catch(e) {
-                // Игнорируем сетевую ошибку, мы все равно покажем фейковую
-            }
+            } catch(e) {}
 
-            // Рандомная задержка от 500ms до 1500ms для имитации работы сервера
             await new Promise(r=>setTimeout(r, 500 + Math.random() * 1000));
             
             btn.disabled=false;
