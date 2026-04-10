@@ -1,4 +1,4 @@
-echo -e "${GRN}Версия телемт: 111 ${NC}"
+echo -e "${GRN}Версия телемт: 222 ${NC}"
 
 systemctl stop telemt 2>/dev/null
 
