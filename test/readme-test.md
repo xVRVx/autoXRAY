@@ -23,3 +23,9 @@ bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/au
 ```
 systemctl stop telemt; systemctl disable telemt; rm -f /etc/systemd/system/telemt.service /bin/telemt; systemctl daemon-reload
 ```
+
+**Принцип работы**
+
+443 XRAY -> MTP TELEMT -> сайт заглушка
+
+Конфигурация: /etc/telemt/telemt.toml
