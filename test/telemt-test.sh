@@ -22,8 +22,9 @@ secure = false
 tls = true
 
 [server]
-port = 443
-listen_addr_ipv4 = "0.0.0.0"
+port = 500
+listen_addr_ipv4 = "127.0.0.1"
+proxy_protocol = true
 
 # === Timeouts (in seconds) ===
 [timeouts]
@@ -42,10 +43,11 @@ listen = "127.0.0.1:9091"
 [censorship]
 tls_domain = "$DOMAIN"
 mask = true
-mask_port = 500
-mask_host = "127.0.0.1"
-# mask_proxy_protocol = true
+mask_unix_sock = "/dev/shm/nginx.sock"
+mask_proxy_protocol = 2
 fake_cert_len = 2048
+# mask_port = 500
+# mask_host = "127.0.0.1"
 
 [access]
 replay_check_len = 65536

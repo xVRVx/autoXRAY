@@ -6,7 +6,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 111 ${NC}"
+echo -e "${GRN}Версия: 222 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -276,8 +276,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   "inbounds": [
 	{
       "tag": "vsRAWrtyVISION",
-      "port": 500,
-      "listen": "127.0.0.1",
+      "port": 443,
+      "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
         "clients": [
@@ -305,10 +305,13 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "streamSettings": {
         "network": "raw",
         "security": "reality",
+        "sockopt": {
+          "acceptProxyProtocol": false
+        },
         "realitySettings": {
           "show": false,
           "xver": 2,
-          "target": "/dev/shm/nginx.sock",
+          "target": "127.0.0.1:500",
           "spiderX": "/",
           "shortIds": [
             "${xray_shortIds_vrv}"
@@ -316,17 +319,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "privateKey": "${xray_privateKey_vrv}",
           "serverNames": [
             "$DOMAIN"
-          ],
-          "limitFallbackUpload": {
-            "afterBytes": 0,
-            "bytesPerSec": 65536,
-            "burstBytesPerSec": 0
-          },
-          "limitFallbackDownload": {
-            "afterBytes": 5242880,
-            "bytesPerSec": 262144,
-            "burstBytesPerSec": 2097152
-          }
+          ]
         }
       }
     },
