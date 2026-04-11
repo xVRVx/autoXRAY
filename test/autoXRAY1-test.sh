@@ -1040,6 +1040,8 @@ if ss -nlt | grep -q ":40000\b"; then
     echo -e "WARP-cli: ${GRN}LISTENING${NC}"
 else
     echo -e "WARP-cli: ${RED}NOT LISTENING${NC}"
+    echo "Возникла ошибка! Возможные пути решения проблемы смотрите здесь:"
+    echo "https://github.com/xVRVx/autoXRAY/blob/main/test/warp-readme.md"
 fi
 
 # Проверка Telemt
