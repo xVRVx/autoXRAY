@@ -15,4 +15,6 @@ bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/wa
 
 
 **Как удалить**
+```
 warp-cli disconnect; apt-get remove cloudflare-warp -y
+```
