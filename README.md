@@ -207,6 +207,9 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/aut
 
 После этого можно удалить WARP-cli, если это необходимо.
 
+**Если возникла ошбика при установке WARP** - [читайте инструкцию.](https://github.com/xVRVx/autoXRAY/blob/main/test/warp-readme.md)
+
+
 ===========================================================================
 
 Скрипты будут дорабатываться до актуального состояния.
