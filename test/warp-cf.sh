@@ -20,7 +20,7 @@ echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] ht
 
 sudo apt-get update && sudo apt-get install cloudflare-warp -y
 
-warp-cli --accept-tos registration new
+yes y | warp-cli registration new
 warp-cli mode proxy
 warp-cli connect
 
