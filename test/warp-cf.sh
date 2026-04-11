@@ -24,8 +24,8 @@ yes y | warp-cli registration new
 warp-cli mode proxy
 warp-cli connect
 
-echo -e "${YEL}Ожидание запуска прокси (3 секунды)...${NC}"
-sleep 3
+echo -e "${YEL}Ожидание запуска прокси (10 секунд)...${NC}"
+sleep 10
 
 # Проверка WARP-CF (Socks5 порт 40000)
 if ss -nlt | grep -q ":40000\b"; then
