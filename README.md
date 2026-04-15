@@ -176,7 +176,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/aut
 
 **Если вы хотите пускать YouTube через ruVPS (у вас он без ТСПУ или вы поставили и настроили [zapret4rocket](https://github.com/IndeecFOX/zapret4rocket))**
 
-Тогда в конфиге ruVPS, который лежит /usr/local/etc/xray/config.json надо добавить в строке 146:
+Тогда в конфиге ruVPS, который лежит /usr/local/etc/xray/config.json надо добавить в секцию "domain": [сюда], "outboundTag": "direct"
 ```bash
 "geosite:youtube",
 "youtube.com",
