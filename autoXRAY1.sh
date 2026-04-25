@@ -58,6 +58,38 @@ ulimit -n 65535
 echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
 
+# Ротация логов xray (защита от роста /var/log/xray)
+if ! command -v logrotate >/dev/null 2>&1; then
+    apt-get install -y logrotate
+fi
+
+mkdir -p /var/log/xray
+cat <<'EOF' > /etc/logrotate.d/xray
+/var/log/xray/*.log {
+    daily
+    rotate 7
+    size 10M
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    sharedscripts
+    su root root
+    create 0640 root root
+}
+EOF
+chmod 0644 /etc/logrotate.d/xray
+
+# Применить сразу + проверка синтаксиса конфига
+if logrotate -d /etc/logrotate.d/xray >/dev/null 2>&1; then
+    logrotate -f /etc/logrotate.d/xray >/dev/null 2>&1 || true
+    echo -e "${GRN}✅ Logrotate для xray установлен (/etc/logrotate.d/xray)${NC}"
+else
+    echo -e "${RED}❌ Ошибка в /etc/logrotate.d/xray${NC}"
+fi
+
+
 # Создание директории сайта
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
