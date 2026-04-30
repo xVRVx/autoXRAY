@@ -205,10 +205,19 @@ server {
     location = /${path_subpage}.json {
 		add_header profile-title "base64:YXV0b1hSQVk=";
 		add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9zaXRlOmNhdGVnb3J5LWFkcyIsImdlb3NpdGU6d2luLXNweSJdLCJCbG9ja0lwIjpbXSwiRG9tYWluU3RyYXRlZ3kiOiJJUElmTm9uTWF0Y2giLCJGYWtlRE5TIjoiZmFsc2UiLCJVc2VDaHVua0ZpbGVzIjoiZmFsc2UifQ";
-		
+
 		add_header routing-enable 0;
+		add_header Referrer-Policy "no-referrer" always;
+		add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet" always;
+		add_header Cache-Control "no-store" always;
 	}
-    
+
+    location = /${path_subpage}.html {
+        add_header Referrer-Policy "no-referrer" always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet" always;
+        add_header Cache-Control "no-store" always;
+    }
+
     location /${path_xhttp} {
         proxy_pass http://127.0.0.1:8400;
         proxy_http_version 1.1;
@@ -280,6 +289,21 @@ if ss -tuln | grep -q ":40000 "; then
 else
     echo -e "${GRN}Установка WARP-cli (автоматически)...${NC}"
     echo -e "1\n1\n40000" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
+fi
+
+
+# Защита SOCKS5/mixed (10443) от ботов: rate-limit новых соединений на IP
+if ! command -v netfilter-persistent >/dev/null 2>&1; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y iptables-persistent
+fi
+
+RULE_10443="-p tcp --dport 10443 -m conntrack --ctstate NEW -m hashlimit --hashlimit-name socks10443 --hashlimit-above 5/minute --hashlimit-burst 10 --hashlimit-mode srcip --hashlimit-srcmask 32 -j DROP"
+if ! iptables -C INPUT $RULE_10443 2>/dev/null; then
+    iptables -I INPUT 1 $RULE_10443
+    netfilter-persistent save >/dev/null 2>&1
+    echo -e "${GRN}✅ iptables: rate-limit на 10443 (5/min, burst 10) установлен${NC}"
+else
+    echo -e "${GRN}iptables правило для 10443 уже есть${NC}"
 fi
 
 # Экспортируем переменные для envsubst
