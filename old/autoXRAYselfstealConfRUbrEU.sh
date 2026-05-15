@@ -124,11 +124,17 @@ CONFIG_PATH="/etc/nginx/sites-available/default"
 
 echo "✅ Записываем конфигурацию в $CONFIG_PATH для домена $DOMAIN"
 
+
+path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
+
+# конфиг nginx
 bash -c "cat > $CONFIG_PATH" <<EOF
 server {
     server_name $DOMAIN;
 	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;	
-
+    set_real_ip_from unix:;
+    real_ip_header proxy_protocol;
+	
     root /var/www/$DOMAIN;
     index index.php index.html;
 	
@@ -143,6 +149,12 @@ server {
     ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
 
+    location = /${path_subpage}.json {
+		add_header profile-title "base64:YXV0b1hSQVk=";
+		add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9zaXRlOmNhdGVnb3J5LWFkcyIsImdlb3NpdGU6d2luLXNweSJdLCJCbG9ja0lwIjpbXSwiRG9tYWluU3RyYXRlZ3kiOiJJUElmTm9uTWF0Y2giLCJGYWtlRE5TIjoiZmFsc2UiLCJVc2VDaHVua0ZpbGVzIjoiZmFsc2UifQ";
+		
+		add_header routing-enable 0;
+	}
 
     location ~ /\.ht {
         deny all;
@@ -172,71 +184,8 @@ systemctl restart nginx
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
 
-# Установка прав
-#chown -R $USER:$USER "$WEB_PATH"
-#chmod -R 755 "$WEB_PATH"
-
-# Arrays with random options
-TITLES=("FileShare" "CloudBox" "DataVault" "SecureShare" "EasyFiles" "QuickAccess" "VaultZone" "SkyDrive" "SafeData" "FlexShare"
-        "DropZone" "SecureStorage" "FastFiles" "SharePoint" "MegaVault" "Boxify" "DataBank" "DriveSecure" "FileStream" "AccessHub")
-
-HEADERS=("Welcome to FileShare" "Login to Your CloudBox" "Enter Your Secure Vault" "Access Your DataVault" "Sign in to EasyFiles"
-         "Connect to QuickAccess" "Welcome to VaultZone" "Login to SkyDrive" "Enter Your SafeData" "Sign in to FlexShare"
-         "Access Your DropZone" "Welcome to SecureStorage" "Login to FastFiles" "Enter Your SharePoint" "Welcome to MegaVault"
-         "Sign in to Boxify" "Access Your DataBank" "Welcome to DriveSecure" "Login to FileStream" "Connect to AccessHub")
-
-BUTTON_COLORS=("bg-blue-600" "bg-green-600" "bg-red-600" "bg-yellow-600" "bg-purple-600" "bg-pink-600" "bg-indigo-600"
-               "bg-teal-600" "bg-orange-600" "bg-cyan-600" "bg-lime-600" "bg-amber-600" "bg-fuchsia-600" "bg-violet-600"
-               "bg-rose-600" "bg-emerald-600" "bg-sky-600" "bg-gray-600" "bg-zinc-600" "bg-stone-600")
-			   
-BUTTON_TEXTS=("Sign In" "Log In" "Login" "Access Account" "Enter Account"
-              "Sign In to Continue" "Sign In to Dashboard" "Log In to Your Account" "Continue to Account" "Access Your Dashboard"
-              "Let’s Go" "Welcome Back!" "Get Started" "Join Us Again" "Back Again? Sign In"
-              "Secure Sign In" "Protected Login" "Sign In Securely"
-              "Enter" "Go")
-
-# Random selection
-TITLE=${TITLES[$RANDOM % ${#TITLES[@]}]}
-HEADER=${HEADERS[$RANDOM % ${#HEADERS[@]}]}
-BUTTON_COLOR=${BUTTON_COLORS[$RANDOM % ${#BUTTON_COLORS[@]}]}
-BUTTON_TEXT=${BUTTON_TEXTS[$RANDOM % ${#BUTTON_TEXTS[@]}]}
-
-echo "✅ Creating index.html at $WEB_PATH"
-
-# Generate HTML content
-cat > "$WEB_PATH/index.html" <<EOF
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>$TITLE</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-	<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
-	<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js" integrity="sha256-9zljDKpE/mQxmaR4V2cGVaQ7arF3CcXxarvgr7Sj8Uc=" crossorigin="anonymous"></script>
-</head>
-<body class="flex items-center justify-center min-h-screen bg-gray-100">
-    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-md">
-        <h2 class="text-2xl font-bold text-center text-gray-700">$HEADER</h2>
-        <form action="#" method="POST" class="space-y-4">
-            <div>
-                <label for="login" class="block text-sm font-medium text-gray-600">Username</label>
-                <input type="text" id="login" name="login" class="w-full p-2 mt-1 border rounded-lg focus:ring focus:ring-blue-200" />
-            </div>
-            <div>
-                <label for="password" class="block text-sm font-medium text-gray-600">Password</label>
-                <input type="password" id="password" name="password" class="w-full p-2 mt-1 border rounded-lg focus:ring focus:ring-blue-200" />
-            </div>
-            <button type="submit" class="w-full px-4 py-2 text-white $BUTTON_COLOR rounded-lg hover:opacity-90 focus:ring focus:ring-blue-200">
-                $BUTTON_TEXT
-            </button>
-        </form>
-    </div>
-</body>
-</html>
-EOF
-
-
+# Генерируем сайт маскировку
+bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- $WEB_PATH
 
 # Установка Xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -248,9 +197,6 @@ SCRIPT_DIR=/usr/local/etc/xray
 
 # Генерируем переменные
 xray_uuid_vrv=$(xray uuid)
-domains=(www.theregister.com www.20minutes.fr www.dealabs.com www.manomano.fr www.caradisiac.com www.techadvisor.com www.computerworld.com teamdocs.su wikiportal.su docscenter.su www.bing.com github.com tradingview.com)
-xray_dest_vrv=${domains[$RANDOM % ${#domains[@]}]}
-xray_dest_vrv222=${domains[$RANDOM % ${#domains[@]}]}
 
 key_output=$(xray x25519)
 xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/PrivateKey/ {print $2}')
@@ -264,14 +210,12 @@ xray_shortIds_vrv=$(openssl rand -hex 8)
 
 xray_sspasw_vrv=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
-path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
-
 ipserv=$(hostname -I | awk '{print $1}')
 
 
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_dest_vrv xray_dest_vrv222 xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH TYPE FP SNI SPX PBK SECURITY FLOW SID uuidVL addressVL portVL
+export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage WEB_PATH TYPE FP SNI SPX PBK SECURITY FLOW SID uuidVL addressVL portVL
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
