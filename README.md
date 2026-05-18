@@ -58,6 +58,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 Теперь надо создать A-запись: Новая запись -> Тип А -> Хост (имя субдомена) -> Указывает на (IP адрес вашего VPS).
 
 Еще бесплатный поддомен можно получить тут: https://www.duckdns.org/ или https://freedns.afraid.org/
+
 **Платный домен и бесплатный днс-хостинг можно получить** в [senko.digital](https://senko.digital/?ref=47670). Здесь же можно арендовать промо VPS.
 Платные сервисы, как правило, работают стабильнее.
 
