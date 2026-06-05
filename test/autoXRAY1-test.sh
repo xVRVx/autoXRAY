@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# указываем фингерпринт
-fpBro=edge
 
 # Цвета для вывода
 GRN='\033[1;32m'
@@ -9,7 +7,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 223 ${NC}"
+echo -e "${GRN}Версия: 224 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -60,6 +58,22 @@ else
     TARGET_MTP="/dev/shm/nginx.sock"
     INSTALL_MTP=false
 fi
+
+echo -e "\n${YEL}Выберите TLS fingerprint для маскировки трафика:${NC}"
+echo "1) chrome    3) safari   5) android   7) 360"
+echo "2) firefox   4) ios      6) edge      8) qq"
+read -p "Введите номер [1-8] (по умолчанию 2 - firefox): " fp_choice
+
+case $fp_choice in
+    1) fpBro="chrome" ;;
+    2) fpBro="firefox" ;;
+    3) fpBro="safari" ;;
+    4) fpBro="ios" ;;
+    5) fpBro="android" ;;
+    7) fpBro="360" ;;
+    8) fpBro="qq" ;;
+    *) fpBro="edge" ;; # Если ввели 2, пустоту или ошибку — ставим firefox
+esac
 # ============================
 
 # Включаем BBR
