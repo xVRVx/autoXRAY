@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# указываем фингерпринт
+fpBro=firefox
+
 # Цвета для вывода
 GRN='\033[1;32m'
 RED='\033[1;31m'
@@ -746,7 +749,7 @@ OUT_REALITY_VISION='{
     "network": "raw",
     "security": "reality",
     "realitySettings": {
-      "show": false, "fingerprint": "edge", "serverName": "$DOMAIN",
+      "show": false, "fingerprint": "$fpBro", "serverName": "$DOMAIN",
       "password": "${xray_publicKey_vrv}", "shortId": "${xray_shortIds_vrv}", "spiderX": "/"
     }
   }
@@ -787,7 +790,7 @@ OUT_REALITY_XHTTP='{
       }
     },
     "realitySettings": {
-      "show": false, "fingerprint": "edge", "serverName": "$DOMAIN",
+      "show": false, "fingerprint": "$fpBro", "serverName": "$DOMAIN",
       "password": "${xray_publicKey_vrv}", "shortId": "${xray_shortIds_vrv}", "spiderX": "/"
     }
   }
@@ -813,7 +816,7 @@ OUT_VISION='{
     "security": "tls",
     "tlsSettings": {
       "serverName": "$DOMAIN",
-      "fingerprint": "edge"
+      "fingerprint": "$fpBro"
     }
   }
 }'
@@ -851,7 +854,7 @@ OUT_XHTTP='{
 		},
 	"mode": "auto", "path": "/${path_xhttp}" },
     "security": "tls",
-    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "edge" }
+    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "$fpBro" }
   }
 }'
 
@@ -871,7 +874,7 @@ OUT_GRPC='{
     "network": "grpc",
     "grpcSettings": { "serviceName": "${path_xhttp}11", "multiMode": false },
     "security": "tls",
-    "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "edge" }
+    "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
   }
 }'
 
@@ -890,7 +893,7 @@ OUT_WS='{
     "network": "ws",
     "wsSettings": { "path": "/${path_xhttp}22" },
     "security": "tls",
-    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "edge" }
+    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "$fpBro" }
   }
 }'
 
@@ -919,18 +922,18 @@ echo -e "Перезапуск XRAY"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-linkRTY1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=edge&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityVISION-autoXRAY"
+linkRTY1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityVISION-autoXRAY"
 
-linkRTY2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=stream-one&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=edge&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
+linkRTY2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=stream-one&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
 
-linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=edge&spx=%2F#vlessRAWtlsVision-autoXRAY"
+linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
 
 
-linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=edge&spx=%2F#vlessXHTTPtls-autoXRAY"
+linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessXHTTPtls-autoXRAY"
 
-linkTLS3="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=ws&headerType=&path=%2F${path_xhttp}22&host=&sni=$DOMAIN&fp=edge&spx=%2F#vlessWStls-autoXRAY"
+linkTLS3="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=ws&headerType=&path=%2F${path_xhttp}22&host=&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessWStls-autoXRAY"
 
-linkTLS4="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=grpc&headerType=&serviceName=${path_xhttp}11&host=&sni=$DOMAIN&fp=edge&spx=%2F#vlessGRPCtls-autoXRAY"
+linkTLS4="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=grpc&headerType=&serviceName=${path_xhttp}11&host=&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessGRPCtls-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
