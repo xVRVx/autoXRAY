@@ -1,12 +1,15 @@
 #!/bin/bash
 
+# указываем фингерпринт
+fpBro=edge
+
 # Цвета для вывода
 GRN='\033[1;32m'
 RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 222 ${NC}"
+echo -e "${GRN}Версия: 223 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -37,6 +40,27 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo -e "${YEL}Продолжение выполнения скрипта...${NC}"
 fi
 
+# === ВОПРОСЫ ПОЛЬЗОВАТЕЛЮ ===
+read -p "Устанавливать WARP для обхода блокировок некоторых сайтов? (y/n, по умолчанию y): " choice_warp
+choice_warp=${choice_warp:-y}
+if [[ "$choice_warp" =~ ^[Yy]$ ]]; then
+    TAG_WARP="warp"
+    INSTALL_WARP=true
+else
+    TAG_WARP="direct"
+    INSTALL_WARP=false
+fi
+
+read -p "Устанавливать MTProxy для Telegram? (y/n, по умолчанию y): " choice_mtp
+choice_mtp=${choice_mtp:-y}
+if [[ "$choice_mtp" =~ ^[Yy]$ ]]; then
+    TARGET_MTP="127.0.0.1:500"
+    INSTALL_MTP=true
+else
+    TARGET_MTP="/dev/shm/nginx.sock"
+    INSTALL_MTP=false
+fi
+# ============================
 
 # Включаем BBR
 bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
@@ -244,16 +268,19 @@ socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 
 # Установка WARP-cli
-# Посмотреть порт(2408): grep -r "Endpoint" /etc/wireguard/
-if ss -tuln | grep -q ":40000 "; then
-    echo -e "${GRN}WARP-cli (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
+if [ "$INSTALL_WARP" = true ]; then
+    if ss -tuln | grep -q ":40000 "; then
+        echo -e "${GRN}WARP-cli (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
+    else
+        echo -e "${GRN}Установка WARP-cli (автоматически)...${NC}"
+        echo -e "1\n1\n40000" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
+    fi
 else
-    echo -e "${GRN}Установка WARP-cli (автоматически)...${NC}"
-    echo -e "1\n1\n40000" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
+    echo -e "${YEL}Установка WARP пропущена по выбору пользователя.${NC}"
 fi
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw
+export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw TARGET_MTP TAG_WARP
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
@@ -311,7 +338,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "realitySettings": {
           "show": false,
           "xver": 2,
-          "target": "127.0.0.1:500",
+          "target": "${TARGET_MTP}",
           "spiderX": "/",
           "shortIds": [
             "${xray_shortIds_vrv}"
@@ -509,10 +536,10 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 	{
       "tag": "socks5",
       "port": 10443,
-      "listen": "0.0.0.0",
+      "listen": "127.0.0.1",
       "protocol": "mixed",
       "settings": {
-        "ip": "0.0.0.0",
+        "ip": "127.0.0.1",
         "udp": true,
         "auth": "password",
         "accounts": [
@@ -577,7 +604,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "outboundTag": "block"
       },
 	{
-	  "outboundTag": "warp",
+	  "outboundTag": "${TAG_WARP}",
 	  "domain": ["ifconfig.me","checkip.amazonaws.com","pify.org","2ip.io","habr.com","geosite:category-ip-geo-detect","geosite:google-gemini","geosite:canva","geosite:openai","geosite:whatsapp"]
 	}
     ],
@@ -741,7 +768,7 @@ OUT_REALITY_VISION='{
     "network": "raw",
     "security": "reality",
     "realitySettings": {
-      "show": false, "fingerprint": "chrome", "serverName": "$DOMAIN",
+      "show": false, "fingerprint": "$fpBro", "serverName": "$DOMAIN",
       "password": "${xray_publicKey_vrv}", "shortId": "${xray_shortIds_vrv}", "spiderX": "/"
     }
   }
@@ -782,7 +809,7 @@ OUT_REALITY_XHTTP='{
       }
     },
     "realitySettings": {
-      "show": false, "fingerprint": "chrome", "serverName": "$DOMAIN",
+      "show": false, "fingerprint": "$fpBro", "serverName": "$DOMAIN",
       "password": "${xray_publicKey_vrv}", "shortId": "${xray_shortIds_vrv}", "spiderX": "/"
     }
   }
@@ -808,7 +835,7 @@ OUT_VISION='{
     "security": "tls",
     "tlsSettings": {
       "serverName": "$DOMAIN",
-      "fingerprint": "chrome"
+      "fingerprint": "$fpBro"
     }
   }
 }'
@@ -846,7 +873,7 @@ OUT_XHTTP='{
 		},
 	"mode": "auto", "path": "/${path_xhttp}" },
     "security": "tls",
-    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "chrome" }
+    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "$fpBro" }
   }
 }'
 
@@ -866,7 +893,7 @@ OUT_GRPC='{
     "network": "grpc",
     "grpcSettings": { "serviceName": "${path_xhttp}11", "multiMode": false },
     "security": "tls",
-    "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "chrome" }
+    "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
   }
 }'
 
@@ -885,7 +912,7 @@ OUT_WS='{
     "network": "ws",
     "wsSettings": { "path": "/${path_xhttp}22" },
     "security": "tls",
-    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "chrome" }
+    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "$fpBro" }
   }
 }'
 
@@ -914,18 +941,18 @@ echo -e "Перезапуск XRAY"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-linkRTY1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityVISION-autoXRAY"
+linkRTY1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityVISION-autoXRAY"
 
-linkRTY2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=stream-one&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
+linkRTY2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=stream-one&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
 
-linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&spx=%2F#vlessRAWtlsVision-autoXRAY"
+linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
 
 
-linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&spx=%2F#vlessXHTTPtls-autoXRAY"
+linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessXHTTPtls-autoXRAY"
 
-linkTLS3="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=ws&headerType=&path=%2F${path_xhttp}22&host=&sni=$DOMAIN&fp=chrome&spx=%2F#vlessWStls-autoXRAY"
+linkTLS3="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=ws&headerType=&path=%2F${path_xhttp}22&host=&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessWStls-autoXRAY"
 
-linkTLS4="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=grpc&headerType=&serviceName=${path_xhttp}11&host=&sni=$DOMAIN&fp=chrome&spx=%2F#vlessGRPCtls-autoXRAY"
+linkTLS4="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=grpc&headerType=&serviceName=${path_xhttp}11&host=&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessGRPCtls-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
@@ -939,8 +966,13 @@ CONFIGS_ARRAY=(
 )
 ALL_LINKS_TEXT=""
 
-echo -e "\n\n${GRN}Устанавливаем MTProto FakeTLS ${NC}"
-source <(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/telemt-test.sh)
+if [ "$INSTALL_MTP" = true ]; then
+    echo -e "\n\n${GRN}Устанавливаем MTProto FakeTLS ${NC}"
+    source <(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/telemt-test.sh)
+else
+    echo -e "\n\n${YEL}Установка MTProto FakeTLS пропущена.${NC}"
+    MTProto=""
+fi
 
 # --- ЗАПИСЬ HEAD (СТАТИКА, МИНИФИЦИРОВАННЫЕ СТИЛИ И JS) ---
 cat > "$WEB_PATH/$path_subpage.html" <<'EOF'
@@ -1003,22 +1035,20 @@ done
 
 SOCKS5_url="tg://socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}"
 
-# Дописываем Socks5, MTProto, All links и подвал
+# Добавляем MTProxy блок только если он установлен
+if [ "$INSTALL_MTP" = true ]; then
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
-<div class="config-row">
-    <div class="config-label">Socks5 (TG)</div>
-    <div class="config-code" id="sock">${SOCKS5_url}</div>
-    <button class="btn-action copy-btn" onclick="copyText('sock', this)">Copy</button>
-    <a href="${SOCKS5_url}" target="_blank" class="btn-action qr-btn" title="автодобавление в тг" style="text-decoration:none">✈️ Add to TG</a>
-</div>
-
 <div class="config-row">
     <div class="config-label">MTProtoFakeTLS (TG)</div>
     <div class="config-code" id="mtproto">${MTProto}</div>
     <button class="btn-action copy-btn" onclick="copyText('mtproto', this)">Copy</button>
     <a href="${MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление моста в тг" style="text-decoration:none">✈️ Add to TG</a>
 </div>
+EOF
+fi
 
+# Дописываем конец страницы
+cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
     <div class="config-code" id="cAll" style="max-height:60px;white-space:pre-wrap;word-break:break-all">$ALL_LINKS_TEXT</div>
@@ -1036,16 +1066,21 @@ EOF
 echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
 
 # Проверка WARP-cli (Socks5 порт 40000)
-if ss -nlt | grep -q ":40000\b"; then
-    echo -e "WARP-cli: ${GRN}LISTENING${NC}"
-else
-    echo -e "WARP-cli: ${RED}NOT LISTENING${NC}"
-    echo "Возникла ошибка! Возможные пути решения проблемы смотрите здесь:"
-    echo "https://github.com/xVRVx/autoXRAY/blob/main/test/warp-readme.md"
+if [ "$INSTALL_WARP" = true ]; then
+    if ss -nlt | grep -q ":40000\b"; then
+        echo -e "WARP-cli: ${GRN}LISTENING${NC}"
+    else
+        echo -e "WARP-cli: ${RED}NOT LISTENING${NC}"
+        echo "Возникла ошибка! Возможные пути решения проблемы смотрите здесь:"
+        echo "https://github.com/xVRVx/autoXRAY/blob/main/test/warp-readme.md"
+    fi
 fi
 
 # Проверка Telemt
-if systemctl is-active --quiet telemt; then echo -e "Telemt: ${GRN}RUNNING${NC}"; else echo -e "Telemt: ${RED}STOPPED/ERROR${NC}"; fi
+if [ "$INSTALL_MTP" = true ]; then
+    if systemctl is-active --quiet telemt; then echo -e "Telemt: ${GRN}RUNNING${NC}"; else echo -e "Telemt: ${RED}STOPPED/ERROR${NC}"; fi
+fi
+
 
 # Проверка Nginx
 if systemctl is-active --quiet nginx; then
@@ -1062,11 +1097,13 @@ else
 fi
 
 
-echo -e "
-${YEL}MTProto FakeTLS для ТГ${NC}
-$MTProto
+echo -e "\n"
 
-${YEL}VLESS XHTTP REALITY EXTRA (для моста) ${NC}
+if [ "$INSTALL_MTP" = true ]; then
+    echo -e "${YEL}MTProto FakeTLS для ТГ${NC}\n$MTProto\n"
+fi
+
+echo -e "${YEL}VLESS XHTTP REALITY EXTRA (для моста) ${NC}
 $linkRTY2
 
 ${YEL}VLESS RAW REALITY VISION ${NC}
@@ -1090,5 +1127,4 @@ ${GRN}$configListLink ${NC}
 Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
-
 "
