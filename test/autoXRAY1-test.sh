@@ -7,7 +7,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 225 ${NC}"
+echo -e "${GRN}Версия: 226 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -39,7 +39,7 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
 fi
 
 # === ВОПРОСЫ ПОЛЬЗОВАТЕЛЮ ===
-read -p "Устанавливать WARP для обхода блокировок некоторых сайтов? (y/n, по умолчанию y): " choice_warp
+read -p "\n${YEL}Устанавливать WARP для обхода блокировок некоторых сайтов? (y/n, по умолчанию y): ${NC}" choice_warp
 choice_warp=${choice_warp:-y}
 if [[ "$choice_warp" =~ ^[Yy]$ ]]; then
     TAG_WARP="warp"
@@ -49,7 +49,7 @@ else
     INSTALL_WARP=false
 fi
 
-read -p "Устанавливать MTProxy для Telegram? (y/n, по умолчанию y): " choice_mtp
+read -p "\n${YEL}Устанавливать MTProxy для Telegram? (y/n, по умолчанию y): ${NC}" choice_mtp
 choice_mtp=${choice_mtp:-y}
 if [[ "$choice_mtp" =~ ^[Yy]$ ]]; then
     TARGET_MTP="127.0.0.1:500"
@@ -294,7 +294,7 @@ else
 fi
 
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw TARGET_MTP TAG_WARP
+export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw TARGET_MTP TAG_WARP fpBro
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
