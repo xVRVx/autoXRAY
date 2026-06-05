@@ -691,7 +691,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "fingerprint": "chrome",
+          "fingerprint": "edge",
           "serverName": "$DOMAIN",
           "password": "${xray_publicKey_vrv}",
           "shortId": "${xray_shortIds_vrv}",
@@ -855,7 +855,7 @@ cat << 'EOF' | envsubst > "$WEB_PATH/$path_subpage.json"
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "fingerprint": "chrome",
+          "fingerprint": "edge",
           "serverName": "$DOMAIN",
           "password": "${xray_publicKey_vrv}",
           "shortId": "${xray_shortIds_vrv}",
@@ -1029,9 +1029,9 @@ echo -e "Перезапуск XRAY"
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
 # Формирование ссылок
-link1="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=${mode}&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlsXHTTPrtyRUbrEU"
+link1="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=${mode}&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=edge&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlsXHTTPrtyRUbrEU"
 
-link2="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=chrome&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlsRAWrtyXTLSRUbrEU"
+link2="vless://${xray_uuid_vrv}@$DOMAIN:${portVL}?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=edge&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlsRAWrtyXTLSRUbrEU"
 
 
 configListLink="https://$DOMAIN/$path_subpage.html"
