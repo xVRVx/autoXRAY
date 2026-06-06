@@ -7,7 +7,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 227 ${NC}"
+echo -e "${GRN}Версия: 228 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -564,7 +564,49 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           }
         ]
       }
-    }
+    },
+	{
+		"tag": "Hysteria2",
+		"listen": "0.0.0.0",
+		"port": 8080,
+		"protocol": "hysteria",
+		"settings": {
+			"version": 2,
+			"clients": [
+				{
+					"auth": "${socksPasw}"
+				}
+			]
+		},
+		"streamSettings": {
+			"network": "hysteria",
+			"security": "tls",
+			"tlsSettings": {
+				"serverName": "$DOMAIN",
+				"alpn": [
+					"h3"
+				],
+				"certificates": [
+					{
+						"usage": "encipherment",
+						"certificateFile": "/var/lib/xray/cert/fullchain.pem",
+						"keyFile": "/var/lib/xray/cert/privkey.pem"
+					}
+				]
+			},
+			"hysteriaSettings": {
+				"version": 2,
+				"auth": "${socksPasw}"
+			},
+			"finalmask": {
+				"quicParams": {
+					"congestion": "brutal",
+					"brutalUp": "100 mbps",
+					"brutalDown": "100 mbps"
+				}
+			}
+		}
+	}
   ],
   "outbounds": [
     {
@@ -930,6 +972,38 @@ OUT_WS='{
   }
 }'
 
+# --- Config 7
+HYSTERIA2='{
+"tag": "proxy",
+"protocol": "hysteria",
+"settings": {
+	"address": "$DOMAIN",
+	"port": 8080,
+	"version": 2
+},
+"streamSettings": {
+	"network": "hysteria",
+	"security": "tls",
+	"tlsSettings": {
+		"serverName": "$DOMAIN",
+		"alpn": [
+			"h3"
+		]
+	},
+	"fingerprint": "$fpBro",
+	"hysteriaSettings": {
+		"version": 2,
+		"auth": "${socksPasw}"
+	},
+	"finalmask": {
+		"quicParams": {
+			"congestion": "brutal",
+			"brutalUp": "100 mbps",
+			"brutalDown": "100 mbps"
+		}
+	}
+}
+}'
 
 
 (
@@ -937,6 +1011,8 @@ OUT_WS='{
   print_config "$OUT_REALITY_XHTTP"  "🇪🇺 VLESS XHTTP REALITY EXTRA"
   echo ","
   print_config "$OUT_REALITY_VISION" "🇪🇺 VLESS RAW REALITY VISION"
+  echo ","
+  print_config "$HYSTERIA2" "🇪🇺 HYSTERIA2"
   echo ","
   print_config "$OUT_VISION"    "🇪🇺 VLESS RAW TLS VISION"
   echo ","
