@@ -7,7 +7,7 @@ RED='\033[1;31m'
 YEL='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 228 ${NC}"
+echo -e "${GRN}Версия: 229 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -574,7 +574,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 			"version": 2,
 			"clients": [
 				{
-					"auth": "${socksPasw}"
+					"auth": "${xray_shortIds_vrv}"
 				}
 			]
 		},
@@ -596,7 +596,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 			},
 			"hysteriaSettings": {
 				"version": 2,
-				"auth": "${socksPasw}"
+				"auth": "${xray_shortIds_vrv}"
 			},
 			"finalmask": {
 				"quicParams": {
@@ -993,7 +993,7 @@ HYSTERIA2='{
 	"fingerprint": "$fpBro",
 	"hysteriaSettings": {
 		"version": 2,
-		"auth": "${socksPasw}"
+		"auth": "${xray_shortIds_vrv}"
 	},
 	"finalmask": {
 		"quicParams": {
