@@ -179,7 +179,14 @@ server {
 		
 		add_header routing-enable 0;
 	}
-    
+
+    location = /${path_subpage}.txt {
+        types { }
+        default_type text/plain;
+        charset utf-8;
+        add_header profile-title "base64:YXV0b1hSQVk=";
+    }
+
     location /${path_xhttp} {
         proxy_pass http://127.0.0.1:8400;
         proxy_http_version 1.1;
@@ -920,6 +927,7 @@ echo -e "Перезапуск XRAY"
 
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
+subPageTxtLink="https://$DOMAIN/$path_subpage.txt"
 
 # Формирование ссылок
 linkRTY1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityVISION-autoXRAY"
@@ -945,6 +953,13 @@ CONFIGS_ARRAY=(
 	"VLESS WS TLS|$linkTLS3"
 	"VLESS GRPC TLS|$linkTLS4"
 )
+
+# Создаем TXT подписку: одна VLESS ссылка на строку
+: > "$WEB_PATH/$path_subpage.txt"
+for item in "${CONFIGS_ARRAY[@]}"; do
+    printf '%s\n' "${item#*|}" >> "$WEB_PATH/$path_subpage.txt"
+done
+
 ALL_LINKS_TEXT=""
 
 # --- ЗАПИСЬ HEAD (СТАТИКА, МИНИФИЦИРОВАННЫЕ СТИЛИ И JS) ---
@@ -974,6 +989,13 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
     <button class="btn-action qr-btn" onclick="showQR('subLink')">QR</button>
 </div>
 
+<h2>📄 VLESS TXT-подписка </h2>
+<div class="config-row">
+    <div class="config-label">Subscription</div>
+    <div class="config-code" id="subLinkTxt">$subPageTxtLink</div>
+    <button class="btn-action copy-btn" onclick="copyText('subLinkTxt', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('subLinkTxt')">QR</button>
+</div>
 
 <h2>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h2>
 
@@ -1068,6 +1090,9 @@ $linkRTY2
 
 ${YEL}Ваша json страничка подписки ${NC}
 $subPageLink
+
+${YEL}Ваша TXT страничка подписки ${NC}
+$subPageTxtLink
 
 ${YEL}Ссылка на сохраненные конфиги ${NC}
 ${GRN}$configListLink ${NC}
