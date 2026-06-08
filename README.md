@@ -1,7 +1,7 @@
 # autoXRAY - личный ВПН сервер
 Bash-скрипт для автоматической настройки ядра [Xray](https://github.com/XTLS/Xray-core). Предназначен для удобного получения актуальных конфигураций VPN для семейного/личного использования, настраивает selfsteal VLESS [XHTTP](https://github.com/XTLS/Xray-core/discussions/4113#discussioncomment-11468947) / [RAW](https://github.com/XTLS/REALITY/blob/main/README.en.md) REALITY.
 
-**UPD5: Добавлены MTProto proxy FakeTLS, Hysteria2** 
+**UPD5: Добавлены MTProto FakeTLS, Hysteria2, можно выбирать ставить ли MTP/WARP** 
 
 **UPD4: Основной скрипт автоматически ставит WARP-cli.** 
 
@@ -29,11 +29,12 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 **Вы получите:**
 1) vless XHTTP reality EXTRA на 443 порту - продвинутые настройки, повышенная нагрузка на cpu.
 2) vless RAW reality VISION на 443 порту - хорошая маскировка, быстрый.
-3) vless RAW tls VISION - 8443 порт
-4) vless XHTTP tls EXTRA - 8443 порт
-5) vless WS tls - 8443 порт
-6) vless GRPC tls - 8443 порт
-7) socks5 прокси на 10443 порту - используйте для сервисов (например: ТГ).
+3) Hysteria2 на 8080 порту
+4) vless RAW tls VISION - 8443 порт
+5) vless XHTTP tls EXTRA - 8443 порт
+6) vless WS tls - 8443 порт
+7) vless GRPC tls - 8443 порт
+8) MTProto proxy FakeTLS на 443 порту.
 
 
 ===========================================================================
