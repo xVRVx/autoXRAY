@@ -137,6 +137,7 @@ case $fp_choice in
     3) fpBro="safari" ;;
     4) fpBro="ios" ;;
     5) fpBro="android" ;;
+    6) fpBro="edge" ;;
     7) fpBro="360" ;;
     8) fpBro="qq" ;;
     *) fpBro="firefox" ;;
