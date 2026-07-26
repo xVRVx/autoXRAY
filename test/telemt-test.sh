@@ -98,5 +98,6 @@ systemctl enable telemt
 sleep 4
 telemtSecret=$(curl -s http://127.0.0.1:9091/v1/users | jq -r '.data[0].links.tls[0] | split("secret=")[1]')
 echo telemtSecret = $telemtSecret
+sleep 2
 
 MTProto="tg://proxy?server=$DOMAIN&port=443&secret=$telemtSecret"
