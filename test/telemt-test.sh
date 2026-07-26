@@ -1,4 +1,4 @@
-echo -e "${GRN}Версия телемт: 224 ${NC}"
+echo -e "${GRN}Версия телемт: 225 ${NC}"
 
 systemctl stop telemt 2>/dev/null
 
@@ -112,5 +112,6 @@ if [ -z "$telemtSecret" ] || [ "$telemtSecret" == "null" ]; then
 else
     echo "telemtSecret = $telemtSecret"
     MTProto="tg://proxy?server=$DOMAIN&port=443&secret=$telemtSecret"
+    sleep 1
     # echo "Ссылка: $MTProto"
 fi
