@@ -474,10 +474,10 @@ cat << EOF > "$SCRIPT_DIR/config.json"
     {
       "tag": "RUsocks5",
       "port": 10443,
-      "listen": "127.0.0.1",
+      "listen": "0.0.0.0",
       "protocol": "mixed",
       "settings": {
-        "ip": "127.0.0.1",
+        "ip": "0.0.0.0",
         "udp": true,
         "auth": "password",
         "accounts": [
@@ -912,7 +912,17 @@ EOF
     ((idx++))
 done
 
-SOCKS5_url="tg://socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}"
+SOCKS5_url_tg="tg://socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}"
+SOCKS5_url="${socksUser}:${socksPasw}@$DOMAIN:10443"
+
+# Добавляем socks5 блок
+cat >> "$WEB_PATH/$path_subpage.html" <<EOF
+<div class="config-row">
+    <div class="config-label" title="Пора отказываться от него">socks5 WARNING</div>
+    <div class="config-code" id="socks5">${SOCKS5_url}</div>
+    <button class="btn-action copy-btn" onclick="copyText('socks5', this)">Copy</button>
+</div>
+EOF
 
 # Добавляем MTProxy блок только если он установлен
 if [ "$INSTALL_MTP" = true ]; then
