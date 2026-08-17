@@ -385,7 +385,7 @@ cat << EOF > "$SCRIPT_DIR/config.json"
       "https+local://1.1.1.1/dns-query",
       "localhost"
     ],
-    "queryStrategy": "UseIPv4"
+    "queryStrategy": "UseIP"
   },
   "inbounds": [
     {
