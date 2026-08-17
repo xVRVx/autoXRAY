@@ -310,7 +310,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "https+local://1.1.1.1/dns-query",
       "localhost"
     ],
-    "queryStrategy": "UseIPv4"
+    "queryStrategy": "UseIP"
   },
   "inbounds": [
 	{
@@ -628,7 +628,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 			"port": 40000
 		  }
 		]
-	  }
+	  },
+	  "targetStrategy": "ForceIPv6v4"
 	}
   ],
   "routing": {
