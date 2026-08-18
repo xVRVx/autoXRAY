@@ -629,7 +629,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 		  }
 		]
 	  },
-	  "targetStrategy": "ForceIPv6v4"
+	  "targetStrategy": "ForceIPv4v6"
 	}
   ],
   "routing": {
@@ -660,7 +660,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       },
 	{
 	  "outboundTag": "${TAG_WARP}",
-	  "domain": ["ifconfig.me","checkip.amazonaws.com","pify.org","2ip.io","habr.com","geosite:category-ip-geo-detect","geosite:google-gemini","geosite:canva"]
+	  "domain": ["ifconfig.me","checkip.amazonaws.com","pify.org","2ip.io","habr.com","geosite:category-ip-geo-detect","geosite:canva"]
 	}
     ],
     "domainStrategy": "IPIfNonMatch"
