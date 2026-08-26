@@ -36,7 +36,7 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
 fi
 
 # === ВОПРОСЫ ПОЛЬЗОВАТЕЛЮ ===
-read -p "$(echo -e "\n${YEL}Устанавливать WARP для обхода блокировок некоторых сайтов? (y/N, по умолчанию N): ${NC}")" choice_warp
+read -p "$(echo -e "\n${YEL}Устанавливать WARP для обхода блокировок некоторых сайтов? (y/n, по умолчанию n): ${NC}")" choice_warp
 choice_warp=${choice_warp:-n}
 if [[ "$choice_warp" =~ ^[Yy]$ ]]; then
     TAG_WARP="warp"
