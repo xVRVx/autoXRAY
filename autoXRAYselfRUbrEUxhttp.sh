@@ -539,7 +539,6 @@ $OUTBOUNDS
     ],
     "rules": [
       {
-        "type": "field",
         "ip": [
           "8.8.8.8",
           "8.8.4.4",
@@ -586,6 +585,9 @@ $OUTBOUNDS
       {
         "domain": [
           "testipv6.net",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:yandex",
@@ -672,6 +674,9 @@ print_config() {
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai",
           "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
