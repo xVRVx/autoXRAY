@@ -380,12 +380,23 @@ cat << EOF > "$SCRIPT_DIR/config.json"
   },
   "dns": {
     "servers": [
-      "https+local://8.8.4.4/dns-query",
-      "https+local://8.8.8.8/dns-query",
-      "https+local://1.1.1.1/dns-query",
-      "localhost"
+      {
+        "address": "https+local://77.88.8.8/dns-query",
+        "domains": [
+          "geosite:category-ru",
+          "geosite:yandex",
+          "geosite:vk",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai"
+        ],
+        "skipFallback": true
+      },
+      "https://8.8.4.4/dns-query",
+      "https://8.8.8.8/dns-query",
+      "https://1.1.1.1/dns-query"
     ],
-    "queryStrategy": "UseIP"
+    "queryStrategy": "UseIPv4"
   },
   "inbounds": [
     {
@@ -528,13 +539,23 @@ $OUTBOUNDS
     ],
     "rules": [
       {
+        "type": "field",
+        "ip": [
+          "8.8.8.8",
+          "8.8.4.4",
+          "1.1.1.1"
+        ],
+        "port": "53,443",
+        "balancerTag": "Super_Balancer"
+      },
+      {
         "ip": [
           "geoip:private"
         ],
         "outboundTag": "block"
       },
       {
-        "port": "25",
+        "port": "25, 135, 137-139, 445",
         "outboundTag": "block"
       },
       {
@@ -574,6 +595,12 @@ $OUTBOUNDS
         "outboundTag": "direct"
       },
       {
+        "ip": [
+          "geoip:ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
         "inboundTag": [
           "RUsocks5"
         ],
@@ -596,7 +623,19 @@ print_config() {
     "loglevel": "warning"
   },
   "dns": {
-    "servers":[
+    "servers": [
+      {
+        "address": "https+local://77.88.8.8/dns-query",
+        "domains": [
+          "geosite:category-ru",
+          "geosite:yandex",
+          "geosite:vk",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai"
+        ],
+        "skipFallback": true
+      },
       "https://8.8.4.4/dns-query",
       "https://8.8.8.8/dns-query",
       "https://1.1.1.1/dns-query"
@@ -606,33 +645,34 @@ print_config() {
   "routing": {
     "domainMatcher": "hybrid",
     "domainStrategy": "IPIfNonMatch",
-    "rules":[
+    "rules": [
       {
-        "domain":[
+        "domain": [
           "geosite:category-ads",
           "geosite:win-spy"
         ],
         "outboundTag": "block"
       },
       {
-        "protocol":[
+        "protocol": [
           "bittorrent"
         ],
         "outboundTag": "direct"
       },
       {
-        "domain":[
-          "habr.com", "apkmirror.com"
+        "domain": [
+          "habr.com",
+          "apkmirror.com"
         ],
         "outboundTag": "proxy"
       },
       {
-        "domain":[
+        "domain": [
           "geosite:private",
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
-		  "geosite:category-ip-geo-detect",
+          "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:yandex",
@@ -642,14 +682,15 @@ print_config() {
         "outboundTag": "direct"
       },
       {
-        "ip":[
+        "ip": [
+          "geoip:ru",
           "geoip:private"
         ],
         "outboundTag": "direct"
       }
     ]
   },
-  "inbounds":[
+  "inbounds": [
     {
       "tag": "socks-in",
       "protocol": "socks",
@@ -660,7 +701,7 @@ print_config() {
       },
       "sniffing": {
         "enabled": true,
-        "destOverride":[ "http", "tls", "quic" ]
+        "destOverride": [ "http", "tls", "quic" ]
       }
     },
     {
@@ -673,7 +714,7 @@ print_config() {
       },
       "sniffing": {
         "enabled": true,
-        "destOverride":[ "http", "tls", "quic" ]
+        "destOverride": [ "http", "tls", "quic" ]
       }
     },
     {
@@ -683,11 +724,11 @@ print_config() {
       "port": 10809,
       "sniffing": {
         "enabled": true,
-        "destOverride":[ "http", "tls", "quic" ]
+        "destOverride": [ "http", "tls", "quic" ]
       }
     }
   ],
-  "outbounds":[
+  "outbounds": [
 $PROXY_OUTBOUND,
     {
       "tag": "direct",

@@ -20,7 +20,7 @@ apt-get update && apt-get install curl jq dnsutils openssl nginx certbot wget ta
 systemctl enable --now nginx
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
-DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
+DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]' | head -n 1)
 
 if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo -e "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
@@ -75,8 +75,8 @@ esac
 # ============================
 
 # Включаем BBR
-bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
-if [ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
+bbr=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null)
+if [ "$bbr" = "bbr" ]; then
     echo -e "${GRN}BBR уже запущен${NC}"
 else
     echo "net.core.default_qdisc=fq" > /etc/sysctl.d/999-autoXRAY.conf
@@ -101,10 +101,10 @@ WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
 
 # Генерируем сайт маскировку
-bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- $WEB_PATH
+bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- "$WEB_PATH"
 
 # Установка Xray
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
 # Блок CERTBOT - START
 
@@ -142,11 +142,12 @@ fi
 
 mkdir -p /var/lib/xray/cert/
 
-### Проверить
-cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
-cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
-chmod 744 /var/lib/xray/cert/privkey.pem
-chmod 744 /var/lib/xray/cert/fullchain.pem
+if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+    cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
+    cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
+    chmod 744 /var/lib/xray/cert/privkey.pem
+    chmod 744 /var/lib/xray/cert/fullchain.pem
+fi
 
 certbot certonly --webroot -w /var/www/html \
   -d $DOMAIN \
@@ -174,13 +175,14 @@ else
 fi
 # Блок CERTBOT - END
 
-# конфиг nginx
+					
 
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
-bash -c "cat > $CONFIG_PATH" <<EOF
+# Конфиг Nginx
+cat <<EOF > "$CONFIG_PATH"
 server {
     server_name $DOMAIN;
 	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
@@ -257,7 +259,7 @@ echo -e "${GRN}✅ Конфигурация nginx обновлена.${NC}"
 
 SCRIPT_DIR=/usr/local/etc/xray
 
-# Генерируем переменные
+# Генерируем ключи и переменные
 xray_uuid_vrv=$(xray uuid)
 
 key_output=$(xray x25519)
@@ -270,10 +272,10 @@ verify_mldsa65=$(echo "$key_mldsa65" | awk -F': ' '/Verify/ {print $2}')
 
 xray_shortIds_vrv=$(openssl rand -hex 8)
 
-# xray_sspasw_vrv=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
+																			  
 xray_sspasw_vrv=$(openssl rand -base64 32)
 
-# ipserv=$(hostname -I | awk '{print $1}')
+										  
 
 socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
@@ -310,7 +312,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "https+local://1.1.1.1/dns-query",
       "localhost"
     ],
-    "queryStrategy": "UseIP"
+    "queryStrategy": "UseIPv4"
   },
   "inbounds": [
 	{
@@ -558,7 +560,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           {
 			"user": "${socksUser}",
             "pass": "${socksPasw}"
-            
+			
           }
         ]
       }
@@ -633,6 +635,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 	}
   ],
   "routing": {
+    "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
         "ip": [
@@ -641,7 +644,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "outboundTag": "block"
       },
 	  {
-        "port": "25",
+        "port": "25, 135, 137-139, 445",
         "outboundTag": "block"
       },
       {
@@ -658,12 +661,20 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ],
         "outboundTag": "block"
       },
-	{
-	  "outboundTag": "${TAG_WARP}",
-	  "domain": ["ifconfig.me","checkip.amazonaws.com","pify.org","2ip.io","habr.com","geosite:category-ip-geo-detect","geosite:canva"]
-	}
-    ],
-    "domainStrategy": "IPIfNonMatch"
+	  {
+	    "outboundTag": "${TAG_WARP}",
+	    "domain": [
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
+          "2ip.io",
+          "habr.com",
+          "geosite:category-ip-geo-detect",
+          "geosite:canva"
+        ]
+	  }
+    ]
+									
   }
 }
 
@@ -681,6 +692,18 @@ print_config() {
   },
   "dns": {
     "servers": [
+      {
+        "address": "https+local://77.88.8.8/dns-query",
+        "domains": [
+          "geosite:category-ru",
+          "geosite:yandex",
+          "geosite:vk",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai"
+        ],
+        "skipFallback": true
+      },
       "https://8.8.4.4/dns-query",
       "https://8.8.8.8/dns-query",
       "https://1.1.1.1/dns-query"
@@ -688,6 +711,7 @@ print_config() {
     "queryStrategy": "UseIPv4"
   },
   "routing": {
+    "domainMatcher": "hybrid",
     "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
@@ -705,7 +729,8 @@ print_config() {
       },
       {
         "domain": [
-          "habr.com", "apkmirror.com"
+          "habr.com",
+          "apkmirror.com"
         ],
         "outboundTag": "proxy"
       },
@@ -727,6 +752,7 @@ print_config() {
       },
       {
         "ip": [
+          "geoip:ru",
           "geoip:private"
         ],
         "outboundTag": "direct"
@@ -784,7 +810,7 @@ print_config() {
     }
   ],
   "outbounds": [
-      $PROXY_OUTBOUND,
+    $PROXY_OUTBOUND,
     {
       "tag": "direct",
       "protocol": "freedom"
@@ -902,8 +928,8 @@ OUT_XHTTP='{
     "network": "xhttp",
     "xhttpSettings": {
 		"extra": {
-			"headers": {
-			},
+			"headers": {},
+	 
 			"noGRPCHeader": false,
 			"scMaxEachPostBytes": 1500000,
 			"scMinPostsIntervalMs": 20,
@@ -925,7 +951,7 @@ OUT_XHTTP='{
 }'
 
 # --- Config 5
-# Важно: alpn h2 обязателен для корректной работы через Nginx
+																									
 OUT_GRPC='{
   "tag": "proxy",
   "protocol": "vless",
@@ -1021,7 +1047,7 @@ echo -e "Перезапуск XRAY"
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
-# Формирование ссылок
+									   
 
 hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:8080/?sni=$DOMAIN&alpn=h3"
 
@@ -1220,7 +1246,7 @@ ${GRN}$configListLink ${NC}
 - Windows: конфиги Happ или winLoadXRAY или v2rayN
 	для vless v2RayTun или Throne
 
-Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
+Внутри клиента открыт socks5 на 10808, 2080 и http на 10809.
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
 "
