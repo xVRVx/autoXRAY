@@ -52,7 +52,6 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 **RU VPS (для моста ru-eu)**
 - [time-host](https://time-host.net/?from=47217 ) - от 140 руб./мес.
 - [hosting-russia](https://hosting-russia.ru/?p=57731) - от 250 руб./мес.
-- [cloudcore](https://cloudcore.ru/?affiliate_uuid=e9ad7432-7898-4de2-8606-38eb90e0c1a6) - от 100 руб.
 
 
 Имейте в виду, что подсети популярных хостинг-провайдеров, таких как аеза, pq(ufo), ishosting и др., заблокированы многими провайдерами(РКН). К ним порой даже невозможно подключиться по SSH (без VPN). Поэтому, пожалуйста, не используйте их или не жалуйтесь, что у вас не работает основной скрипт.
