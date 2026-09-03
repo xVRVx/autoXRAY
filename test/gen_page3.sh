@@ -53,7 +53,34 @@ BUTTON_TEXTS=(
 )
 
 # ==========================================
-# 3. ОШИБКИ АУТЕНТИФИКАЦИИ (20 ВАРИАНТОВ)
+# 3. ВАРИАТИВНОСТЬ ССЫЛКИ СБРОСА КЛЮЧА / ПАРОЛЯ
+# ==========================================
+FORGOT_TEXTS=(
+    "Forgot Key?"
+    "Forgot Password?"
+    "Reset Key"
+    "Lost Credential?"
+    "Trouble signing in?"
+    "Reset Access"
+    "Lost Security Key?"
+    "Can't sign in?"
+    "Account Recovery"
+    "Forgot credentials?"
+)
+
+RECOVERY_NOTICES=(
+    "Self-service key recovery is restricted by security policy. Contact your system administrator."
+    "Automated password reset is disabled for this security realm. Submit a ticket to IT Support."
+    "Privileged account unlock requires manual approval by the Security Operations Center (SOC)."
+    "Key rotation must be initiated directly through internal directory services (LDAP/Active Directory)."
+    "Self-service reset is not permitted from outside the corporate perimeter."
+    "Credential recovery challenge must be authorized by your organizational unit supervisor."
+    "Hardware security token required for identity recovery. Contact Tier-2/3 Helpdesk."
+    "Remote account recovery has been administratively disabled on this edge node."
+)
+
+# ==========================================
+# 4. ОШИБКИ АУТЕНТИФИКАЦИИ (20 ВАРИАНТОВ)
 # ==========================================
 ERROR_MESSAGES=(
     "The identity or security key you provided is invalid."
@@ -79,7 +106,7 @@ ERROR_MESSAGES=(
 )
 
 # ==========================================
-# 4. ФИКТИВНЫЕ КОМПАНИИ В ФУТЕР
+# 5. ФИКТИВНЫЕ КОМПАНИИ В ФУТЕР
 # ==========================================
 COMPANIES=(
     "Global Cloud Infrastructure Systems Ltd."
@@ -95,7 +122,7 @@ COMPANIES=(
 )
 
 # ==========================================
-# 5. ИКОНКИ (SVG BASE64)
+# 6. ИКОНКИ (SVG BASE64)
 # ==========================================
 FAVICONS=(
     # 1. Cloud
@@ -117,7 +144,7 @@ FAVICONS=(
 )
 
 # ==========================================
-# 6. ШРИФТЫ GOOGLE
+# 7. ШРИФТЫ GOOGLE
 # ==========================================
 FONTS_DATA=(
     "Inter|Inter:wght@400;500;600;700"
@@ -131,7 +158,7 @@ FONTS_DATA=(
 )
 
 # ==========================================
-# 7. ФОНЫ (12 ТЕМ)
+# 8. ФОНЫ (12 ТЕМ)
 # ==========================================
 BG_GRADIENTS=(
     "bg-slate-950 text-slate-100"
@@ -149,7 +176,7 @@ BG_GRADIENTS=(
 )
 
 # ==========================================
-# 8. КНОПКИ (10 ЦВЕТОВ)
+# 9. КНОПКИ (10 ЦВЕТОВ)
 # ==========================================
 BUTTON_COLORS=(
     "bg-blue-600 hover:bg-blue-700"
@@ -165,13 +192,14 @@ BUTTON_COLORS=(
 )
 
 # ==========================================
-# 9. СЛУЧАЙНЫЕ ID (АНТИ-СИГНАТУРА)
+# 10. СЛУЧАЙНЫЕ ID (АНТИ-СИГНАТУРА)
 # ==========================================
 RND_HASH=$(openssl rand -hex 4)
 ID_FORM="f_$RND_HASH"
 ID_USER="u_$(openssl rand -hex 3)"
 ID_PASS="p_$(openssl rand -hex 3)"
 ID_REMEMBER="r_$(openssl rand -hex 3)"
+ID_FORGOT="fk_$(openssl rand -hex 3)"
 ID_BTN="b_$(openssl rand -hex 3)"
 ID_TXT="t_$(openssl rand -hex 3)"
 ID_ALERT="a_$(openssl rand -hex 3)"
@@ -189,6 +217,9 @@ USER_INPUT_TYPE=$(echo "$PORTAL_INFO" | cut -d'|' -f5)
 
 BUTTON_TEXT=${BUTTON_TEXTS[$RANDOM % ${#BUTTON_TEXTS[@]}]}
 DEFAULT_ERROR=${ERROR_MESSAGES[$RANDOM % ${#ERROR_MESSAGES[@]}]}
+FORGOT_TEXT=${FORGOT_TEXTS[$RANDOM % ${#FORGOT_TEXTS[@]}]}
+RECOVERY_NOTICE=${RECOVERY_NOTICES[$RANDOM % ${#RECOVERY_NOTICES[@]}]}
+
 COPYRIGHT=${COMPANIES[$RANDOM % ${#COMPANIES[@]}]}
 CURRENT_YEAR=$(date +%Y)
 
@@ -224,7 +255,7 @@ else
 fi
 
 # ==========================================
-# 10. ГЕНЕРАЦИЯ HTML
+# 11. ГЕНЕРАЦИЯ HTML
 # ==========================================
 cat > "$TARGET_DIR/index.html" <<EOF
 <!DOCTYPE html>
@@ -335,6 +366,8 @@ cat > "$TARGET_DIR/index.html" <<EOF
         }
         .footer a { color: inherit; text-decoration: none; margin: 0 0.5rem; }
         .footer a:hover { text-decoration: underline; }
+        .link-action { text-decoration: none; cursor: pointer; transition: opacity .15s ease; }
+        .link-action:hover { text-decoration: underline; }
         .checkbox-row {
             display: flex;
             align-items: center;
@@ -388,7 +421,7 @@ cat > "$TARGET_DIR/index.html" <<EOF
             <div>
                 <div class="flex justify-between items-center" style="margin-bottom: 0.35rem;">
                     <label for="$ID_PASS" class="text-xs" style="font-weight: 600; color: $LABEL_COLOR;">Credential Key</label>
-                    <a href="#" onclick="return false;" class="text-xs" style="color: $LABEL_COLOR; text-decoration: none;">Forgot Key?</a>
+                    <a href="#" id="$ID_FORGOT" class="text-xs link-action" style="color: $LABEL_COLOR;">$FORGOT_TEXT</a>
                 </div>
                 <input type="password" id="$ID_PASS" name="credential" required class="input-control rounded-lg py-2.5 px-3.5" placeholder="••••••••••••" autocomplete="current-password">
             </div>
@@ -423,7 +456,17 @@ cat > "$TARGET_DIR/index.html" <<EOF
         const alertBox = document.getElementById('$ID_ALERT');
         const alertTxt = document.getElementById('$ID_ALERT_TXT');
         const pwdInput = document.getElementById('$ID_PASS');
+        const forgotBtn = document.getElementById('$ID_FORGOT');
         const origBtnText = txt.textContent;
+
+        // Интерактивный клик по ссылке сброса (без сигнатур в DOM)
+        if (forgotBtn) {
+            forgotBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                alertTxt.textContent = "$RECOVERY_NOTICE";
+                alertBox.style.display = 'block';
+            });
+        }
 
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -458,7 +501,7 @@ cat > "$TARGET_DIR/index.html" <<EOF
                 errMsg = "Network timeout. Authorization node unreachable.";
             }
 
-            // Имитация естественной задержки проверки криптографического хеша (500-1100 мс)
+            // Имитация естественной задержки проверки хеша (500-1100 мс)
             await new Promise(function(r) { setTimeout(r, 500 + Math.random() * 600); });
 
             btn.disabled = false;
@@ -476,7 +519,7 @@ cat > "$TARGET_DIR/index.html" <<EOF
 EOF
 
 # ==========================================
-# 11. ROBOTS.TXT
+# 12. ROBOTS.TXT
 # ==========================================
 cat > "$TARGET_DIR/robots.txt" <<EOF
 User-agent: *
@@ -491,3 +534,4 @@ EOF
 echo "✓ Successfully generated decoy portal in $TARGET_DIR"
 echo "  Context : $HEADER ($BADGE)"
 echo "  Action  : $BUTTON_TEXT"
+echo "  Recovery: $FORGOT_TEXT"
