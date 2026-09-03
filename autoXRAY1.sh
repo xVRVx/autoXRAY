@@ -234,7 +234,7 @@ server {
         grpc_pass grpc://127.0.0.1:8411;
     }
 	
-    # Фейковый API-эндпоинт для фолбека
+    # Для сайта
     location /api/v1/authenticate {
         limit_except POST {
             deny all;

@@ -254,7 +254,7 @@ server {
         add_header routing-enable 0;
     }
 
-    # Фейковый API-эндпоинт для фолбека
+    # Для сайта
     location /api/v1/authenticate {
         limit_except POST {
             deny all;
