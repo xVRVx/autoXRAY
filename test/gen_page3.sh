@@ -540,4 +540,6 @@ echo "✓ Successfully generated decoy portal in $TARGET_DIR"
 echo "  Mode    : $( [ $THEME_MODE -eq 0 ] && echo "Dark" || echo "Light" )"
 echo "  Context : $HEADER ($BADGE)"
 echo "  Action  : $BUTTON_TEXT"
-echo "  Version : gen_page3_101"
+echo "  Version : gen_page3_102"
+
+sleep 1
