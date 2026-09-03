@@ -10,8 +10,7 @@ fi
 mkdir -p "$TARGET_DIR"
 
 # ==========================================
-# 1. ТЕМАТИКИ ПОРТАЛОВ (22 РЕАЛИСТИЧНЫХ ТИПА)
-# Формат: Заголовок | Подзаголовок | Бейдж | Placeholder логина | Тип поля
+# 1. ТЕМАТИКИ ПОРТАЛОВ (22 ТИПА)
 # ==========================================
 PORTAL_TYPES=(
     "Corporate SSO Portal|Unified authentication gateway for enterprise applications|Single Sign-On|domain\\username|text"
@@ -29,7 +28,7 @@ PORTAL_TYPES=(
     "API Gateway Management|OAuth2 / OIDC token issuance & credential management console|API Portal|client-id|text"
     "VPN & IPsec Concentrator|Encrypted perimeter tunnel for authorized corporate workforce|Network Gateway|vpn-username|text"
     "CI/CD Pipeline Coordinator|Automated runner orchestration & artifact distribution store|Build Farm|pipeline-agent|text"
-    "Database Security Proxy|Connection pooling & query audit layer for internal clusters|DB Proxy|cluster-admin|text"
+    "Database Security|Connection pooling & query audit layer for internal clusters|DB SEC|cluster-admin|text"
     "Compliance & Audit Vault|Immutable event ledger & compliance record archive|Audit System|compliance-officer|text"
     "Identity & Governance (IAM)|Centralized directory federation & role lifecycle manager|IAM Core|identity-id|text"
     "ERP Operations Hub|Enterprise resource management & financial ledger portal|Enterprise ERP|staff-id|text"
@@ -39,7 +38,7 @@ PORTAL_TYPES=(
 )
 
 # ==========================================
-# 2. ТЕКСТЫ ДЛЯ КНОПОК (32 ВАРИАНТА)
+# 2. КНОПКИ (32 ВАРИАНТА)
 # ==========================================
 BUTTON_TEXTS=(
     "Sign In" "Log In" "Authenticate" "Authorize" "Verify Identity"
@@ -53,19 +52,12 @@ BUTTON_TEXTS=(
 )
 
 # ==========================================
-# 3. ВАРИАТИВНОСТЬ ССЫЛКИ СБРОСА КЛЮЧА / ПАРОЛЯ
+# 3. ВАРИАЦИИ ССЫЛКИ И ОТВЕТОВ СБРОСА
 # ==========================================
 FORGOT_TEXTS=(
-    "Forgot Key?"
-    "Forgot Password?"
-    "Reset Key"
-    "Lost Credential?"
-    "Trouble signing in?"
-    "Reset Access"
-    "Lost Security Key?"
-    "Can't sign in?"
-    "Account Recovery"
-    "Forgot credentials?"
+    "Forgot Key?" "Forgot Password?" "Reset Key" "Lost Credential?"
+    "Trouble signing in?" "Reset Access" "Lost Security Key?" "Can't sign in?"
+    "Account Recovery" "Forgot credentials?"
 )
 
 RECOVERY_NOTICES=(
@@ -106,7 +98,7 @@ ERROR_MESSAGES=(
 )
 
 # ==========================================
-# 5. ФИКТИВНЫЕ КОМПАНИИ В ФУТЕР
+# 5. КОМПАНИИ В ФУТЕР
 # ==========================================
 COMPANIES=(
     "Global Cloud Infrastructure Systems Ltd."
@@ -125,26 +117,16 @@ COMPANIES=(
 # 6. ИКОНКИ (SVG BASE64)
 # ==========================================
 FAVICONS=(
-    # 1. Cloud
     "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjU2M0VCIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xNy41IDE5YTMuNSAzLjUgMCAwIDAgMC03aC01YTQuNSA0LjUgMCAwIDAtOC44IDIuMUEgNCA0IDAgMCAwIDYgMjFoMTEuNXoiLz48L3N2Zz4="
-    # 2. Shield Lock
     "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDU5NjY5IiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xMiAyMmw4LTRsLTgtMThsLTggMThsOCA0eiIvPjwvc3ZnPg=="
-    # 3. Modern Key
     "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMEY3NjZFIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0yMSAybC0yIDJtLTcuNjEgNy42MWE1LjUgNS41IDAgMSAxLTcuNzc4IDcuNzc4IDUuNSA1LjUgMCAwIDEgNy43NzctNy43Nzd6bTAgMEwxNS41IDcuNW0wIDBsMyAzTDIyIDdsLTMtM20tMy41IDMuNUwxOSA0Ii8+PC9zdmc+"
-    # 4. Cube / Box
     "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjN0MzM0VBIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0yMSAxNlY4YTIgMiAwIDAgMC0xLTEuNzNsLTctNGEyIDIgMCAwIDAtMiAwbC03IDRBMiAyIDAgMCAwIDMgOHY4YTIgMiAwIDAgMCAxIDEuNzNsNyA0YTIgMiAwIDAgMCAyIDBsNy00QTIgMiAwIDAgMCAyMSAxNnoiLz48L3N2Zz4="
-    # 5. Server Rack
     "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjIiIHk9IjIiIHdpZHRoPSIyMCIgaGVpZ2h0PSI4IiByeD0iMiIvPjxyZWN0IHg9IjIiIHk9IjE0IiB3aWR0aD0iMjAiIGhlaWdodD0iOCIgcng9IjIiLz48L3N2Zz4="
-    # 6. Terminal Console
-    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM0I4MkY2IiBzdHJva2Utd2lkdGg9IjIiPjxwb2x5bGluZSBwb2ludHM9IjQgMTcgMTAgMTEgNCA1Ii8+PGxpbmUgeDE9IjEyIiB5MT0iMTkiIHgyPSIyMCIgeTI9IjE5Ii8+PC9zdmc+"
-    # 7. Database
-    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRUExODNEIiBzdHJva2Utd2lkdGg9IjIiPjxlbGxpcHNlIGN4PSIxMiIgY3k9IjUiIHJ4PSI5IiByeT0iMyIvPjxwYXRoIGQ9Ik0yMSA4LjVjMCAxLjY2LTQgMy05IDNzLTktMS4zNC05LTMiLz48cGF0aCBkPSJNMjEgMTJjMCAxLjY2LTQgMy05IDNzLTktMS4zNC05LTMiLz48cGF0aCBkPSJNMjEgMTUuNWMwIDEuNjYtNCAzLTkgM3MtOS0xLjM0LTktMyIvPjwvc3ZnPg=="
-    # 8. Network Node
     "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDhBMUIyIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PGxpbmUgeDE9IjIiIHkxPSIxMiIgeDI9IjIyIiB5Mj0iMTIiLz48L3N2Zz4="
 )
 
 # ==========================================
-# 7. ШРИФТЫ GOOGLE
+# 7. ШРИФТЫ
 # ==========================================
 FONTS_DATA=(
     "Inter|Inter:wght@400;500;600;700"
@@ -154,48 +136,94 @@ FONTS_DATA=(
     "DM Sans|DM+Sans:wght@400;500;700"
     "IBM Plex Sans|IBM+Plex+Sans:wght@400;500;600;700"
     "Open Sans|Open+Sans:wght@400;600;700"
-    "Montserrat|Montserrat:wght@400;500;600;700"
 )
 
 # ==========================================
-# 8. ФОНЫ (12 ТЕМ)
+# 8. ДВИЖОК ДИЗАЙНА (14 РЕАЛЬНЫХ СТИЛЕЙ)
 # ==========================================
-BG_GRADIENTS=(
-    "bg-slate-950 text-slate-100"
-    "bg-gray-950 text-gray-100"
-    "bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white"
-    "bg-gradient-to-tr from-gray-900 via-slate-800 to-slate-950 text-white"
-    "bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-900 text-slate-100"
-    "bg-gradient-to-bl from-zinc-900 via-neutral-900 to-black text-neutral-100"
-    "bg-gray-50 text-gray-900"
-    "bg-slate-50 text-slate-900"
-    "bg-gradient-to-br from-slate-50 via-gray-100 to-slate-100 text-gray-900"
-    "bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/30 text-gray-900"
-    "bg-gradient-to-tr from-zinc-100 via-stone-50 to-neutral-100 text-neutral-900"
-    "bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100"
-)
+# Случайный выбор: 0 = ТЕМНАЯ ТЕМА, 1 = СВЕТЛАЯ ТЕМА
+THEME_MODE=$((RANDOM % 2))
+
+if [ $THEME_MODE -eq 0 ]; then
+    # --- НАБОР ТЕМНЫХ ТЕМ ---
+    DARK_PRESETS=(
+        # 1. Deep Slate
+        "background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);|background-color: rgba(30, 41, 59, 0.7); border: 1px solid rgba(71, 85, 105, 0.45); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.65);|#38bdf8"
+        # 2. OLED Pure Black
+        "background: #000000;|background-color: #0d0d0d; border: 1px solid #262626; box-shadow: 0 20px 40px rgba(0,0,0,0.9);|#ffffff"
+        # 3. Cyber Navy
+        "background: linear-gradient(135deg, #020617 0%, #0a192f 50%, #020617 100%);|background-color: rgba(10, 25, 47, 0.75); border: 1px solid rgba(56, 189, 248, 0.2); box-shadow: 0 25px 50px -12px rgba(2, 6, 23, 0.8);|#60a5fa"
+        # 4. Amethyst Night
+        "background: linear-gradient(to bottom right, #090514, #130924, #000000);|background-color: rgba(26, 16, 46, 0.7); border: 1px solid rgba(168, 85, 247, 0.25); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);|#c084fc"
+        # 5. Emerald Bastion
+        "background: radial-gradient(circle at 50% 20%, #062419 0%, #020b08 100%);|background-color: rgba(6, 36, 25, 0.65); border: 1px solid rgba(52, 211, 153, 0.2); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.75);|#34d399"
+        # 6. Neutral Charcoal
+        "background: #121212;|background-color: #1e1e1e; border: 1px solid #333333; box-shadow: 0 20px 45px rgba(0,0,0,0.8);|#e5e5e5"
+        # 7. Steel Blue
+        "background: linear-gradient(to bottom, #111827, #030712);|background-color: rgba(31, 41, 55, 0.75); border: 1px solid rgba(75, 85, 99, 0.4); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);|#818cf8"
+    )
+    SELECTED_THEME=${DARK_PRESETS[$RANDOM % ${#DARK_PRESETS[@]}]}
+    BODY_BG=$(echo "$SELECTED_THEME" | cut -d'|' -f1)
+    CARD_BG=$(echo "$SELECTED_THEME" | cut -d'|' -f2)
+    ACCENT_COLOR=$(echo "$SELECTED_THEME" | cut -d'|' -f3)
+
+    TITLE_COLOR="#ffffff"
+    SUBTITLE_COLOR="#94a3b8"
+    LABEL_COLOR="#cbd5e1"
+    FOOTER_COLOR="#64748b"
+    INPUT_BG="background-color: rgba(2, 6, 23, 0.6); border: 1px solid #334155; color: #f8fafc;"
+    ALERT_BG="background-color: rgba(69, 10, 10, 0.45); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5;"
+    BADGE_BG="background: rgba(255, 255, 255, 0.05); color: $ACCENT_COLOR; border: 1px solid rgba(255, 255, 255, 0.1);"
+
+    DARK_BTNS=(
+        "background-color: #2563eb;" "background-color: #4f46e5;"
+        "background-color: #0d9488;" "background-color: #059669;"
+        "background-color: #7c3aed;" "background-color: #262626; border: 1px solid #404040;"
+    )
+    BTN_BG_STYLE=${DARK_BTNS[$RANDOM % ${#DARK_BTNS[@]}]}
+else
+    # --- НАБОР СВЕТЛЫХ ТЕМ ---
+    LIGHT_PRESETS=(
+        # 1. Clean Enterprise
+        "background: #f8fafc;|background-color: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.02);|#2563eb"
+        # 2. Warm Stripe-like Gray
+        "background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);|background-color: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 10px 30px rgba(0,0,0,0.04);|#111827"
+        # 3. Soft Azure
+        "background: radial-gradient(circle at 50% 0%, #eff6ff 0%, #f8fafc 100%);|background-color: rgba(255, 255, 255, 0.95); border: 1px solid #dbeafe; box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.05);|#1d4ed8"
+        # 4. Mint Glass
+        "background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);|background-color: #ffffff; border: 1px solid #dcfce7; box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.05);|#059669"
+        # 5. Minimal Slate
+        "background: #f1f5f9;|background-color: #ffffff; border: 1px solid #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.03);|#334155"
+        # 6. Cool Indigo Tint
+        "background: linear-gradient(to bottom right, #f5f3ff, #f8fafc);|background-color: #ffffff; border: 1px solid #ede9fe; box-shadow: 0 20px 30px rgba(124, 58, 237, 0.04);|#6d28d9"
+        # 7. Pure Modern White
+        "background: #ffffff;|background-color: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.08);|#2563eb"
+    )
+    SELECTED_THEME=${LIGHT_PRESETS[$RANDOM % ${#LIGHT_PRESETS[@]}]}
+    BODY_BG=$(echo "$SELECTED_THEME" | cut -d'|' -f1)
+    CARD_BG=$(echo "$SELECTED_THEME" | cut -d'|' -f2)
+    ACCENT_COLOR=$(echo "$SELECTED_THEME" | cut -d'|' -f3)
+
+    TITLE_COLOR="#0f172a"
+    SUBTITLE_COLOR="#475569"
+    LABEL_COLOR="#334155"
+    FOOTER_COLOR="#94a3b8"
+    INPUT_BG="background-color: #ffffff; border: 1px solid #cbd5e1; color: #0f172a;"
+    ALERT_BG="background-color: #fef2f2; border: 1px solid #fee2e2; color: #dc2626;"
+    BADGE_BG="background: rgba(0, 0, 0, 0.04); color: $ACCENT_COLOR; border: 1px solid rgba(0, 0, 0, 0.08);"
+
+    LIGHT_BTNS=(
+        "background-color: #2563eb;" "background-color: #0f172a;"
+        "background-color: #4f46e5;" "background-color: #0d9488;"
+        "background-color: #059669;" "background-color: #1e293b;"
+    )
+    BTN_BG_STYLE=${LIGHT_BTNS[$RANDOM % ${#LIGHT_BTNS[@]}]}
+fi
 
 # ==========================================
-# 9. КНОПКИ (10 ЦВЕТОВ)
+# 9. СЛУЧАЙНЫЕ ID И ЗНАЧЕНИЯ
 # ==========================================
-BUTTON_COLORS=(
-    "bg-blue-600 hover:bg-blue-700"
-    "bg-indigo-600 hover:bg-indigo-700"
-    "bg-teal-600 hover:bg-teal-700"
-    "bg-emerald-600 hover:bg-emerald-700"
-    "bg-slate-800 hover:bg-slate-900"
-    "bg-violet-600 hover:bg-violet-700"
-    "bg-cyan-600 hover:bg-cyan-700"
-    "bg-sky-600 hover:bg-sky-700"
-    "bg-blue-700 hover:bg-blue-800"
-    "bg-neutral-800 hover:bg-neutral-900"
-)
-
-# ==========================================
-# 10. СЛУЧАЙНЫЕ ID (АНТИ-СИГНАТУРА)
-# ==========================================
-RND_HASH=$(openssl rand -hex 4)
-ID_FORM="f_$RND_HASH"
+ID_FORM="f_$(openssl rand -hex 4)"
 ID_USER="u_$(openssl rand -hex 3)"
 ID_PASS="p_$(openssl rand -hex 3)"
 ID_REMEMBER="r_$(openssl rand -hex 3)"
@@ -207,7 +235,6 @@ ID_ALERT_TXT="at_$(openssl rand -hex 3)"
 CSRF_PARAM="csrf_$(openssl rand -hex 3)"
 CSRF_VAL=$(openssl rand -hex 16)
 
-# Выбор случайных значений
 PORTAL_INFO=${PORTAL_TYPES[$RANDOM % ${#PORTAL_TYPES[@]}]}
 HEADER=$(echo "$PORTAL_INFO" | cut -d'|' -f1)
 SUBHEADER=$(echo "$PORTAL_INFO" | cut -d'|' -f2)
@@ -222,40 +249,17 @@ RECOVERY_NOTICE=${RECOVERY_NOTICES[$RANDOM % ${#RECOVERY_NOTICES[@]}]}
 
 COPYRIGHT=${COMPANIES[$RANDOM % ${#COMPANIES[@]}]}
 CURRENT_YEAR=$(date +%Y)
-
-BUTTON_COLOR=${BUTTON_COLORS[$RANDOM % ${#BUTTON_COLORS[@]}]}
-BG_STYLE=${BG_GRADIENTS[$RANDOM % ${#BG_GRADIENTS[@]}]}
 FAVICON=${FAVICONS[$RANDOM % ${#FAVICONS[@]}]}
 
 FONT_PAIR=${FONTS_DATA[$RANDOM % ${#FONTS_DATA[@]}]}
 FONT_NAME=$(echo "$FONT_PAIR" | cut -d'|' -f1)
 FONT_URL_PART=$(echo "$FONT_PAIR" | cut -d'|' -f2)
 
-# Рандомизация радиуса скругления карточки
-RADII=("0.75rem" "1rem" "1.25rem" "0.5rem")
+RADII=("0.5rem" "0.75rem" "1rem" "1.25rem")
 CARD_RADIUS=${RADII[$RANDOM % ${#RADII[@]}]}
 
-# Настройка темы
-if [[ "$BG_STYLE" == *"950"* || "$BG_STYLE" == *"900"* || "$BG_STYLE" == *"black"* ]]; then
-    THEME_DARK=1
-    CARD_BG="background-color: rgba(15, 23, 42, 0.85); border: 1px solid rgba(51, 65, 85, 0.6); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);"
-    INPUT_STYLE="background-color: rgba(2, 6, 23, 0.7); border: 1px solid #334155; color: #f8fafc;"
-    LABEL_COLOR="#94a3b8"
-    ALERT_STYLE="background-color: rgba(69, 10, 10, 0.4); border: 1px solid rgba(153, 27, 27, 0.5); color: #fca5a5;"
-    FOOTER_COLOR="#64748b"
-    BADGE_STYLE="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);"
-else
-    THEME_DARK=0
-    CARD_BG="background-color: rgba(255, 255, 255, 0.95); border: 1px solid #e2e8f0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);"
-    INPUT_STYLE="background-color: #ffffff; border: 1px solid #cbd5e1; color: #0f172a;"
-    LABEL_COLOR="#475569"
-    ALERT_STYLE="background-color: #fef2f2; border: 1px solid #fee2e2; color: #dc2626;"
-    FOOTER_COLOR="#94a3b8"
-    BADGE_STYLE="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.2);"
-fi
-
 # ==========================================
-# 11. ГЕНЕРАЦИЯ HTML
+# 10. ГЕНЕРАЦИЯ HTML (ЧЕТКИЕ СТИЛИ БЕЗ ОШИБОК)
 # ==========================================
 cat > "$TARGET_DIR/index.html" <<EOF
 <!DOCTYPE html>
@@ -270,15 +274,16 @@ cat > "$TARGET_DIR/index.html" <<EOF
     <link rel="icon" type="image/svg+xml" href="$FAVICON">
     <style>
         *, ::before, ::after { box-sizing: border-box; margin: 0; padding: 0; border: 0 solid transparent; }
+        html, body { min-height: 100vh; }
         body {
             font-family: '$FONT_NAME', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
             -webkit-font-smoothing: antialiased;
+            $BODY_BG
         }
         .container-box {
             width: 100%;
@@ -296,7 +301,19 @@ cat > "$TARGET_DIR/index.html" <<EOF
         .text-center { text-align: center; }
         .text-xs { font-size: 0.75rem; line-height: 1rem; }
         .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-        .text-xl { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.015em; }
+        .portal-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: -0.015em;
+            color: $TITLE_COLOR !important;
+            margin: 0;
+        }
+        .portal-desc {
+            font-size: 0.78rem;
+            color: $SUBTITLE_COLOR !important;
+            margin-top: 0.4rem;
+            line-height: 1.25rem;
+        }
         .rounded-lg { border-radius: 0.5rem; }
         .p-3 { padding: 0.75rem; }
         .py-2\.5 { padding-top: 0.65rem; padding-bottom: 0.65rem; }
@@ -310,19 +327,26 @@ cat > "$TARGET_DIR/index.html" <<EOF
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            margin-bottom: 0.85rem;
-            $BADGE_STYLE
+            margin-bottom: 0.75rem;
+            $BADGE_BG
         }
         .input-control {
             width: 100%;
             outline: none;
             transition: all .15s ease;
             font-size: 0.875rem;
-            $INPUT_STYLE
+            $INPUT_BG
         }
         .input-control:focus {
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
             border-color: #3b82f6 !important;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: $LABEL_COLOR !important;
+            margin-bottom: 0.35rem;
         }
         .btn {
             display: flex;
@@ -332,11 +356,13 @@ cat > "$TARGET_DIR/index.html" <<EOF
             border-radius: 0.5rem;
             font-size: 0.875rem;
             font-weight: 600;
-            color: #ffffff;
+            color: #ffffff !important;
             cursor: pointer;
             transition: all .15s ease;
             border: none;
+            $BTN_BG_STYLE
         }
+        .btn:hover { opacity: 0.92; }
         .btn:disabled { opacity: 0.65; cursor: not-allowed; }
         .btn:active:not(:disabled) { transform: scale(0.99); }
         .alert-box {
@@ -345,7 +371,7 @@ cat > "$TARGET_DIR/index.html" <<EOF
             border-radius: 0.5rem;
             font-size: 0.8125rem;
             line-height: 1.25rem;
-            $ALERT_STYLE
+            $ALERT_BG
         }
         .spinner {
             width: 1rem;
@@ -362,48 +388,29 @@ cat > "$TARGET_DIR/index.html" <<EOF
             margin-top: 2.25rem;
             font-size: 0.725rem;
             text-align: center;
-            color: $FOOTER_COLOR;
+            color: $FOOTER_COLOR !important;
         }
         .footer a { color: inherit; text-decoration: none; margin: 0 0.5rem; }
         .footer a:hover { text-decoration: underline; }
-        .link-action { text-decoration: none; cursor: pointer; transition: opacity .15s ease; }
-        .link-action:hover { text-decoration: underline; }
+        .link-action { text-decoration: none; cursor: pointer; color: $SUBTITLE_COLOR; }
+        .link-action:hover { text-decoration: underline; color: $TITLE_COLOR; }
         .checkbox-row {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             font-size: 0.8125rem;
-            color: $LABEL_COLOR;
+            color: $LABEL_COLOR !important;
         }
         .checkbox-row input { cursor: pointer; }
-
-        /* Фоновые классы */
-        .bg-slate-950 { background-color: #020617; }
-        .bg-gray-950 { background-color: #030712; }
-        .bg-gray-50 { background-color: #f9fafb; }
-        .bg-slate-50 { background-color: #f8fafc; }
-        .bg-blue-600 { background-color: #2563eb; } .bg-blue-600:hover { background-color: #1d4ed8; }
-        .bg-blue-700 { background-color: #1d4ed8; } .bg-blue-700:hover { background-color: #1e40af; }
-        .bg-indigo-600 { background-color: #4f46e5; } .bg-indigo-600:hover { background-color: #4338ca; }
-        .bg-teal-600 { background-color: #0d9488; } .bg-teal-600:hover { background-color: #0f766e; }
-        .bg-emerald-600 { background-color: #059669; } .bg-emerald-600:hover { background-color: #047857; }
-        .bg-slate-800 { background-color: #1e293b; } .bg-slate-800:hover { background-color: #0f172a; }
-        .bg-violet-600 { background-color: #7c3aed; } .bg-violet-600:hover { background-color: #6d28d9; }
-        .bg-cyan-600 { background-color: #0891b2; } .bg-cyan-600:hover { background-color: #0e7490; }
-        .bg-sky-600 { background-color: #0284c7; } .bg-sky-600:hover { background-color: #0369a1; }
-        .bg-neutral-800 { background-color: #262626; } .bg-neutral-800:hover { background-color: #171717; }
-        
-        .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops, #0f172a, #020617)); }
-        .bg-gradient-to-tr { background-image: linear-gradient(to top right, var(--tw-gradient-stops, #111827, #0f172a)); }
     </style>
 </head>
-<body class="$BG_STYLE">
+<body>
 
     <div class="container-box">
         <div class="text-center mb-6">
             <span class="badge">$BADGE</span>
-            <h1 class="text-xl">$HEADER</h1>
-            <p class="text-xs" style="color: $LABEL_COLOR; margin-top: 0.35rem;">$SUBHEADER</p>
+            <h1 class="portal-title">$HEADER</h1>
+            <p class="portal-desc">$SUBHEADER</p>
         </div>
 
         <div id="$ID_ALERT" class="alert-box p-3" role="alert">
@@ -414,14 +421,14 @@ cat > "$TARGET_DIR/index.html" <<EOF
             <input type="hidden" name="$CSRF_PARAM" value="$CSRF_VAL">
 
             <div>
-                <label for="$ID_USER" class="text-xs" style="display:block; font-weight: 600; color: $LABEL_COLOR; margin-bottom: 0.35rem;">Identity Principal</label>
+                <label for="$ID_USER" class="form-label">Identity Principal</label>
                 <input type="$USER_INPUT_TYPE" id="$ID_USER" name="identity" required class="input-control rounded-lg py-2.5 px-3.5" placeholder="$USER_PLACEHOLDER" autocomplete="username">
             </div>
 
             <div>
                 <div class="flex justify-between items-center" style="margin-bottom: 0.35rem;">
-                    <label for="$ID_PASS" class="text-xs" style="font-weight: 600; color: $LABEL_COLOR;">Credential Key</label>
-                    <a href="#" id="$ID_FORGOT" class="text-xs link-action" style="color: $LABEL_COLOR;">$FORGOT_TEXT</a>
+                    <label for="$ID_PASS" class="form-label" style="margin-bottom: 0;">Credential Key</label>
+                    <a href="#" id="$ID_FORGOT" class="text-xs link-action">$FORGOT_TEXT</a>
                 </div>
                 <input type="password" id="$ID_PASS" name="credential" required class="input-control rounded-lg py-2.5 px-3.5" placeholder="••••••••••••" autocomplete="current-password">
             </div>
@@ -433,7 +440,7 @@ cat > "$TARGET_DIR/index.html" <<EOF
                 </label>
             </div>
 
-            <button type="submit" id="$ID_BTN" class="btn py-2.5 $BUTTON_COLOR" style="margin-top: 1.35rem;">
+            <button type="submit" id="$ID_BTN" class="btn py-2.5" style="margin-top: 1.35rem;">
                 <span id="$ID_TXT">$BUTTON_TEXT</span>
             </button>
         </form>
@@ -459,7 +466,6 @@ cat > "$TARGET_DIR/index.html" <<EOF
         const forgotBtn = document.getElementById('$ID_FORGOT');
         const origBtnText = txt.textContent;
 
-        // Интерактивный клик по ссылке сброса (без сигнатур в DOM)
         if (forgotBtn) {
             forgotBtn.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -501,7 +507,6 @@ cat > "$TARGET_DIR/index.html" <<EOF
                 errMsg = "Network timeout. Authorization node unreachable.";
             }
 
-            // Имитация естественной задержки проверки хеша (500-1100 мс)
             await new Promise(function(r) { setTimeout(r, 500 + Math.random() * 600); });
 
             btn.disabled = false;
@@ -519,7 +524,7 @@ cat > "$TARGET_DIR/index.html" <<EOF
 EOF
 
 # ==========================================
-# 12. ROBOTS.TXT
+# 11. ROBOTS.TXT
 # ==========================================
 cat > "$TARGET_DIR/robots.txt" <<EOF
 User-agent: *
@@ -532,6 +537,6 @@ Allow: /
 EOF
 
 echo "✓ Successfully generated decoy portal in $TARGET_DIR"
+echo "  Mode    : $( [ $THEME_MODE -eq 0 ] && echo "Dark" || echo "Light" )"
 echo "  Context : $HEADER ($BADGE)"
 echo "  Action  : $BUTTON_TEXT"
-echo "  Recovery: $FORGOT_TEXT"
