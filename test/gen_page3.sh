@@ -28,7 +28,7 @@ PORTAL_TYPES=(
     "API Gateway Management|OAuth2 / OIDC token issuance & credential management console|API Portal|client-id|text"
     "VPN & IPsec Concentrator|Encrypted perimeter tunnel for authorized corporate workforce|Network Gateway|vpn-username|text"
     "CI/CD Pipeline Coordinator|Automated runner orchestration & artifact distribution store|Build Farm|pipeline-agent|text"
-    "Database Security|Connection pooling & query audit layer for internal clusters|DB SEC|cluster-admin|text"
+    "Database Security Proxy|Connection pooling & query audit layer for internal clusters|DB Proxy|cluster-admin|text"
     "Compliance & Audit Vault|Immutable event ledger & compliance record archive|Audit System|compliance-officer|text"
     "Identity & Governance (IAM)|Centralized directory federation & role lifecycle manager|IAM Core|identity-id|text"
     "ERP Operations Hub|Enterprise resource management & financial ledger portal|Enterprise ERP|staff-id|text"
@@ -52,7 +52,7 @@ BUTTON_TEXTS=(
 )
 
 # ==========================================
-# 3. ВАРИАЦИИ ССЫЛКИ И ОТВЕТОВ СБРОСА
+# 3. ВАРИАЦИИ ССЫЛКИ И СТРОГИХ ОТВЕТОВ СБРОСА
 # ==========================================
 FORGOT_TEXTS=(
     "Forgot Key?" "Forgot Password?" "Reset Key" "Lost Credential?"
@@ -98,7 +98,7 @@ ERROR_MESSAGES=(
 )
 
 # ==========================================
-# 5. КОМПАНИИ В ФУТЕР
+# 5. КОМПАНИИ И НАБОРЫ ССЫЛОК В ФУТЕРЕ
 # ==========================================
 COMPANIES=(
     "Global Cloud Infrastructure Systems Ltd."
@@ -113,17 +113,56 @@ COMPANIES=(
     "Cortex Infrastructure Security Services"
 )
 
-# ==========================================
-# 6. ИКОНКИ (SVG BASE64)
-# ==========================================
-FAVICONS=(
-    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjU2M0VCIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xNy41IDE5YTMuNSAzLjUgMCAwIDAgMC03aC01YTQuNSA0LjUgMCAwIDAtOC44IDIuMUEgNCA0IDAgMCAwIDYgMjFoMTEuNXoiLz48L3N2Zz4="
-    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDU5NjY5IiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xMiAyMmw4LTRsLTgtMThsLTggMThsOCA0eiIvPjwvc3ZnPg=="
-    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMEY3NjZFIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0yMSAybC0yIDJtLTcuNjEgNy42MWE1LjUgNS41IDAgMSAxLTcuNzc4IDcuNzc4IDUuNSA1LjUgMCAwIDEgNy43NzctNy43Nzd6bTAgMEwxNS41IDcuNW0wIDBsMyAzTDIyIDdsLTMtM20tMy41IDMuNUwxOSA0Ii8+PC9zdmc+"
-    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjN0MzM0VBIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0yMSAxNlY4YTIgMiAwIDAgMC0xLTEuNzNsLTctNGEyIDIgMCAwIDAtMiAwbC03IDRBMiAyIDAgMCAwIDMgOHY4YTIgMiAwIDAgMCAxIDEuNzNsNyA0YTIgMiAwIDAgMCAyIDBsNy00QTIgMiAwIDAgMCAyMSAxNnoiLz48L3N2Zz4="
-    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjIiIHk9IjIiIHdpZHRoPSIyMCIgaGVpZ2h0PSI4IiByeD0iMiIvPjxyZWN0IHg9IjIiIHk9IjE0IiB3aWR0aD0iMjAiIGhlaWdodD0iOCIgcng9IjIiLz48L3N2Zz4="
-    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDhBMUIyIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PGxpbmUgeDE9IjIiIHkxPSIxMiIgeDI9IjIyIiB5Mj0iMTIiLz48L3N2Zz4="
+FOOTER_LINK_SETS=(
+    "Security Policy|Privacy Regulations|Acceptable Use"
+    "Security Baseline|Privacy Notice|Terms of Operation"
+    "Compliance Framework|Data Protection|Access Guidelines"
+    "Trust & Safety|Legal Disclosures|System Operating Rules"
 )
+
+# ==========================================
+# 6. ДИНАМИЧЕСКИЙ ГЕНЕРАТОР SVG С ВЫСОКИМ КОНТРАСТОМ
+# ==========================================
+SVG_PALETTE=(
+    "#2563eb" "#0284c7" "#0d9488" "#059669" "#7c3aed"
+    "#4f46e5" "#db2777" "#e11d48" "#ea580c" "#d97706"
+    "#475569" "#0891b2"
+)
+SVG_STROKES=("1.8" "2.0" "2.2")
+
+SVG_SHAPES=(
+    # 1. Cloud
+    "M17.5 19a3.5 3.5 0 0 0 0-7h-5a4.5 4.5 0 0 0-8.8 2.1A4 4 0 0 0 6 21h11.5z"
+    # 2. Shield Lock
+    "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+    # 3. Access Key
+    "M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"
+    # 4. Box / Cube
+    "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+    # 5. Server Stack
+    "M2 4h20v6H2zM2 14h20v6H2zM6 7h.01M6 17h.01"
+    # 6. Terminal Console
+    "M4 17l6-6-6-6M12 19h8"
+    # 7. Database
+    "M12 2C6.48 2 2 3.79 2 6v12c0 2.21 4.48 4 10 4s10-1.79 10-4V6c0-2.21-4.48-4-10-4z"
+    # 8. Network Globe
+    "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+    # 9. Hardware Chip / CPU
+    "M4 4h16v16H4zM9 9h6v6H9zM9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"
+    # 10. Layers
+    "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+    # 11. Biometrics
+    "M12 11c-1.66 0-3 1.34-3 3v2c0 1.66 1.34 3 3 3s3-1.34 3-3v-2c0-1.66-1.34-3-3-3z"
+    # 12. Telemetry Pulse
+    "M22 12h-4l-3 9L9 3l-3 9H2"
+)
+
+RAND_COLOR=${SVG_PALETTE[$RANDOM % ${#SVG_PALETTE[@]}]}
+RAND_WIDTH=${SVG_STROKES[$RANDOM % ${#SVG_STROKES[@]}]}
+RAND_PATH=${SVG_SHAPES[$RANDOM % ${#SVG_SHAPES[@]}]}
+
+RAW_SVG="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='$RAND_COLOR' stroke-width='$RAND_WIDTH' stroke-linecap='round' stroke-linejoin='round'><path d='$RAND_PATH'/></svg>"
+FAVICON="data:image/svg+xml;base64,$(echo -n "$RAW_SVG" | base64 | tr -d '\n')"
 
 # ==========================================
 # 7. ШРИФТЫ
@@ -139,9 +178,8 @@ FONTS_DATA=(
 )
 
 # ==========================================
-# 8. ДВИЖОК ДИЗАЙНА (14 РЕАЛЬНЫХ СТИЛЕЙ)
+# 8. ДВИЖОК ДИЗАЙНА (14 СТИЛЕЙ: 50% DARK / 50% LIGHT)
 # ==========================================
-# Случайный выбор: 0 = ТЕМНАЯ ТЕМА, 1 = СВЕТЛАЯ ТЕМА
 THEME_MODE=$((RANDOM % 2))
 
 if [ $THEME_MODE -eq 0 ]; then
@@ -221,7 +259,7 @@ else
 fi
 
 # ==========================================
-# 9. СЛУЧАЙНЫЕ ID И ЗНАЧЕНИЯ
+# 9. СЛУЧАЙНЫЕ ID И ЗНАЧЕНИЯ (АНТИ-СИГНАТУРА)
 # ==========================================
 ID_FORM="f_$(openssl rand -hex 4)"
 ID_USER="u_$(openssl rand -hex 3)"
@@ -247,9 +285,16 @@ DEFAULT_ERROR=${ERROR_MESSAGES[$RANDOM % ${#ERROR_MESSAGES[@]}]}
 FORGOT_TEXT=${FORGOT_TEXTS[$RANDOM % ${#FORGOT_TEXTS[@]}]}
 RECOVERY_NOTICE=${RECOVERY_NOTICES[$RANDOM % ${#RECOVERY_NOTICES[@]}]}
 
-COPYRIGHT=${COMPANIES[$RANDOM % ${#COMPANIES[@]}]}
+# Защита от двух точек в футере
+RAW_COPYRIGHT=${COMPANIES[$RANDOM % ${#COMPANIES[@]}]}
+COPYRIGHT_CLEAN=$(echo "$RAW_COPYRIGHT" | sed 's/\.*$//')
 CURRENT_YEAR=$(date +%Y)
-FAVICON=${FAVICONS[$RANDOM % ${#FAVICONS[@]}]}
+
+# Выбор набора ссылок в футере
+FOOTER_LINKS_ROW=${FOOTER_LINK_SETS[$RANDOM % ${#FOOTER_LINK_SETS[@]}]}
+LINK_1=$(echo "$FOOTER_LINKS_ROW" | cut -d'|' -f1)
+LINK_2=$(echo "$FOOTER_LINKS_ROW" | cut -d'|' -f2)
+LINK_3=$(echo "$FOOTER_LINKS_ROW" | cut -d'|' -f3)
 
 FONT_PAIR=${FONTS_DATA[$RANDOM % ${#FONTS_DATA[@]}]}
 FONT_NAME=$(echo "$FONT_PAIR" | cut -d'|' -f1)
@@ -259,7 +304,7 @@ RADII=("0.5rem" "0.75rem" "1rem" "1.25rem")
 CARD_RADIUS=${RADII[$RANDOM % ${#RADII[@]}]}
 
 # ==========================================
-# 10. ГЕНЕРАЦИЯ HTML (ЧЕТКИЕ СТИЛИ БЕЗ ОШИБОК)
+# 10. ГЕНЕРАЦИЯ HTML
 # ==========================================
 cat > "$TARGET_DIR/index.html" <<EOF
 <!DOCTYPE html>
@@ -447,11 +492,11 @@ cat > "$TARGET_DIR/index.html" <<EOF
     </div>
 
     <footer class="footer">
-        <p>&copy; $CURRENT_YEAR $COPYRIGHT. All rights reserved.</p>
+        <p>&copy; $CURRENT_YEAR $COPYRIGHT_CLEAN. All rights reserved.</p>
         <p style="margin-top: 0.4rem;">
-            <a href="#" onclick="return false;">Security Policy</a> &bull;
-            <a href="#" onclick="return false;">Privacy Regulations</a> &bull;
-            <a href="#" onclick="return false;">Acceptable Use</a>
+            <a href="#compliance" class="link-action">$LINK_1</a> &bull;
+            <a href="#privacy" class="link-action">$LINK_2</a> &bull;
+            <a href="#terms" class="link-action">$LINK_3</a>
         </p>
     </footer>
 
@@ -540,6 +585,6 @@ echo "✓ Successfully generated decoy portal in $TARGET_DIR"
 echo "  Mode    : $( [ $THEME_MODE -eq 0 ] && echo "Dark" || echo "Light" )"
 echo "  Context : $HEADER ($BADGE)"
 echo "  Action  : $BUTTON_TEXT"
-echo "  Version : gen_page3_102"
+echo "  Version : gen_page3_103"
 
 sleep 1
