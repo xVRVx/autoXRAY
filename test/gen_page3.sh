@@ -26,7 +26,7 @@ PORTAL_TYPES=(
     "Secure File Exchange|Air-gapped file delivery & transit verification node|File Vault|transfer-key / email|text"
     "Kubernetes Control Plane|RBAC authentication endpoint for managed worker clusters|K8s Dashboard|service-account|text"
     "API Gateway Management|OAuth2 / OIDC token issuance & credential management console|API Portal|client-id|text"
-    "VPN & IPsec Concentrator|Encrypted perimeter tunnel for authorized corporate workforce|Network Gateway|vpn-username|text"
+    "IPsec Concentrator|Encrypted perimeter tunnel for authorized corporate workforce|Network Gateway|IPsec-username|text"
     "CI/CD Pipeline Coordinator|Automated runner orchestration & artifact distribution store|Build Farm|pipeline-agent|text"
     "Database Security|Connection pooling & query audit layer for internal clusters|DB SEC|cluster-admin|text"
     "Compliance & Audit Vault|Immutable event ledger & compliance record archive|Audit System|compliance-officer|text"
@@ -585,6 +585,6 @@ echo "✓ Successfully generated decoy portal in $TARGET_DIR"
 echo "  Mode    : $( [ $THEME_MODE -eq 0 ] && echo "Dark" || echo "Light" )"
 echo "  Context : $HEADER ($BADGE)"
 echo "  Action  : $BUTTON_TEXT"
-echo "  Version : gen_page3_104"
+echo "  Version : gen_page3_105"
 
 sleep 1
