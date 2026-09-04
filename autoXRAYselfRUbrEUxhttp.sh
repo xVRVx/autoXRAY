@@ -224,48 +224,32 @@ fi
 
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
+# Выбираем один фиксированный сценарий ошибки для этой установки (всего 16 вариантов)
+AUTH_VARIANTS=(
+    "ERR_INVALID_CREDENTIALS|The username or password you entered is incorrect."
+    "ERR_INVALID_CREDENTIALS|The identity or security key you provided is invalid."
+    "ERR_BAD_PASSWORD|Incorrect password. Please verify your credentials and retry."
+    "ERR_KEY_MISMATCH|The security key provided does not match the account identity."
+    "ERR_CREDENTIAL_REJECTED|Credential verification rejected by the authentication authority."
+    "ERR_PASSWORD_MISMATCH|The password provided does not match the registered key."
+    "ERR_INCORRECT_KEY|Incorrect security credentials provided for this principal."
+    "ERR_USER_NOT_FOUND|Principal identity not found in directory services."
+    "ERR_IDENTITY_NOT_FOUND|No account found matching the provided identity."
+    "ERR_PRINCIPAL_MISSING|User principal does not exist in this organizational realm."
+    "ERR_ACCOUNT_NOT_FOUND|Account identifier not recognized by the identity provider."
+    "ERR_UNKNOWN_USER|Unrecognized user identity. Please verify your login."
+    "ERR_LOOKUP_FAILED|User lookup failed: Specified identity does not exist."
+    "ERR_AUTH_FAILED|Authentication failed: The provided credentials do not match."
+    "ERR_DIRECTORY_MISMATCH|Credentials could not be verified against the corporate directory."
+    "ERR_RECORDS_MISMATCH|The security credentials entered do not match our records."
+)
+
+RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
+AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
+AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
+
 # конфиг nginx
 cat <<EOF > "$CONFIG_PATH"
-map \$request_id \$auth_error_msg {
-    default   "The identity or security key you provided is invalid.";
-    "~^0"     "Invalid credential key. Verification challenge failed.";
-    "~^1"     "Incorrect password. Please verify your credentials and retry.";
-    "~^2"     "The security key provided does not match the account identity.";
-    "~^3"     "Credential verification rejected by the authentication authority.";
-    "~^4"     "The password provided does not match the registered key.";
-    "~^5"     "Incorrect security credentials provided for this principal.";
-    "~^6"     "Principal identity not found in directory services.";
-    "~^7"     "No account found matching the provided identity.";
-    "~^8"     "User principal does not exist in this organizational realm.";
-    "~^9"     "Account identifier not recognized by the identity provider.";
-    "~^a"     "Unrecognized user identity. Please verify your login.";
-    "~^b"     "User lookup failed: Specified identity does not exist.";
-    "~^c"     "The username or password you entered is incorrect.";
-    "~^d"     "Authentication failed: The provided credentials do not match.";
-    "~^e"     "Credentials could not be verified against the corporate directory.";
-    "~^f"     "The security credentials entered do not match our records.";
-}
-
-map \$request_id \$auth_error_code {
-    default   "ERR_AUTH_FAILED";
-    "~^0"     "ERR_INVALID_CREDENTIALS";
-    "~^1"     "ERR_BAD_PASSWORD";
-    "~^2"     "ERR_KEY_MISMATCH";
-    "~^3"     "ERR_CREDENTIAL_REJECTED";
-    "~^4"     "ERR_PASSWORD_MISMATCH";
-    "~^5"     "ERR_INCORRECT_KEY";
-    "~^6"     "ERR_USER_NOT_FOUND";
-    "~^7"     "ERR_IDENTITY_NOT_FOUND";
-    "~^8"     "ERR_PRINCIPAL_MISSING";
-    "~^9"     "ERR_ACCOUNT_NOT_FOUND";
-    "~^a"     "ERR_UNKNOWN_USER";
-    "~^b"     "ERR_LOOKUP_FAILED";
-    "~^c"     "ERR_AUTH_FAILED";
-    "~^d"     "ERR_VERIFICATION_FAILED";
-    "~^e"     "ERR_DIRECTORY_MISMATCH";
-    "~^f"     "ERR_RECORDS_MISMATCH";
-}
-
 server {
     server_name $DOMAIN;
     listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
@@ -294,7 +278,7 @@ server {
         add_header routing-enable 0;
     }
 
-    # Для сайта (динамический ответ из map)
+    # Для сайта
     location /api/v1/authenticate {
         limit_except POST {
             deny all;
@@ -306,7 +290,7 @@ server {
         add_header X-Content-Type-Options "nosniff" always;
         add_header Cache-Control "no-store, no-cache, must-revalidate" always;
 
-        return 401 '{"success":false,"code":"\$auth_error_code","message":"\$auth_error_msg","request_id":"\$request_id"}';
+        return 401 '{"success":false,"code":"$AUTH_CODE","message":"$AUTH_MSG","request_id":"\$request_id"}';
     }
 
     location ~ /\.ht {
