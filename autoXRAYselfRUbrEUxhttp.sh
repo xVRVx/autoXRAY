@@ -226,6 +226,46 @@ path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
 # конфиг nginx
 cat <<EOF > "$CONFIG_PATH"
+map \$request_id \$auth_error_msg {
+    default   "The identity or security key you provided is invalid.";
+    "~^0"     "Invalid credential key. Verification challenge failed.";
+    "~^1"     "Incorrect password. Please verify your credentials and retry.";
+    "~^2"     "The security key provided does not match the account identity.";
+    "~^3"     "Credential verification rejected by the authentication authority.";
+    "~^4"     "The password provided does not match the registered key.";
+    "~^5"     "Incorrect security credentials provided for this principal.";
+    "~^6"     "Principal identity not found in directory services.";
+    "~^7"     "No account found matching the provided identity.";
+    "~^8"     "User principal does not exist in this organizational realm.";
+    "~^9"     "Account identifier not recognized by the identity provider.";
+    "~^a"     "Unrecognized user identity. Please verify your login.";
+    "~^b"     "User lookup failed: Specified identity does not exist.";
+    "~^c"     "The username or password you entered is incorrect.";
+    "~^d"     "Authentication failed: The provided credentials do not match.";
+    "~^e"     "Credentials could not be verified against the corporate directory.";
+    "~^f"     "The security credentials entered do not match our records.";
+}
+
+map \$request_id \$auth_error_code {
+    default   "ERR_AUTH_FAILED";
+    "~^0"     "ERR_INVALID_CREDENTIALS";
+    "~^1"     "ERR_BAD_PASSWORD";
+    "~^2"     "ERR_KEY_MISMATCH";
+    "~^3"     "ERR_CREDENTIAL_REJECTED";
+    "~^4"     "ERR_PASSWORD_MISMATCH";
+    "~^5"     "ERR_INCORRECT_KEY";
+    "~^6"     "ERR_USER_NOT_FOUND";
+    "~^7"     "ERR_IDENTITY_NOT_FOUND";
+    "~^8"     "ERR_PRINCIPAL_MISSING";
+    "~^9"     "ERR_ACCOUNT_NOT_FOUND";
+    "~^a"     "ERR_UNKNOWN_USER";
+    "~^b"     "ERR_LOOKUP_FAILED";
+    "~^c"     "ERR_AUTH_FAILED";
+    "~^d"     "ERR_VERIFICATION_FAILED";
+    "~^e"     "ERR_DIRECTORY_MISMATCH";
+    "~^f"     "ERR_RECORDS_MISMATCH";
+}
+
 server {
     server_name $DOMAIN;
     listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
@@ -254,7 +294,7 @@ server {
         add_header routing-enable 0;
     }
 
-    # Для сайта
+    # Для сайта (динамический ответ из map)
     location /api/v1/authenticate {
         limit_except POST {
             deny all;
@@ -266,7 +306,7 @@ server {
         add_header X-Content-Type-Options "nosniff" always;
         add_header Cache-Control "no-store, no-cache, must-revalidate" always;
 
-        return 401 '{"success":false,"code":"ERR_AUTH_FAILED","message":"The identity or security key you provided is invalid.","request_id":"\$request_id"}';
+        return 401 '{"success":false,"code":"\$auth_error_code","message":"\$auth_error_msg","request_id":"\$request_id"}';
     }
 
     location ~ /\.ht {
@@ -287,6 +327,7 @@ server {
     }
 }
 EOF
+
 
 systemctl restart nginx
 
