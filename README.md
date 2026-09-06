@@ -177,11 +177,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ```
 Установится прокси мост между серверами, итоговая цепочка: конфиг клиента -> ru VPS -> eu VPS -> зарубежный сайт
 
-Также можно взять vless RAW reality VISION и использовать предыдущий скрипт моста:
-```bash
-bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/old/autoXRAYselfstealConfRUbrEU.sh)" -- поддомен2.вашДОМЕН.com "vless://вашКонфигRAW"
-```
-Также теперь можно использовать несколько xhttp конфигов, все они будут добавлены в мост.
+Теперь можно использовать несколько xhttp конфигов, все они будут добавлены в мост.
 
 -- поддомен2.Домен.Ком "vless://xhttp1" "vless://xhttp2" "vless://xhttp3"
 
