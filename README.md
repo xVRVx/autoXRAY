@@ -181,7 +181,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 
 -- поддомен2.Домен.Ком "vless://xhttp1" "vless://xhttp2" "vless://xhttp3"
 
-===
+===========================================================================
 
 **Если вы хотите пускать YouTube через ruVPS (у вас он без ТСПУ или вы поставили и настроили [zapret4rocket](https://github.com/IndeecFOX/zapret4rocket))**
 
