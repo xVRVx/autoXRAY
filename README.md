@@ -39,20 +39,25 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 
 ===========================================================================
 
-## Выбор сервера (подбирал промо тарифы)
+## Выбор сервера (подбирал строго без [KYC](## "Know Your Customer — обязательная верификация личности (паспорт | телефон | карта)"))
+
 **EU VPS (самые стабильные DE)**
-- [XorekCloud](https://xorek.cloud/?from=28522) - полноценный тариф за 249 руб./мес. (промо за 149).
-- [netgrid](https://netgrid.host/ru?from=5893) - промо от 2€
-- [intezio](https://intezio.net/?ref=3d2bf6736da6) - промо от 179 руб.
-- [notbad](https://my.notbad.cloud/?from=188) - от 4$, есть оплата рублями, хороший курс и канал.
-- [senko.digital](https://senko.digital/?ref=47670) - от 2€, есть днс-хостинг и домены для selfsteel, есть оплата СБП.
+- [XorekCloud](https://xorek.cloud/?from=28522) - полноценный тариф за 249 руб./мес. (промо за 149). | DE/NL
+- [netgrid](https://netgrid.host/ru?from=5893) - промо от 2€. | DE/NL/CZ/PL/USA и др.
+- [intezio](https://intezio.net/?ref=3d2bf6736da6) - промо от 179 руб. | DE/NL
+- [notbad](https://my.notbad.cloud/?from=188) - от 4$, есть оплата рублями, хороший курс и канал. | DE/NL
+- [senko.digital](https://senko.digital/?ref=47670) - от 2€, есть днс-хостинг и домены для selfsteel, есть оплата СБП. | DE/NL/FI
+- [serv.host](https://serv.host/?from=44424) - от 360 руб./мес. | RU/DE/NL/FI и др.
 
 Если брать NL-локацию, то, возможно, получится урвать ВПС без рекламы на ютубе.
+
+Промо-тарифы постоянно заканчиваются и, как правило, сильно урезаны.
 
 **RU VPS (для моста ru-eu)**
 - [time-host](https://time-host.net/?from=47217 ) - от 140 руб./мес.
 - [hosting-russia](https://hosting-russia.ru/?p=57731) - от 250 руб./мес.
 - [CloudCore](https://cloudcore.ru/?affiliate_uuid=e9ad7432-7898-4de2-8606-38eb90e0c1a6) - от 100 руб./мес.
+
 
 
 Имейте в виду, что подсети популярных хостинг-провайдеров, таких как аеза, pq(ufo), ishosting и др., заблокированы многими провайдерами(РКН). К ним порой даже невозможно подключиться по SSH (без VPN). Поэтому, пожалуйста, не используйте их или не жалуйтесь, что у вас не работает основной скрипт.
