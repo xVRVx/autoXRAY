@@ -1,5 +1,6 @@
 # === Telegram Web Proxy (TeleMT Classic + tproxy-server) ===
-
+echo -e "${GRN}Версия: 113 ${NC}"
+sleep 1
 echo -e "\n${GRN}=== Установка бэкенда TeleMT и Web Proxy шлюза ===${NC}"
 
 # Останавливаем старые службы, если были
@@ -8,13 +9,7 @@ systemctl stop telemt tproxy-server 2>/dev/null || true
 # Генерируем 16-байтный (32 hex) секрет для Web Proxy
 SECRET=$(openssl rand -hex 16)
 
-# # 1. Страховка: если в Xray остался старый порт 500, переключаем на сокет Nginx
-# if [ -f /usr/local/etc/xray/config.json ] && grep -q '"127.0.0.1:500"' /usr/local/etc/xray/config.json; then
-    # sed -i 's|"127.0.0.1:500"|"/dev/shm/nginx.sock"|g' /usr/local/etc/xray/config.json
-    # systemctl restart xray 2>/dev/null || true
-# fi
-
-# 2. Установка TeleMT (бэкенд на 127.0.0.1:900 в Classic MTProto режиме)
+# 1. Установка TeleMT (бэкенд на 127.0.0.1:900 в Classic MTProto режиме)
 ARCH_TYPE=$(uname -m)
 LIBC_TYPE=$(ldd --version 2>&1 | grep -iq musl && echo musl || echo gnu)
 
@@ -88,26 +83,38 @@ EOF
 systemctl daemon-reload
 systemctl enable --now telemt
 
-# 3. Сборка tproxy-server (Telegram Web Proxy)
+# 2. Загрузка и сборка tproxy-server (без зависимости от git)
+echo -e "${GRN}[2/4] Загрузка и сборка tproxy-server...${NC}"
 GO_ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 mkdir -p /opt/go
 curl -sL "https://go.dev/dl/go1.22.6.linux-${GO_ARCH}.tar.gz" | tar -C /opt/go --strip-components=1 -xz
 
+# Скачиваем архив исходников напрямую через curl
 rm -rf /tmp/tproxy-source
-git clone --depth 1 https://github.com/telegramdesktop/tproxy-server.git /tmp/tproxy-source
+mkdir -p /tmp/tproxy-source
+curl -sL "https://github.com/telegramdesktop/tproxy-server/archive/refs/heads/master.tar.gz" | tar -xz -C /tmp/tproxy-source --strip-components=1
+
+# Статическая сборка (CGO_ENABLED=0 не требует gcc/make)
 cd /tmp/tproxy-source
-/opt/go/bin/go build -trimpath -o /usr/local/bin/tproxy-server ./cmd/tproxy-server
+CGO_ENABLED=0 /opt/go/bin/go build -trimpath -ldflags="-s -w" -o /usr/local/bin/tproxy-server ./cmd/tproxy-server
 chmod +x /usr/local/bin/tproxy-server
 rm -rf /tmp/tproxy-source /opt/go
 cd /root
 
-# 4. Конфигурация tproxy-server
+# 3. Конфигурация tproxy-server
 mkdir -p /etc/tproxy-server
 
-# Токен подписи (строго 32 байта и права 0400)
-if [ ! -f /etc/tproxy-server/token.key ]; then
+# Токен подписи (строго 32 байта)
+if [ ! -s /etc/tproxy-server/token.key ] || [ "$(wc -c < /etc/tproxy-server/token.key)" -ne 32 ]; then
     head -c 32 /dev/urandom > /etc/tproxy-server/token.key
 fi
+
+# Гарантируем наличие каталога и index.html, чтобы tproxy-server не упал при старте
+mkdir -p "$WEB_PATH"
+if [ ! -f "$WEB_PATH/index.html" ]; then
+    echo "<!DOCTYPE html><html><head><meta charset='utf-8'><title>$DOMAIN</title></head><body><h1>Server Ready</h1></body></html>" > "$WEB_PATH/index.html"
+fi
+chmod 755 "$WEB_PATH"
 
 cat <<EOF > /etc/tproxy-server/config.json
 {
@@ -168,7 +175,7 @@ cat <<EOF > /etc/tproxy-server/profiles.json
 }
 EOF
 
-# Права доступа
+# Настройка прав
 chmod 0400 /etc/tproxy-server/token.key
 chmod 0600 /etc/tproxy-server/profiles.json
 chown -R telemt:telemt /etc/tproxy-server
@@ -195,8 +202,13 @@ EOF
 systemctl daemon-reload
 systemctl enable --now tproxy-server
 
-# 5. Экспорт переменной для родительского скрипта autoXRAY
+# 4. Экспорт переменной для родительского скрипта autoXRAY
 export MTProto="tg://webproxy?server=${DOMAIN}&secret=${SECRET}"
 
-echo -e "${GRN}✅ Telegram Web Proxy запущен и привязан к Nginx (${DOMAIN})${NC}"
+sleep 1
+if systemctl is-active --quiet tproxy-server; then
+    echo -e "${GRN}✅ Telegram Web Proxy запущен и работает (${DOMAIN})${NC}"
+else
+    echo -e "${RED}⚠️ Ошибка запуска tproxy-server! Проверьте логи: journalctl -u tproxy-server -e${NC}"
+fi
 sleep 1
