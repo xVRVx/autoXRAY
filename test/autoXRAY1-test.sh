@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 117 ${NC}"
+echo -e "${GRN}Версия: 118 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
@@ -44,30 +44,22 @@ read -p "$(echo -e "\n${YEL}Устанавливать Web Proxy для Telegram
 choice_mtp=${choice_mtp:-y}
 if [[ "$choice_mtp" =~ ^[Yy]$ ]]; then
     INSTALL_MTP=true
-    # Умный роутинг: Telegram Web Proxy уходит на 8080, а остальные запросы отдают сайт или честный 404
-    NGINX_web_proxy='    # web proxy & static routing
+    NGINX_web_proxy='    # web proxy
     location / {
+        proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
+
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
+
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
+
         proxy_buffering off;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
-
-        # Если Telegram стучится с WebSocket или bridge-пропуском
-        if ($http_upgrade = "websocket") {
-            proxy_pass http://127.0.0.1:8080;
-        }
-        if ($arg_bridge != "") {
-            proxy_pass http://127.0.0.1:8080;
-        }
-
-        # Обычные пользователи видят главную, а несуществующие адреса получают 404
-        try_files $uri $uri/ =404;
     }'
 else
     INSTALL_MTP=false
@@ -121,7 +113,7 @@ mkdir -p "$WEB_PATH"
 bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page3.sh)" -- "$WEB_PATH"
 
 # Установка Xray
-bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.9.9
+bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.7.28
 
 # Блок CERTBOT - START
 if [ -f /etc/nginx/sites-available/default ]; then
@@ -254,12 +246,10 @@ server {
     ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
 
-    # 1. Секретная страница со списком конфигов (отдаем напрямую с диска)
     location = /${path_subpage}.html {
         try_files \$uri =404;
     }
 
-    # 2. JSON-подписка (отдаем напрямую с диска)
     location = /${path_subpage}.json {
         add_header profile-title "base64:YXV0b1hSQVk=";
         add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9zaXRlOmNhdGVnb3J5LWFkcyIsImdlb3NpdGU6d2luLXNweSJdLCJCbG9ja0lwIjpbXSwiRG9tYWluU3RyYXRlZ3kiOiJJUElmTm9uTWF0Y2giLCJGYWtlRE5TIjoiZmFsc2UiLCJVc2VDaHVua0ZpbGVzIjoiZmFsc2UifQ";
