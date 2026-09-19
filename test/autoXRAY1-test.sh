@@ -4,9 +4,10 @@
 GRN='\033[1;32m'
 RED='\033[1;31m'
 YEL='\033[1;33m'
+CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 113 ${NC}"
+echo -e "${GRN}Версия: 114 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
@@ -48,15 +49,13 @@ if [[ "$choice_mtp" =~ ^[Yy]$ ]]; then
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
 
-        proxy_hide_header Content-Security-Policy;
-
         proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
+        proxy_set_header Connection $connection_upgrade;
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto https;
 
         proxy_buffering off;
         proxy_read_timeout 3600s;
@@ -86,7 +85,7 @@ case $fp_choice in
 esac
 # ============================
 
-# Включаем BBR и MTU Probing (Пункт 5)
+# Включаем BBR и MTU Probing
 cat <<EOF > /etc/sysctl.d/999-autoXRAY.conf
 net.core.default_qdisc=fq
 net.ipv4.tcp_congestion_control=bbr
@@ -115,8 +114,6 @@ bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/g
 bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.7.28
 
 # Блок CERTBOT - START
-
-# Определяем путь к конфигу nginx
 if [ -f /etc/nginx/sites-available/default ]; then
     CONFIG_PATH="/etc/nginx/sites-available/default"
 	echo -e "${GRN}Обнаружена стандартная сборка nginx. ${NC}"
@@ -208,11 +205,17 @@ RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
 AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
 AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
-# Конфиг Nginx (Пункт 7: оптимизация логов для сбережения диска)
+# Конфиг Nginx
 cat <<EOF > "$CONFIG_PATH"
+map \$http_upgrade \$connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
 server {
     server_name $DOMAIN;
-    listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
+
+    listen unix:/dev/shm/nginx.sock ssl proxy_protocol;
     listen unix:/dev/shm/nginxTLS.sock proxy_protocol;
     listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
     set_real_ip_from unix:;
@@ -1083,12 +1086,9 @@ ALL_LINKS_TEXT=""
 if [ "$INSTALL_MTP" = true ]; then
     echo -e "\n\n${GRN}Устанавливаем Telegram Web Proxy ${NC}"
     source <(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/web-proxy-test.sh)
-    # Пункт 2: генерация https://t.me/ ссылки для клика со смартфонов
-    MTProto_tme=$(echo "$MTProto" | sed 's|^tg://|https://t.me/|')
 else
     echo -e "\n\n${YEL}Установка Telegram Web Proxy пропущена.${NC}"
     MTProto=""
-    MTProto_tme=""
 fi
 
 # --- ЗАПИСЬ HEAD (СТАТИКА, МИНИФИЦИРОВАННЫЕ СТИЛИ И JS) ---
@@ -1162,14 +1162,14 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </div>
 EOF
 
-# Добавляем Web Proxy блок (Пункт 2: https://t.me ссылка на кнопке)
+# Добавляем Web Proxy блок (чистые tg:// ссылки)
 if [ "$INSTALL_MTP" = true ]; then
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
     <div class="config-label">Telegram Web Proxy</div>
     <div class="config-code" id="mtproto">${MTProto}</div>
     <button class="btn-action copy-btn" onclick="copyText('mtproto', this)">Copy</button>
-    <a href="${MTProto_tme}" target="_blank" class="btn-action qr-btn" title="автодобавление прокси в тг" style="text-decoration:none">✈️ Add to TG</a>
+    <a href="${MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление прокси в тг" style="text-decoration:none">✈️ Add to TG</a>
 </div>
 EOF
 fi
@@ -1189,7 +1189,7 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </body></html>
 EOF
 
-# --- ФИНАЛЬНАЯ ПРОВЕРКА (Пункт 6: добавлен опрос tproxy-server) ---
+# --- ФИНАЛЬНАЯ ПРОВЕРКА ---
 echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
 
 if [ "$INSTALL_MTP" = true ]; then
@@ -1213,8 +1213,7 @@ echo -e "\n"
 
 if [ "$INSTALL_MTP" = true ]; then
     echo -e "${YEL}Telegram Web Proxy для ТГ:${NC}"
-    echo -e "Схема: ${CYAN}$MTProto${NC}"
-    echo -e "HTTPS: ${CYAN}$MTProto_tme${NC}\n"
+    echo -e "${CYAN}$MTProto${NC}\n"
 fi
 
 echo -e "${YEL}VLESS XHTTP REALITY EXTRA (для моста) ${NC}
