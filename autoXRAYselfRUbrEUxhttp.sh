@@ -4,7 +4,10 @@
 GRN='\033[1;32m'
 RED='\033[1;31m'
 YEL='\033[1;33m'
+CYAN='\033[1;36m'
 NC='\033[0m' # No Color
+
+echo -e "${GRN}Версия: 111 ${NC}"
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -116,15 +119,34 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
 fi
 
 # === ВОПРОСЫ ПОЛЬЗОВАТЕЛЮ ===
-read -p "$(echo -e "\n${YEL}Устанавливать MTProxy для Telegram? (y/n, по умолчанию y): ${NC}")" choice_mtp
+read -p "$(echo -e "\n${YEL}Устанавливать Web Proxy для Telegram? (y/n, по умолчанию y): ${NC}")" choice_mtp
 choice_mtp=${choice_mtp:-y}
 if [[ "$choice_mtp" =~ ^[Yy]$ ]]; then
-    TARGET_MTP="127.0.0.1:500"
     INSTALL_MTP=true
+    NGINX_web_proxy='    # web proxy
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+
+        proxy_hide_header Content-Security-Policy;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }'
 else
-    TARGET_MTP="/dev/shm/nginx.sock"
     INSTALL_MTP=false
+    NGINX_web_proxy='    # web proxy TG not installed'
 fi
+TARGET_MTP="/dev/shm/nginx.sock"
 
 echo -e "\n${YEL}Выберите TLS fingerprint для маскировки трафика:${NC}"
 echo "1) chrome    3) safari   5) android   7) 360"
@@ -144,16 +166,14 @@ case $fp_choice in
 esac
 # ============================
 
-# Включаем BBR
-bbr=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null)
-if [ "$bbr" = "bbr" ]; then
-    echo -e "${GRN}BBR уже запущен${NC}"
-else
-    echo "net.core.default_qdisc=fq" > /etc/sysctl.d/999-autoXRAY.conf
-    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.d/999-autoXRAY.conf
-    sysctl --system
-    echo -e "${GRN}BBR активирован${NC}"
-fi
+# Включаем BBR и MTU Probing (Пункт 5)
+cat <<EOF > /etc/sysctl.d/999-autoXRAY.conf
+net.core.default_qdisc=fq
+net.ipv4.tcp_congestion_control=bbr
+net.ipv4.tcp_mtu_probing=1
+EOF
+sysctl --system >/dev/null 2>&1
+echo -e "${GRN}BBR и TCP MTU Probing активированы${NC}"
 
 cat <<EOF > /etc/security/limits.d/99-autoXRAY.conf
 *       soft    nofile  1048576
@@ -165,7 +185,6 @@ ulimit -n 65535
 echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
 # Блок CERTBOT - START
-# Определяем путь к конфигу nginx
 if [ -f /etc/nginx/sites-available/default ]; then
     CONFIG_PATH="/etc/nginx/sites-available/default"
 	echo -e "${GRN}Обнаружена стандартная сборка nginx. ${NC}"
@@ -224,7 +243,6 @@ fi
 
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
-# Выбираем один фиксированный сценарий ошибки для этой установки (всего 16 вариантов)
 AUTH_VARIANTS=(
     "ERR_INVALID_CREDENTIALS|The username or password you entered is incorrect."
     "ERR_INVALID_CREDENTIALS|The identity or security key you provided is invalid."
@@ -248,7 +266,7 @@ RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
 AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
 AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
-# конфиг nginx
+# Конфиг Nginx (Пункт 7: оптимизация логов для сбережения диска)
 cat <<EOF > "$CONFIG_PATH"
 server {
     server_name $DOMAIN;
@@ -257,6 +275,8 @@ server {
     real_ip_header proxy_protocol;
 
     server_tokens off;
+    access_log off;
+    error_log /var/log/nginx/error.log crit;
 
     root /var/www/$DOMAIN;
     index index.html;
@@ -293,6 +313,8 @@ server {
         return 401 '{"success":false,"code":"$AUTH_CODE","message":"$AUTH_MSG","request_id":"\$request_id"}';
     }
 
+$NGINX_web_proxy
+
     location ~ /\.ht {
         deny all;
     }
@@ -311,7 +333,6 @@ server {
     }
 }
 EOF
-
 
 systemctl restart nginx
 
@@ -339,7 +360,6 @@ socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 # ====СОЗДАНИЕ КОНФИГА СЕРВЕРА В ЦИКЛЕ ====
-
 ROUTING_RULES=""
 OUTBOUNDS=""
 
@@ -396,7 +416,6 @@ done
 
 # Удаляем запятую в конце
 ROUTING_RULES="${ROUTING_RULES%,}"
-
 
 # Создаем JSON конфигурацию сервера
 cat << EOF > "$SCRIPT_DIR/config.json"
@@ -937,11 +956,14 @@ subPageLink="https://$DOMAIN/$path_subpage.json"
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 if [ "$INSTALL_MTP" = true ]; then
-    echo -e "\n\n${GRN}Устанавливаем MTProto FakeTLS ${NC}"
-    source <(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/telemt-test.sh)
+    echo -e "\n\n${GRN}Устанавливаем Telegram Web Proxy ${NC}"
+    source <(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/web-proxy-test.sh)
+    # Пункт 2: генерация https://t.me/ ссылки для клика со смартфонов
+    MTProto_tme=$(echo "$MTProto" | sed 's|^tg://|https://t.me/|')
 else
-    echo -e "\n\n${YEL}Установка MTProto FakeTLS пропущена.${NC}"
+    echo -e "\n\n${YEL}Установка Telegram Web Proxy пропущена.${NC}"
     MTProto=""
+    MTProto_tme=""
 fi
 
 echo -e "\n\n${GRN}Создаем страницу подписки ${NC}"
@@ -1011,14 +1033,14 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </div>
 EOF
 
-# Добавляем MTProxy блок только если он установлен
+# Добавляем Web Proxy блок (Пункт 2: https://t.me ссылка на кнопке)
 if [ "$INSTALL_MTP" = true ]; then
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
-    <div class="config-label">MTProtoFakeTLS (TG)</div>
+    <div class="config-label">Telegram Web Proxy</div>
     <div class="config-code" id="mtproto">${MTProto}</div>
     <button class="btn-action copy-btn" onclick="copyText('mtproto', this)">Copy</button>
-    <a href="${MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление моста в тг" style="text-decoration:none">✈️ Add to TG</a>
+    <a href="${MTProto_tme}" target="_blank" class="btn-action qr-btn" title="автодобавление прокси в тг" style="text-decoration:none">✈️ Add to TG</a>
 </div>
 EOF
 fi
@@ -1038,19 +1060,22 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </body></html>
 EOF
 
-# --- ФИНАЛЬНАЯ ПРОВЕРКА ---
+# --- ФИНАЛЬНАЯ ПРОВЕРКА (Пункт 6: опрос tproxy-server) ---
 echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
 
 if [ "$INSTALL_MTP" = true ]; then
     if systemctl is-active --quiet telemt; then echo -e "Telemt: ${GRN}RUNNING${NC}"; else echo -e "Telemt: ${RED}STOPPED/ERROR${NC}"; fi
+    if systemctl is-active --quiet tproxy-server; then echo -e "WebProxy: ${GRN}RUNNING${NC}"; else echo -e "WebProxy: ${RED}STOPPED/ERROR${NC}"; fi
 fi
-if systemctl is-active --quiet nginx; then echo -e "Nginx: ${GRN}RUNNING${NC}"; else echo -e "Nginx: ${RED}STOPPED/ERROR${NC}"; fi
-if systemctl is-active --quiet xray; then echo -e "XRAY: ${GRN}RUNNING${NC}"; else echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"; fi
 
+if systemctl is-active --quiet nginx; then echo -e "Nginx: ${GRN}RUNNING${NC}" ; else echo -e "Nginx: ${RED}STOPPED/ERROR${NC}"; fi
+if systemctl is-active --quiet xray; then echo -e "XRAY: ${GRN}RUNNING${NC}"; else echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"; fi
 
 echo -e "\n"
 if [ "$INSTALL_MTP" = true ]; then
-    echo -e "${YEL}MTProto FakeTLS для ТГ${NC}\n$MTProto\n"
+    echo -e "${YEL}Telegram Web Proxy для ТГ:${NC}"
+    echo -e "Схема: ${CYAN}$MTProto${NC}"
+    echo -e "HTTPS: ${CYAN}$MTProto_tme${NC}\n"
 fi
 
 echo -e "
@@ -1072,5 +1097,4 @@ ${GRN}$configListLink ${NC}
 Внутри клиента: socks5 на 10808, 2080 и http на 10809.
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
-
 "
