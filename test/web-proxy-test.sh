@@ -1,5 +1,5 @@
 # === Telegram Web Proxy (TeleMT Classic + tproxy-server) ===
-echo -e "${GRN}Версия: 113 ${NC}"
+echo -e "${GRN}Версия: 115 ${NC}"
 sleep 1
 echo -e "\n${GRN}=== Установка бэкенда TeleMT и Web Proxy шлюза ===${NC}"
 
@@ -9,7 +9,7 @@ systemctl stop telemt tproxy-server 2>/dev/null || true
 # Генерируем 16-байтный (32 hex) секрет для Web Proxy
 SECRET=$(openssl rand -hex 16)
 
-# 1. Установка TeleMT (бэкенд на 127.0.0.1:900 в Classic MTProto режиме)
+# 1. Установка TeleMT (бэкенд на 127.0.0.1:9000 в Classic MTProto режиме)
 ARCH_TYPE=$(uname -m)
 LIBC_TYPE=$(ldd --version 2>&1 | grep -iq musl && echo musl || echo gnu)
 
@@ -17,7 +17,7 @@ wget -qO- "https://github.com/telemt/telemt/releases/latest/download/telemt-${AR
 mv /tmp/telemt /usr/local/bin/telemt
 chmod +x /usr/local/bin/telemt
 
-mkdir -p /etc/telemt
+mkdir -p /etc/telemt /opt/telemt
 
 cat <<EOF > "/etc/telemt/telemt.toml"
 [general]
@@ -31,12 +31,11 @@ secure = false
 tls = false
 
 [server]
-port = 900
+port = 9000
 listen_addr_ipv4 = "127.0.0.1"
 
 [timeouts]
 client_handshake = 15
-tg_connect = 10
 client_keepalive = 60
 client_ack = 300
 
@@ -73,6 +72,7 @@ Group=telemt
 WorkingDirectory=/opt/telemt
 ExecStart=/usr/local/bin/telemt /etc/telemt/telemt.toml
 Restart=on-failure
+RestartSec=3
 LimitNOFILE=65536
 NoNewPrivileges=true
 
@@ -109,7 +109,7 @@ if [ ! -s /etc/tproxy-server/token.key ] || [ "$(wc -c < /etc/tproxy-server/toke
     head -c 32 /dev/urandom > /etc/tproxy-server/token.key
 fi
 
-# Гарантируем наличие каталога и index.html, чтобы tproxy-server не упал при старте
+# Гарантируем наличие каталога и index.html
 mkdir -p "$WEB_PATH"
 if [ ! -f "$WEB_PATH/index.html" ]; then
     echo "<!DOCTYPE html><html><head><meta charset='utf-8'><title>$DOMAIN</title></head><body><h1>Server Ready</h1></body></html>" > "$WEB_PATH/index.html"
@@ -162,14 +162,14 @@ cat <<EOF > /etc/tproxy-server/config.json
 }
 EOF
 
+# Порт бэкенда изменен на 9000
 cat <<EOF > /etc/tproxy-server/profiles.json
 {
   "profiles": [
     {
       "name": "default",
       "secret": "$SECRET",
-      "backend": "127.0.0.1:900",
-      "carrier_mode": "websocket-lanes"
+      "backend": "127.0.0.1:9000"
     }
   ]
 }
@@ -180,11 +180,12 @@ chmod 0400 /etc/tproxy-server/token.key
 chmod 0600 /etc/tproxy-server/profiles.json
 chown -R telemt:telemt /etc/tproxy-server
 
+# Служба tproxy-server (Wants вместо Requires)
 cat <<EOF > "/etc/systemd/system/tproxy-server.service"
 [Unit]
 Description=Telegram Web Proxy Relay
 After=network.target telemt.service
-Requires=telemt.service
+Wants=telemt.service
 
 [Service]
 Type=simple
@@ -192,6 +193,7 @@ User=telemt
 Group=telemt
 ExecStart=/usr/local/bin/tproxy-server -config /etc/tproxy-server/config.json
 Restart=on-failure
+RestartSec=3
 LimitNOFILE=65536
 NoNewPrivileges=true
 
@@ -205,10 +207,10 @@ systemctl enable --now tproxy-server
 # 4. Экспорт переменной для родительского скрипта autoXRAY
 export MTProto="tg://webproxy?server=${DOMAIN}&secret=${SECRET}"
 
-sleep 1
-if systemctl is-active --quiet tproxy-server; then
-    echo -e "${GRN}✅ Telegram Web Proxy запущен и работает (${DOMAIN})${NC}"
+sleep 2
+if systemctl is-active --quiet telemt && systemctl is-active --quiet tproxy-server; then
+    echo -e "${GRN}✅ TeleMT (9000) и tproxy-server (8080) успешно запущены! (${DOMAIN})${NC}"
 else
-    echo -e "${RED}⚠️ Ошибка запуска tproxy-server! Проверьте логи: journalctl -u tproxy-server -e${NC}"
+    echo -e "${RED}⚠️ Ошибка запуска! Проверьте логи: journalctl -u telemt -u tproxy-server -e${NC}"
 fi
 sleep 1

@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 112 ${NC}"
+echo -e "${GRN}Версия: 115 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
@@ -129,15 +129,13 @@ if [[ "$choice_mtp" =~ ^[Yy]$ ]]; then
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
 
-        proxy_hide_header Content-Security-Policy;
-
         proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
+        proxy_set_header Connection $connection_upgrade;
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto https;
 
         proxy_buffering off;
         proxy_read_timeout 3600s;
@@ -167,7 +165,7 @@ case $fp_choice in
 esac
 # ============================
 
-# Включаем BBR и MTU Probing (Пункт 5)
+# Включаем BBR и MTU Probing
 cat <<EOF > /etc/sysctl.d/999-autoXRAY.conf
 net.core.default_qdisc=fq
 net.ipv4.tcp_congestion_control=bbr
@@ -267,11 +265,17 @@ RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
 AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
 AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
-# Конфиг Nginx (Пункт 7: оптимизация логов для сбережения диска)
+# Конфиг Nginx
 cat <<EOF > "$CONFIG_PATH"
+map \$http_upgrade \$connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
 server {
     server_name $DOMAIN;
-    listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
+    # Убран http2 с сокета Reality для стабильной работы WebSockets Telegram
+    listen unix:/dev/shm/nginx.sock ssl proxy_protocol;
     set_real_ip_from unix:;
     real_ip_header proxy_protocol;
 
@@ -741,6 +745,7 @@ print_config() {
           "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
+          "geosite:f-droid",
           "geosite:yandex",
           "geosite:vk",
           "geosite:category-ru"
@@ -959,12 +964,9 @@ configListLink="https://$DOMAIN/$path_subpage.html"
 if [ "$INSTALL_MTP" = true ]; then
     echo -e "\n\n${GRN}Устанавливаем Telegram Web Proxy ${NC}"
     source <(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/web-proxy-test.sh)
-    # Пункт 2: генерация https://t.me/ ссылки для клика со смартфонов
-    MTProto_tme=$(echo "$MTProto" | sed 's|^tg://|https://t.me/|')
 else
     echo -e "\n\n${YEL}Установка Telegram Web Proxy пропущена.${NC}"
     MTProto=""
-    MTProto_tme=""
 fi
 
 echo -e "\n\n${GRN}Создаем страницу подписки ${NC}"
@@ -1034,14 +1036,14 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </div>
 EOF
 
-# Добавляем Web Proxy блок (Пункт 2: https://t.me ссылка на кнопке)
+# Добавляем Web Proxy блок (чистые tg:// ссылки)
 if [ "$INSTALL_MTP" = true ]; then
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
     <div class="config-label">Telegram Web Proxy</div>
     <div class="config-code" id="mtproto">${MTProto}</div>
     <button class="btn-action copy-btn" onclick="copyText('mtproto', this)">Copy</button>
-    <a href="${MTProto_tme}" target="_blank" class="btn-action qr-btn" title="автодобавление прокси в тг" style="text-decoration:none">✈️ Add to TG</a>
+    <a href="${MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление прокси в тг" style="text-decoration:none">✈️ Add to TG</a>
 </div>
 EOF
 fi
@@ -1061,7 +1063,7 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </body></html>
 EOF
 
-# --- ФИНАЛЬНАЯ ПРОВЕРКА (Пункт 6: опрос tproxy-server) ---
+# --- ФИНАЛЬНАЯ ПРОВЕРКА ---
 echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
 
 if [ "$INSTALL_MTP" = true ]; then
@@ -1069,14 +1071,15 @@ if [ "$INSTALL_MTP" = true ]; then
     if systemctl is-active --quiet tproxy-server; then echo -e "WebProxy: ${GRN}RUNNING${NC}"; else echo -e "WebProxy: ${RED}STOPPED/ERROR${NC}"; fi
 fi
 
-if systemctl is-active --quiet nginx; then echo -e "Nginx: ${GRN}RUNNING${NC}" ; else echo -e "Nginx: ${RED}STOPPED/ERROR${NC}"; fi
-if systemctl is-active --quiet xray; then echo -e "XRAY: ${GRN}RUNNING${NC}"; else echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"; fi
+if systemctl is-active --quiet nginx; then
+    echo -e "Nginx: ${GRN}RUNNING${NC}" ; else echo -e "Nginx: ${RED}STOPPED/ERROR${NC}"; fi
+if systemctl is-active --quiet xray; then
+    echo -e "XRAY: ${GRN}RUNNING${NC}"; else echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"; fi
 
 echo -e "\n"
 if [ "$INSTALL_MTP" = true ]; then
     echo -e "${YEL}Telegram Web Proxy для ТГ:${NC}"
-    echo -e "Схема: ${CYAN}$MTProto${NC}"
-    echo -e "HTTPS: ${CYAN}$MTProto_tme${NC}\n"
+    echo -e "${CYAN}$MTProto${NC}\n"
 fi
 
 echo -e "
