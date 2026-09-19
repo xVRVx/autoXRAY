@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 115 ${NC}"
+echo -e "${GRN}Версия: 117 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
@@ -143,7 +143,9 @@ if [[ "$choice_mtp" =~ ^[Yy]$ ]]; then
     }'
 else
     INSTALL_MTP=false
-    NGINX_web_proxy='    # web proxy TG not installed'
+    NGINX_web_proxy='    location / {
+        try_files $uri $uri/ =404;
+    }'
 fi
 TARGET_MTP="/dev/shm/nginx.sock"
 
@@ -274,8 +276,7 @@ map \$http_upgrade \$connection_upgrade {
 
 server {
     server_name $DOMAIN;
-    # Убран http2 с сокета Reality для стабильной работы WebSockets Telegram
-    listen unix:/dev/shm/nginx.sock ssl proxy_protocol;
+    listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
     set_real_ip_from unix:;
     real_ip_header proxy_protocol;
 
@@ -296,6 +297,11 @@ server {
 
     ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
+
+    # Секретная HTML-страница со списком конфигов (отдаем с диска напрямую)
+    location = /${path_subpage}.html {
+        try_files \$uri =404;
+    }
 
     location = /${path_subpage}.json {
         add_header profile-title "base64:YXV0b1hSQVk=";

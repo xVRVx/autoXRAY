@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 118 ${NC}"
+echo -e "${GRN}Версия: 117 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
@@ -216,10 +216,11 @@ map \$http_upgrade \$connection_upgrade {
 
 server {
     server_name $DOMAIN;
-    # Сокет для Reality фолбека без http2
-    listen unix:/dev/shm/nginx.sock ssl proxy_protocol;
+
+    listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
     listen unix:/dev/shm/nginxTLS.sock proxy_protocol;
     listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
+
     set_real_ip_from unix:;
     real_ip_header proxy_protocol;
 
