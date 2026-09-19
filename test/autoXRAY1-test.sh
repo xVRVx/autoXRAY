@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 117 ${NC}"
+echo -e "${GRN}Версия: 120 (Reality: 8443 | TLS: 443) ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
@@ -216,7 +216,6 @@ map \$http_upgrade \$connection_upgrade {
 
 server {
     server_name $DOMAIN;
-
     listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
     listen unix:/dev/shm/nginxTLS.sock proxy_protocol;
     listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
@@ -354,9 +353,10 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     "queryStrategy": "UseIPv4"
   },
   "inbounds": [
+    # --- Reality теперь на порту 8443 ---
 	{
       "tag": "vsRAWrtyVISION",
-      "port": 443,
+      "port": 8443,
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
@@ -436,9 +436,10 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         }
       }
     },
+    # --- Стандартный TLS теперь на порту 443 ---
     {
       "tag": "vsRAWtlsVISION",
-      "port": 8443,
+      "port": 443,
       "listen": "0.0.0.0",
       "protocol": "vless",
       "settings": {
@@ -849,7 +850,7 @@ print_config() {
 TPL
 }
 
-# --- Config 1
+# --- Config 1: Reality теперь на 8443 порту ---
 OUT_REALITY_VISION='{
   "mux": { "concurrency": -1, "enabled": false },
   "tag": "proxy",
@@ -857,7 +858,7 @@ OUT_REALITY_VISION='{
   "settings": {
     "vnext": [{
       "address": "$DOMAIN",
-      "port": 443,
+      "port": 8443,
       "users": [{ "id": "${xray_uuid_vrv}", "flow": "xtls-rprx-vision", "encryption": "none" }]
     }]
   },
@@ -871,7 +872,7 @@ OUT_REALITY_VISION='{
   }
 }'
 
-# --- Config 2
+# --- Config 2: Reality XHTTP теперь на 8443 порту ---
 OUT_REALITY_XHTTP='{
   "mux": { "concurrency": -1, "enabled": false },
   "tag": "proxy",
@@ -879,7 +880,7 @@ OUT_REALITY_XHTTP='{
   "settings": {
     "vnext": [{
       "address": "$DOMAIN",
-      "port": 443,
+      "port": 8443,
       "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }]
     }]
   },
@@ -912,14 +913,14 @@ OUT_REALITY_XHTTP='{
   }
 }'
 
-# --- Config 3
+# --- Config 3: TLS Vision теперь на 443 порту ---
 OUT_VISION='{
   "tag": "proxy",
   "protocol": "vless",
   "settings": {
     "vnext": [{
       "address": "$DOMAIN",
-      "port": 8443,
+      "port": 443,
       "users": [{ "id": "${xray_uuid_vrv}", "flow": "xtls-rprx-vision", "encryption": "none" }]
     }]
   },
@@ -933,14 +934,14 @@ OUT_VISION='{
   }
 }'
 
-# --- Config 4
+# --- Config 4: TLS XHTTP теперь на 443 порту ---
 OUT_XHTTP='{
   "tag": "proxy",
   "protocol": "vless",
   "settings": {
     "vnext": [{
       "address": "$DOMAIN",
-      "port": 8443,
+      "port": 443,
       "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }]
     }]
   },
@@ -969,14 +970,14 @@ OUT_XHTTP='{
   }
 }'
 
-# --- Config 5
+# --- Config 5: gRPC теперь на 443 порту ---
 OUT_GRPC='{
   "tag": "proxy",
   "protocol": "vless",
   "settings": {
     "vnext": [{
       "address": "$DOMAIN",
-      "port": 8443,
+      "port": 443,
       "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }]
     }]
   },
@@ -988,14 +989,14 @@ OUT_GRPC='{
   }
 }'
 
-# --- Config 6
+# --- Config 6: WebSocket теперь на 443 порту ---
 OUT_WS='{
   "tag": "proxy",
   "protocol": "vless",
   "settings": {
     "vnext": [{
       "address": "$DOMAIN",
-      "port": 8443,
+      "port": 443,
       "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }]
     }]
   },
@@ -1007,7 +1008,7 @@ OUT_WS='{
   }
 }'
 
-# --- Config 7
+# --- Config 7: Hysteria2 (без изменений на 8080) ---
 HYSTERIA2='{
 "tag": "proxy",
 "protocol": "hysteria",
@@ -1042,19 +1043,19 @@ HYSTERIA2='{
 
 (
   echo "["
+  print_config "$OUT_VISION"         "🇪🇺 VLESS RAW TLS VISION"
+  echo ","
+  print_config "$OUT_XHTTP"          "🇪🇺 VLESS XHTTP TLS EXTRA"
+  echo ","
   print_config "$OUT_REALITY_XHTTP"  "🇪🇺 VLESS XHTTP REALITY EXTRA"
   echo ","
   print_config "$OUT_REALITY_VISION" "🇪🇺 VLESS RAW REALITY VISION"
   echo ","
-  print_config "$HYSTERIA2" "🇪🇺 HYSTERIA2"
+  print_config "$HYSTERIA2"          "🇪🇺 HYSTERIA2"
   echo ","
-  print_config "$OUT_VISION"    "🇪🇺 VLESS RAW TLS VISION"
+  print_config "$OUT_GRPC"           "🇪🇺 VLESS gRPC TLS"
   echo ","
-  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA"
-  echo ","
-  print_config "$OUT_GRPC"      "🇪🇺 VLESS gRPC TLS"
-  echo ","
-  print_config "$OUT_WS"        "🇪🇺 VLESS WS TLS"
+  print_config "$OUT_WS"             "🇪🇺 VLESS WS TLS"
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
 
@@ -1063,31 +1064,28 @@ echo -e "Перезапуск XRAY"
 
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
-
 hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:8080/?sni=$DOMAIN&alpn=h3"
 
-linkRTY1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityVISION-autoXRAY"
+# Reality ссылки на 8443
+linkRTY1="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityVISION-autoXRAY"
+linkRTY2="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=stream-one&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
 
-linkRTY2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=stream-one&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
-
-linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
-
-linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessXHTTPtls-autoXRAY"
-
-linkTLS3="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=ws&headerType=&path=%2F${path_xhttp}22&host=&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessWStls-autoXRAY"
-
-linkTLS4="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=grpc&headerType=&serviceName=${path_xhttp}11&host=&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessGRPCtls-autoXRAY"
+# TLS ссылки на 443
+linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
+linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessXHTTPtls-autoXRAY"
+linkTLS3="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=ws&headerType=&path=%2F${path_xhttp}22&host=&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessWStls-autoXRAY"
+linkTLS4="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=grpc&headerType=&serviceName=${path_xhttp}11&host=&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessGRPCtls-autoXRAY"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 CONFIGS_ARRAY=(
-    "VLESS XHTTP REALITY EXTRA (для моста)|$linkRTY2"
-    "VLESS RAW REALITY VISION|$linkRTY1"
-	"HYSTERIA2|$hy2"
-	"VLESS RAW TLS VISION|$linkTLS1"
-	"VLESS XHTTP TLS EXTRA|$linkTLS2"
-	"VLESS WS TLS|$linkTLS3"
-	"VLESS GRPC TLS|$linkTLS4"
+	"VLESS RAW TLS VISION (443)|$linkTLS1"
+	"VLESS XHTTP TLS EXTRA (443)|$linkTLS2"
+    "VLESS XHTTP REALITY EXTRA (8443)|$linkRTY2"
+    "VLESS RAW REALITY VISION (8443)|$linkRTY1"
+	"HYSTERIA2 (8080)|$hy2"
+	"VLESS WS TLS (443)|$linkTLS3"
+	"VLESS GRPC TLS (443)|$linkTLS4"
 )
 ALL_LINKS_TEXT=""
 
@@ -1126,15 +1124,12 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
     <button class="btn-action qr-btn" onclick="showQR('subLink')">QR</button>
 </div>
 
-
 <h2>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h2>
-
 <div class="btn-group">
     <a href="happ://add/$subPageLink" class="btn">⚡ Add to HAPP</a>
     <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Download App</a>
 </div>
 <p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включается, если вы пользовались сторонними сервисами.</p>
-
 
 <h2>➡️ Конфиги</h2>
 EOF
@@ -1224,14 +1219,17 @@ if [ "$INSTALL_MTP" = true ]; then
     echo -e "${CYAN}$MTProto${NC}\n"
 fi
 
-echo -e "${YEL}VLESS XHTTP REALITY EXTRA (для моста) ${NC}
+echo -e "${YEL}VLESS RAW TLS VISION (443)${NC}
+$linkTLS1
+
+${YEL}VLESS XHTTP TLS EXTRA (443)${NC}
+$linkTLS2
+
+${YEL}VLESS XHTTP REALITY EXTRA (8443)${NC}
 $linkRTY2
 
-${YEL}VLESS RAW REALITY VISION ${NC}
+${YEL}VLESS RAW REALITY VISION (8443)${NC}
 $linkRTY1
-
-${YEL}VLESS XHTTP TLS EXTRA ${NC}
-$linkTLS2
 
 ${YEL}Ваша json страничка подписки ${NC}
 $subPageLink
