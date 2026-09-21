@@ -1,13 +1,14 @@
 #!/bin/bash
 
-
 # Цвета для вывода
 GRN='\033[1;32m'
 RED='\033[1;31m'
 YEL='\033[1;33m'
+CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 230 ${NC}"
+echo -e "${GRN}Версия: 117 ${NC}"
+sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
 
@@ -23,7 +24,7 @@ apt-get update && apt-get install curl jq dnsutils openssl nginx certbot wget ta
 systemctl enable --now nginx
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
-DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]')
+DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]' | head -n 1)
 
 if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo -e "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
@@ -39,25 +40,34 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
 fi
 
 # === ВОПРОСЫ ПОЛЬЗОВАТЕЛЮ ===
-read -p "$(echo -e "\n${YEL}Устанавливать WARP для обхода блокировок некоторых сайтов? (y/n, по умолчанию y): ${NC}")" choice_warp
-choice_warp=${choice_warp:-y}
-if [[ "$choice_warp" =~ ^[Yy]$ ]]; then
-    TAG_WARP="warp"
-    INSTALL_WARP=true
-else
-    TAG_WARP="direct"
-    INSTALL_WARP=false
-fi
-
-read -p "$(echo -e "\n${YEL}Устанавливать MTProxy для Telegram? (y/n, по умолчанию y): ${NC}")" choice_mtp
+read -p "$(echo -e "\n${YEL}Устанавливать Web Proxy для Telegram? (y/n, по умолчанию y): ${NC}")" choice_mtp
 choice_mtp=${choice_mtp:-y}
 if [[ "$choice_mtp" =~ ^[Yy]$ ]]; then
-    TARGET_MTP="127.0.0.1:500"
     INSTALL_MTP=true
+    NGINX_web_proxy='    # web proxy
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }'
 else
-    TARGET_MTP="/dev/shm/nginx.sock"
     INSTALL_MTP=false
+    NGINX_web_proxy='    location / {
+        try_files $uri $uri/ =404;
+    }'
 fi
+TARGET_MTP="/dev/shm/nginx.sock"
 
 echo -e "\n${YEL}Выберите TLS fingerprint для маскировки трафика:${NC}"
 echo "1) chrome    3) safari   5) android   7) 360"
@@ -70,23 +80,21 @@ case $fp_choice in
     3) fpBro="safari" ;;
     4) fpBro="ios" ;;
     5) fpBro="android" ;;
+    6) fpBro="edge" ;;
     7) fpBro="360" ;;
     8) fpBro="qq" ;;
     *) fpBro="firefox" ;;
 esac
 # ============================
 
-# Включаем BBR
-bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
-if [ "$bbr" = "net.ipv4.tcp_congestion_control = bbr" ]; then
-    echo -e "${GRN}BBR уже запущен${NC}"
-else
-    echo "net.core.default_qdisc=fq" > /etc/sysctl.d/999-autoXRAY.conf
-    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.d/999-autoXRAY.conf
-    sysctl --system
-    echo -e "${GRN}BBR активирован${NC}"
-fi
-
+# Включаем BBR и MTU Probing
+cat <<EOF > /etc/sysctl.d/999-autoXRAY.conf
+net.core.default_qdisc=fq
+net.ipv4.tcp_congestion_control=bbr
+net.ipv4.tcp_mtu_probing=1
+EOF
+sysctl --system >/dev/null 2>&1
+echo -e "${GRN}BBR и TCP MTU Probing активированы${NC}"
 
 cat <<EOF > /etc/security/limits.d/99-autoXRAY.conf
 *       soft    nofile  1048576
@@ -97,20 +105,17 @@ EOF
 ulimit -n 65535
 echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
-
 # Создание директории сайта
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
 
 # Генерируем сайт маскировку
-bash -c "$(curl -L https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page2.sh)" -- $WEB_PATH
+bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page3.sh)" -- "$WEB_PATH"
 
 # Установка Xray
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.7.28
 
 # Блок CERTBOT - START
-
-# Определяем путь к конфигу nginx
 if [ -f /etc/nginx/sites-available/default ]; then
     CONFIG_PATH="/etc/nginx/sites-available/default"
 	echo -e "${GRN}Обнаружена стандартная сборка nginx. ${NC}"
@@ -141,14 +146,14 @@ else
     exit 1
 fi
 
-
 mkdir -p /var/lib/xray/cert/
 
-### Проверить
-cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
-cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
-chmod 744 /var/lib/xray/cert/privkey.pem
-chmod 744 /var/lib/xray/cert/fullchain.pem
+if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+    cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
+    cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
+    chmod 744 /var/lib/xray/cert/privkey.pem
+    chmod 744 /var/lib/xray/cert/fullchain.pem
+fi
 
 certbot certonly --webroot -w /var/www/html \
   -d $DOMAIN \
@@ -176,32 +181,64 @@ else
 fi
 # Блок CERTBOT - END
 
-# конфиг nginx
-
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
-
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
-bash -c "cat > $CONFIG_PATH" <<EOF
+AUTH_VARIANTS=(
+    "ERR_INVALID_CREDENTIALS|The username or password you entered is incorrect."
+    "ERR_INVALID_CREDENTIALS|The identity or security key you provided is invalid."
+    "ERR_BAD_PASSWORD|Incorrect password. Please verify your credentials and retry."
+    "ERR_KEY_MISMATCH|The security key provided does not match the account identity."
+    "ERR_CREDENTIAL_REJECTED|Credential verification rejected by the authentication authority."
+    "ERR_PASSWORD_MISMATCH|The password provided does not match the registered key."
+    "ERR_INCORRECT_KEY|Incorrect security credentials provided for this principal."
+    "ERR_USER_NOT_FOUND|Principal identity not found in directory services."
+    "ERR_IDENTITY_NOT_FOUND|No account found matching the provided identity."
+    "ERR_PRINCIPAL_MISSING|User principal does not exist in this organizational realm."
+    "ERR_ACCOUNT_NOT_FOUND|Account identifier not recognized by the identity provider."
+    "ERR_UNKNOWN_USER|Unrecognized user identity. Please verify your login."
+    "ERR_LOOKUP_FAILED|User lookup failed: Specified identity does not exist."
+    "ERR_AUTH_FAILED|Authentication failed: The provided credentials do not match."
+    "ERR_DIRECTORY_MISMATCH|Credentials could not be verified against the corporate directory."
+    "ERR_RECORDS_MISMATCH|The security credentials entered do not match our records."
+)
+
+RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
+AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
+AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
+
+# Конфиг Nginx
+cat <<EOF > "$CONFIG_PATH"
+map \$http_upgrade \$connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
 server {
     server_name $DOMAIN;
-	listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
-	listen unix:/dev/shm/nginxTLS.sock proxy_protocol;
-	listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
+
+    listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
+    listen unix:/dev/shm/nginxTLS.sock proxy_protocol;
+    listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
+
     set_real_ip_from unix:;
     real_ip_header proxy_protocol;
-	
+
+    server_tokens off;
+    access_log off;
+    error_log /var/log/nginx/error.log crit;
+
     root /var/www/$DOMAIN;
-    index index.php index.html;
-	
+    index index.html;
+
     # grpc settings
     grpc_read_timeout 1h;
     grpc_send_timeout 1h;
     grpc_set_header X-Real-IP \$remote_addr;
-	
-	ssl_protocols TLSv1.2 TLSv1.3;
-	ssl_ciphers HIGH:!aNULL:!MD5;
-	ssl_prefer_server_ciphers on;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
 
     ssl_session_timeout 1d;
     ssl_session_cache shared:MozSSL:10m;
@@ -210,19 +247,23 @@ server {
     ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
 
+    location = /${path_subpage}.html {
+        try_files \$uri =404;
+    }
+
     location = /${path_subpage}.json {
-		add_header profile-title "base64:YXV0b1hSQVk=";
-		add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9zaXRlOmNhdGVnb3J5LWFkcyIsImdlb3NpdGU6d2luLXNweSJdLCJCbG9ja0lwIjpbXSwiRG9tYWluU3RyYXRlZ3kiOiJJUElmTm9uTWF0Y2giLCJGYWtlRE5TIjoiZmFsc2UiLCJVc2VDaHVua0ZpbGVzIjoiZmFsc2UifQ";
-		
-		add_header routing-enable 0;
-	}
-	
+        add_header profile-title "base64:YXV0b1hSQVk=";
+        add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9zaXRlOmNhdGVnb3J5LWFkcyIsImdlb3NpdGU6d2luLXNweSJdLCJCbG9ja0lwIjpbXSwiRG9tYWluU3RyYXRlZ3kiOiJJUElmTm9uTWF0Y2giLCJGYWtlRE5TIjoiZmFsc2UiLCJVc2VDaHVua0ZpbGVzIjoiZmFsc2UifQ";
+        add_header routing-enable 0;
+        try_files \$uri =404;
+    }
+
     location /${path_xhttp} {
         proxy_pass http://127.0.0.1:8400;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
     }
-	
+
     location /${path_xhttp}11 {
         if (\$request_method != "POST") {
             return 404;
@@ -231,9 +272,25 @@ server {
         client_body_timeout 1h;
         client_max_body_size 0;
         grpc_pass grpc://127.0.0.1:8411;
+    }
 
+    # Для сайта
+    location /api/v1/authenticate {
+        limit_except POST {
+            deny all;
+        }
+
+        default_type application/json;
+
+        add_header Set-Cookie "X-Auth-Token=\$request_id; Path=/; HttpOnly; Secure; SameSite=Lax" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+
+        return 401 '{"success":false,"code":"$AUTH_CODE","message":"$AUTH_MSG","request_id":"\$request_id"}';
     }
 	
+$NGINX_web_proxy
+
     location ~ /\.ht {
         deny all;
     }
@@ -248,7 +305,7 @@ server {
     }
 
     location / {
-		return 301 https://\$host\$request_uri;
+        return 301 https://\$host\$request_uri;
     }
 }
 EOF
@@ -256,10 +313,9 @@ EOF
 systemctl restart nginx
 echo -e "${GRN}✅ Конфигурация nginx обновлена.${NC}"
 
-
 SCRIPT_DIR=/usr/local/etc/xray
 
-# Генерируем переменные
+# Генерируем ключи и переменные
 xray_uuid_vrv=$(xray uuid)
 
 key_output=$(xray x25519)
@@ -271,30 +327,13 @@ seed_mldsa65=$(echo "$key_mldsa65" | awk -F': ' '/Seed/ {print $2}')
 verify_mldsa65=$(echo "$key_mldsa65" | awk -F': ' '/Verify/ {print $2}')
 
 xray_shortIds_vrv=$(openssl rand -hex 8)
-
-# xray_sspasw_vrv=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 xray_sspasw_vrv=$(openssl rand -base64 32)
-
-# ipserv=$(hostname -I | awk '{print $1}')
 
 socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
-
-# Установка WARP-cli
-if [ "$INSTALL_WARP" = true ]; then
-    if ss -tuln | grep -q ":40000 "; then
-        echo -e "${GRN}WARP-cli (Socks5 на порту 40000) уже работает. Пропускаем.${NC}"
-    else
-        echo -e "${GRN}Установка WARP-cli (автоматически)...${NC}"
-        echo -e "1\n1\n40000" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) w
-    fi
-else
-    echo -e "${YEL}Установка WARP пропущена по выбору пользователя.${NC}"
-fi
-
 # Экспортируем переменные для envsubst
-export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw TARGET_MTP TAG_WARP fpBro
+export xray_uuid_vrv xray_privateKey_vrv xray_publicKey_vrv xray_shortIds_vrv xray_sspasw_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw TARGET_MTP fpBro
 
 # Создаем JSON конфигурацию сервера
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
@@ -550,17 +589,16 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 	{
       "tag": "socks5",
       "port": 10443,
-      "listen": "127.0.0.1",
+      "listen": "0.0.0.0",
       "protocol": "mixed",
       "settings": {
-        "ip": "127.0.0.1",
+        "ip": "0.0.0.0",
         "udp": true,
         "auth": "password",
         "accounts": [
           {
 			"user": "${socksUser}",
             "pass": "${socksPasw}"
-            
           }
         ]
       }
@@ -619,21 +657,10 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     {
       "tag": "block",
       "protocol": "blackhole"
-    },
-	{
-	  "tag": "warp",
-	  "protocol": "socks",
-	  "settings": {
-		"servers": [
-		  {
-			"address": "127.0.0.1",
-			"port": 40000
-		  }
-		]
-	  }
-	}
+    }
   ],
   "routing": {
+    "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
         "ip": [
@@ -642,7 +669,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "outboundTag": "block"
       },
 	  {
-        "port": "25",
+        "port": "25, 135, 137-139, 445",
         "outboundTag": "block"
       },
       {
@@ -659,15 +686,19 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         ],
         "outboundTag": "block"
       },
-	{
-	  "outboundTag": "${TAG_WARP}",
-	  "domain": ["ifconfig.me","checkip.amazonaws.com","pify.org","2ip.io","habr.com","geosite:category-ip-geo-detect","geosite:google-gemini","geosite:canva","geosite:openai","geosite:whatsapp"]
-	}
-    ],
-    "domainStrategy": "IPIfNonMatch"
+	  {
+	    "outboundTag": "block",
+	    "domain": [
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
+          "2ip.io",
+          "geosite:category-ip-geo-detect"
+        ]
+	  }
+    ]
   }
 }
-
 EOF
 
 # Создаем JSON конфигурацию клиента
@@ -682,6 +713,18 @@ print_config() {
   },
   "dns": {
     "servers": [
+      {
+        "address": "https+local://77.88.8.8/dns-query",
+        "domains": [
+          "geosite:category-ru",
+          "geosite:yandex",
+          "geosite:vk",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai"
+        ],
+        "skipFallback": true
+      },
       "https://8.8.4.4/dns-query",
       "https://8.8.8.8/dns-query",
       "https://1.1.1.1/dns-query"
@@ -689,6 +732,7 @@ print_config() {
     "queryStrategy": "UseIPv4"
   },
   "routing": {
+    "domainMatcher": "hybrid",
     "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
@@ -706,7 +750,8 @@ print_config() {
       },
       {
         "domain": [
-          "habr.com", "apkmirror.com"
+          "habr.com",
+          "apkmirror.com"
         ],
         "outboundTag": "proxy"
       },
@@ -716,26 +761,22 @@ print_config() {
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai",
           "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
-          "geosite:huawei",
-          "geosite:xiaomi",
-          "geosite:category-android-app-download",
           "geosite:f-droid",
           "geosite:yandex",
           "geosite:vk",
-          "geosite:microsoft",
-          "geosite:win-update",
-          "geosite:win-extra",
-          "geosite:google-play",
-          "geosite:steam",
           "geosite:category-ru"
         ],
         "outboundTag": "direct"
       },
       {
         "ip": [
+          "geoip:ru",
           "geoip:private"
         ],
         "outboundTag": "direct"
@@ -793,7 +834,7 @@ print_config() {
     }
   ],
   "outbounds": [
-      $PROXY_OUTBOUND,
+    $PROXY_OUTBOUND,
     {
       "tag": "direct",
       "protocol": "freedom"
@@ -871,10 +912,6 @@ OUT_REALITY_XHTTP='{
   }
 }'
 
-
-
-
-
 # --- Config 3
 OUT_VISION='{
   "tag": "proxy",
@@ -911,8 +948,7 @@ OUT_XHTTP='{
     "network": "xhttp",
     "xhttpSettings": {
 		"extra": {
-			"headers": {
-			},
+			"headers": {},
 			"noGRPCHeader": false,
 			"scMaxEachPostBytes": 1500000,
 			"scMinPostsIntervalMs": 20,
@@ -934,7 +970,6 @@ OUT_XHTTP='{
 }'
 
 # --- Config 5
-# Важно: alpn h2 обязателен для корректной работы через Nginx
 OUT_GRPC='{
   "tag": "proxy",
   "protocol": "vless",
@@ -1005,7 +1040,6 @@ HYSTERIA2='{
 }
 }'
 
-
 (
   echo "["
   print_config "$OUT_REALITY_XHTTP"  "🇪🇺 VLESS XHTTP REALITY EXTRA"
@@ -1030,8 +1064,6 @@ echo -e "Перезапуск XRAY"
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
-# Формирование ссылок
-
 hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:8080/?sni=$DOMAIN&alpn=h3"
 
 linkRTY1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessRAWrealityVISION-autoXRAY"
@@ -1039,7 +1071,6 @@ linkRTY1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=tcp&headerT
 linkRTY2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=stream-one&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#vlessXHTTPrealityEXTRA-autoXRAY"
 
 linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
-
 
 linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:8443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessXHTTPtls-autoXRAY"
 
@@ -1061,10 +1092,10 @@ CONFIGS_ARRAY=(
 ALL_LINKS_TEXT=""
 
 if [ "$INSTALL_MTP" = true ]; then
-    echo -e "\n\n${GRN}Устанавливаем MTProto FakeTLS ${NC}"
-    source <(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/telemt-test.sh)
+    echo -e "\n\n${GRN}Устанавливаем Telegram Web Proxy ${NC}"
+    source <(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/web-proxy-test.sh)
 else
-    echo -e "\n\n${YEL}Установка MTProto FakeTLS пропущена.${NC}"
+    echo -e "\n\n${YEL}Установка Telegram Web Proxy пропущена.${NC}"
     MTProto=""
 fi
 
@@ -1127,16 +1158,26 @@ EOF
     ((idx++))
 done
 
-SOCKS5_url="tg://socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}"
+SOCKS5_url_tg="tg://socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}"
+SOCKS5_url="${socksUser}:${socksPasw}@$DOMAIN:10443"
 
-# Добавляем MTProxy блок только если он установлен
+# Добавляем socks5 блок
+cat >> "$WEB_PATH/$path_subpage.html" <<EOF
+<div class="config-row">
+    <div class="config-label" title="Пора отказываться от него">socks5 WARNING</div>
+    <div class="config-code" id="socks5">${SOCKS5_url}</div>
+    <button class="btn-action copy-btn" onclick="copyText('socks5', this)">Copy</button>
+</div>
+EOF
+
+# Добавляем Web Proxy блок (чистые tg:// ссылки)
 if [ "$INSTALL_MTP" = true ]; then
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
-    <div class="config-label">MTProtoFakeTLS (TG)</div>
+    <div class="config-label">Telegram Web Proxy</div>
     <div class="config-code" id="mtproto">${MTProto}</div>
     <button class="btn-action copy-btn" onclick="copyText('mtproto', this)">Copy</button>
-    <a href="${MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление моста в тг" style="text-decoration:none">✈️ Add to TG</a>
+    <a href="${MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление прокси в тг" style="text-decoration:none">✈️ Add to TG</a>
 </div>
 EOF
 fi
@@ -1159,42 +1200,28 @@ EOF
 # --- ФИНАЛЬНАЯ ПРОВЕРКА ---
 echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
 
-# Проверка WARP-cli (Socks5 порт 40000)
-if [ "$INSTALL_WARP" = true ]; then
-    if ss -nlt | grep -q ":40000\b"; then
-        echo -e "WARP-cli: ${GRN}LISTENING${NC}"
-    else
-        echo -e "WARP-cli: ${RED}NOT LISTENING${NC}"
-        echo "Возникла ошибка! Возможные пути решения проблемы смотрите здесь:"
-        echo "https://github.com/xVRVx/autoXRAY/blob/main/test/warp-readme.md"
-    fi
-fi
-
-# Проверка Telemt
 if [ "$INSTALL_MTP" = true ]; then
     if systemctl is-active --quiet telemt; then echo -e "Telemt: ${GRN}RUNNING${NC}"; else echo -e "Telemt: ${RED}STOPPED/ERROR${NC}"; fi
+    if systemctl is-active --quiet tproxy-server; then echo -e "WebProxy: ${GRN}RUNNING${NC}"; else echo -e "WebProxy: ${RED}STOPPED/ERROR${NC}"; fi
 fi
 
-
-# Проверка Nginx
 if systemctl is-active --quiet nginx; then
     echo -e "Nginx: ${GRN}RUNNING${NC}"
 else
     echo -e "Nginx: ${RED}STOPPED/ERROR${NC}"
 fi
 
-# Проверка XRAY
 if systemctl is-active --quiet xray; then
     echo -e "XRAY: ${GRN}RUNNING${NC}"
 else
     echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"
 fi
 
-
 echo -e "\n"
 
 if [ "$INSTALL_MTP" = true ]; then
-    echo -e "${YEL}MTProto FakeTLS для ТГ${NC}\n$MTProto\n"
+    echo -e "${YEL}Telegram Web Proxy для ТГ:${NC}"
+    echo -e "${CYAN}$MTProto${NC}\n"
 fi
 
 echo -e "${YEL}VLESS XHTTP REALITY EXTRA (для моста) ${NC}
@@ -1204,7 +1231,7 @@ ${YEL}VLESS RAW REALITY VISION ${NC}
 $linkRTY1
 
 ${YEL}VLESS XHTTP TLS EXTRA ${NC}
-$linkRTY2
+$linkTLS2
 
 ${YEL}Ваша json страничка подписки ${NC}
 $subPageLink
@@ -1218,7 +1245,7 @@ ${GRN}$configListLink ${NC}
 - Windows: конфиги Happ или winLoadXRAY или v2rayN
 	для vless v2RayTun или Throne
 
-Открыт локальный socks5 на порту 10808, 2080 и http на 10809.
+Внутри клиента открыт socks5 на 10808, 2080 и http на 10809.
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
 "

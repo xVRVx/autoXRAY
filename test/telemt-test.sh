@@ -1,4 +1,4 @@
-echo -e "${GRN}Версия телемт: 222 ${NC}"
+echo -e "${GRN}Версия телемт: 226 ${NC}"
 
 systemctl stop telemt 2>/dev/null
 
@@ -91,11 +91,28 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
+systemctl enable telemt --now
+
+echo "Ожидание запуска API telemt..."
+
+telemtSecret=""
+# Делаем до 15 попыток с интервалом в 1 секунду
+for i in {1..15}; do
+    telemtSecret=$(curl -s http://127.0.0.1:9091/v1/users | jq -r '.data[0].links.tls[0] // empty | split("secret=")[1]' 2>/dev/null)
+    
+    if [ -n "$telemtSecret" ] && [ "$telemtSecret" != "null" ]; then
+        break
+    fi
+    sleep 1
+done
+
+if [ -z "$telemtSecret" ] || [ "$telemtSecret" == "null" ]; then
+    echo -e "${RED}Ошибка: Не удалось получить секрет от telemt API.${NC}"
+    echo "Проверьте статус службы: systemctl status telemt"
+else
+    echo "telemtSecret = $telemtSecret"
+    MTProto="tg://proxy?server=$DOMAIN&port=443&secret=$telemtSecret"
+    # echo "Ссылка: $MTProto"
+fi
+
 sleep 1
-systemctl start telemt
-systemctl enable telemt
-
-sleep 3
-telemtSecret=$(curl -s http://127.0.0.1:9091/v1/users | jq -r '.data[0].links.tls[0] | split("secret=")[1]')
-
-MTProto="tg://proxy?server=$DOMAIN&port=443&secret=$telemtSecret"
