@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 117 ${NC}"
+echo -e "${GRN}Версия: 119-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
@@ -39,9 +39,8 @@ declare -a NODE_UUID NODE_ADDR NODE_PORT NODE_NAME NODE_TYPE NODE_SEC NODE_FP NO
 # Уникальные UUID для сервера-моста (RU)
 declare -a BRIDGE_UUID
 
-# Генерируем базовый UUID сервера для всех подключений (будет один клиент в конфиге сервера)
+# Генерируем базовый UUID сервера для всех подключений
 SERVER_UUID=$(openssl rand -hex 16 | sed 's/\(........\)\(....\)\(....\)\(....\)\(............\)/\1-\2-\3-\4-\5/')
-# Разбиваем UUID на группы для удобной подмены 3-й группы (7 и 8 байты)
 g1="${SERVER_UUID:0:8}"
 g2="${SERVER_UUID:9:4}"
 g3="${SERVER_UUID:14:4}"
@@ -69,7 +68,6 @@ for (( i=0; i<COUNT; i++ )); do
 
     query_string="${restVL#*\?}"
 
-    # Очищаем массив params
     unset params
     declare -A params
     IFS='&' read -ra pairs <<< "$query_string"
@@ -90,13 +88,11 @@ for (( i=0; i<COUNT; i++ )); do
     NODE_SID[$i]="${params[sid]}"
     NODE_SPX[$i]="${params[spx]}"
 
-    # Встраиваем Vless Route ID (начиная с 1) в 3-ю группу UUID (7 и 8 байты) для клиента
     ROUTE_ID=$((i + 1))
     HEX_ROUTE_ID=$(printf "%04x" $ROUTE_ID)
     BRIDGE_UUID[$i]="${g1}-${g2}-${HEX_ROUTE_ID}-${g4}-${g5}"
 done
 
-# Порт прослушивания сервера-моста (единый для Inbound, обычно 443 для Reality)
 SERVER_PORT=443
 
 echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
@@ -147,7 +143,6 @@ else
         try_files $uri $uri/ =404;
     }'
 fi
-TARGET_MTP="/dev/shm/nginx.sock"
 
 echo -e "\n${YEL}Выберите TLS fingerprint для маскировки трафика:${NC}"
 echo "1) chrome    3) safari   5) android   7) 360"
@@ -194,7 +189,6 @@ elif [ -f /etc/nginx/conf.d/default.conf ]; then
 	echo -e "${YEL}Обнаружена нестандартная сборка nginx. Предварительная настройка NGINX для CERTBOT ${NC}"
 	mkdir -p /var/www/html
 
-# Записываем временный конфиг
 cat <<EOF > "$CONFIG_PATH"
 server {
 	listen 80 default_server;
@@ -216,26 +210,31 @@ else
     exit 1
 fi
 
+mkdir -p /var/lib/xray/cert/
+
+if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+    cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
+    cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
+    chmod 744 /var/lib/xray/cert/privkey.pem
+    chmod 744 /var/lib/xray/cert/fullchain.pem
+fi
+
 certbot certonly --webroot -w /var/www/html \
   -d $DOMAIN \
   -m mail@$DOMAIN \
   --agree-tos --non-interactive \
-  --deploy-hook "systemctl reload nginx"
+  --deploy-hook "systemctl reload nginx; cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem; cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/fullchain.pem; systemctl restart xray"
 
 RET=$?
 
 if [ $RET -eq 0 ]; then
   echo -e "\n${GRN}========================================"
-  echo    "✅  Команда certbot успешно выполнена"
   echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
   echo    "========================================"
   echo -e "${NC}"
 else
   echo -e "\n${RED}========================================"
   echo    "❌  CERTBOT ЗАВЕРШИЛСЯ С ОШИБКОЙ"
-  echo    "❌  Сертификат https от letsencrypt НЕ ПОЛУЧЕН!"
-  echo    "❌  Смотрите выше логи процесса получения сертификата"
-  echo    "❌  Код возврата: $RET"
   echo    "========================================"
   echo -e "${NC}"
   exit 1
@@ -243,6 +242,7 @@ fi
 # Блок CERTBOT - END
 
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
+path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
 AUTH_VARIANTS=(
     "ERR_INVALID_CREDENTIALS|The username or password you entered is incorrect."
@@ -267,7 +267,7 @@ RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
 AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
 AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
-# Конфиг Nginx
+# Конфиг Nginx с сокетами и проксированием XHTTP
 cat <<EOF > "$CONFIG_PATH"
 map \$http_upgrade \$connection_upgrade {
     default upgrade;
@@ -276,7 +276,11 @@ map \$http_upgrade \$connection_upgrade {
 
 server {
     server_name $DOMAIN;
+
     listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
+    listen unix:/dev/shm/nginxTLS.sock proxy_protocol;
+    listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
+
     set_real_ip_from unix:;
     real_ip_header proxy_protocol;
 
@@ -298,7 +302,6 @@ server {
     ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
 
-    # Секретная HTML-страница со списком конфигов (отдаем с диска напрямую)
     location = /${path_subpage}.html {
         try_files \$uri =404;
     }
@@ -307,20 +310,24 @@ server {
         add_header profile-title "base64:YXV0b1hSQVk=";
         add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9zaXRlOmNhdGVnb3J5LWFkcyIsImdlb3NpdGU6d2luLXNweSJdLCJCbG9ja0lwIjpbXSwiRG9tYWluU3RyYXRlZ3kiOiJJUElmTm9uTWF0Y2giLCJGYWtlRE5TIjoiZmFsc2UiLCJVc2VDaHVua0ZpbGVzIjoiZmFsc2UifQ";
         add_header routing-enable 0;
+        try_files \$uri =404;
     }
 
-    # Для сайта
+    # Вход для XHTTP TLS
+    location /${path_xhttp} {
+        proxy_pass http://127.0.0.1:8400;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+    }
+
     location /api/v1/authenticate {
         limit_except POST {
             deny all;
         }
-
         default_type application/json;
-
         add_header Set-Cookie "X-Auth-Token=\$request_id; Path=/; HttpOnly; Secure; SameSite=Lax" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header Cache-Control "no-store, no-cache, must-revalidate" always;
-
         return 401 '{"success":false,"code":"$AUTH_CODE","message":"$AUTH_MSG","request_id":"\$request_id"}';
     }
 
@@ -347,7 +354,7 @@ EOF
 
 systemctl restart nginx
 
-# Создание директории
+# Создание директории сайта
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
 
@@ -359,35 +366,25 @@ bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-releas
 
 SCRIPT_DIR=/usr/local/etc/xray
 
-# Генерируем глобальные ключи для сервера-моста
-key_output=$(xray x25519)
-xray_privateKey_vrv=$(echo "$key_output" | awk -F': ' '/PrivateKey/ {print $2}')
-xray_publicKey_vrv=$(echo "$key_output" | awk -F': ' '/Password/ {print $2}')
-xray_shortIds_vrv=$(openssl rand -hex 8)
-
-path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
-
 socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
-# ====СОЗДАНИЕ КОНФИГА СЕРВЕРА В ЦИКЛЕ ====
+# ==== СОЗДАНИЕ КОНФИГА СЕРВЕРА В ЦИКЛЕ ====
 ROUTING_RULES=""
 OUTBOUNDS=""
 
 for (( i=0; i<COUNT; i++ )); do
     ROUTE_ID=$((i + 1))
 
-    # Наполняем правила маршрутизации с использованием vlessRoute (проверка 7 и 8 байта UUID)
     ROUTING_RULES+="$(cat <<EOF
       { "vlessRoute": "$ROUTE_ID", "outboundTag": "proxy-$i" },
 EOF
 )"
 
-    # Если параметр extra пустой, подставляем null
     EXTRA_VAL="${NODE_EXTRA[$i]}"
     if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
-    # Наполняем outbounds (к конечным EU нодам) — используем ИХ родные порты
+    # Outbound поддерживает как TLS, так и Reality для целевых EU нод
     OUTBOUNDS+="$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
@@ -410,6 +407,10 @@ EOF
           "path": "${NODE_PATH[$i]}"
         },
         "security": "${NODE_SEC[$i]}",
+        "tlsSettings": {
+          "serverName": "${NODE_SNI[$i]}",
+          "fingerprint": "${NODE_FP[$i]}"
+        },
         "realitySettings": {
           "show": false,
           "fingerprint": "${NODE_FP[$i]}",
@@ -425,10 +426,9 @@ EOF
 )"
 done
 
-# Удаляем запятую в конце
 ROUTING_RULES="${ROUTING_RULES%,}"
 
-# Создаем JSON конфигурацию сервера
+# Создаем JSON конфигурацию сервера-моста
 cat << EOF > "$SCRIPT_DIR/config.json"
 {
   "log": {
@@ -471,7 +471,7 @@ cat << EOF > "$SCRIPT_DIR/config.json"
   },
   "inbounds": [
     {
-      "tag": "RUbrEUraw",
+      "tag": "RUbrEUtlsVISION",
       "port": 443,
       "listen": "0.0.0.0",
       "protocol": "vless",
@@ -485,43 +485,41 @@ cat << EOF > "$SCRIPT_DIR/config.json"
         "decryption": "none",
         "fallbacks": [
           {
-            "dest": "3333",
+            "alpn": "h2",
+            "dest": "/dev/shm/nginx_h2.sock",
+            "xver": 2
+          },
+          {
+            "dest": "/dev/shm/nginxTLS.sock",
             "xver": 2
           }
         ]
       },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ]
-      },
       "streamSettings": {
         "network": "raw",
-        "security": "reality",
-        "sockopt": {
-          "acceptProxyProtocol": false
-        },
-        "realitySettings": {
-          "show": false,
-          "xver": 2,
-          "target": "${TARGET_MTP}",
-          "spiderX": "/",
-          "shortIds": [
-            "$xray_shortIds_vrv"
+        "security": "tls",
+        "tlsSettings": {
+          "certificates": [
+            {
+              "certificateFile": "/var/lib/xray/cert/fullchain.pem",
+              "keyFile": "/var/lib/xray/cert/privkey.pem"
+            }
           ],
-          "privateKey": "$xray_privateKey_vrv",
-          "serverNames": [
-            "$DOMAIN"
+          "minVersion": "1.2",
+          "cipherSuites": "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+          "alpn": [
+            "h2", "http/1.1"
           ]
         }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [ "http", "tls", "quic" ]
       }
     },
     {
-      "tag": "RUbrEUxhttp",
-      "port": 3333,
+      "tag": "RUbrEUxhttpTLS",
+      "port": 8400,
       "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
@@ -532,34 +530,29 @@ cat << EOF > "$SCRIPT_DIR/config.json"
         ],
         "decryption": "none"
       },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ]
-      },
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-          "mode": "stream-one",
-          "path": "/$path_xhttp",
-          "acceptProxyProtocol": false
+          "mode": "auto",
+          "path": "/$path_xhttp"
         },
         "security": "none",
         "sockopt": {
-          "acceptProxyProtocol": true
+          "acceptProxyProtocol": false
         }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [ "http", "tls", "quic" ]
       }
     },
     {
       "tag": "RUsocks5",
       "port": 10443,
-      "listen": "0.0.0.0",
+      "listen": "127.0.0.1",
       "protocol": "mixed",
       "settings": {
-        "ip": "0.0.0.0",
+        "ip": "127.0.0.1",
         "udp": true,
         "auth": "password",
         "accounts": [
@@ -825,13 +818,13 @@ CLIENT_CONFIGS=""
 declare -a CONFIGS_ARRAY
 ALL_LINKS_TEXT=""
 
-# Цикл генерации клиентов по каждой ссылке
+# Цикл генерации клиентов по каждой ноде
 for (( i=0; i<COUNT; i++ )); do
     REMARK_BASE="${NODE_NAME[$i]}"
     if [ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
 
-    # --- Config: Bridge XHTTP (идет на мост, порт $SERVER_PORT) ---
-    OUT_REALITY_XHTTP=$(cat <<EOF
+    # --- Config: Bridge XHTTP TLS (основной канал моста через 443 порт) ---
+    OUT_TLS_XHTTP=$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
       "tag": "proxy",
@@ -839,15 +832,19 @@ for (( i=0; i<COUNT; i++ )); do
       "settings": {
         "vnext":[{
           "address": "$DOMAIN",
-          "port": $SERVER_PORT,
+          "port": 443,
           "users":[{ "id": "${BRIDGE_UUID[$i]}", "encryption": "none" }]
         }]
       },
       "streamSettings": {
         "network": "xhttp",
-        "security": "reality",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "$DOMAIN",
+          "fingerprint": "$fpBro"
+        },
         "xhttpSettings": {
-          "mode": "stream-one",
+          "mode": "auto",
           "path": "/$path_xhttp",
           "extra": {
             "noGRPCHeader": false,
@@ -864,18 +861,14 @@ for (( i=0; i<COUNT; i++ )); do
               "maxConnections": 0
             }
           }
-        },
-        "realitySettings": {
-          "show": false, "fingerprint": "$fpBro", "serverName": "$DOMAIN",
-          "password": "$xray_publicKey_vrv", "shortId": "$xray_shortIds_vrv", "spiderX": "/"
         }
       }
     }
 EOF
 )
 
-    # --- Config: Bridge RAW Vision (идет на мост, порт $SERVER_PORT) ---
-    OUT_REALITY_VISION=$(cat <<EOF
+    # --- Config: Bridge RAW Vision (альтернативный скоростной канал) ---
+    OUT_TLS_VISION=$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
       "tag": "proxy",
@@ -883,16 +876,16 @@ EOF
       "settings": {
         "vnext":[{
           "address": "$DOMAIN",
-          "port": $SERVER_PORT,
+          "port": 443,
           "users":[{ "id": "${BRIDGE_UUID[$i]}", "flow": "xtls-rprx-vision", "encryption": "none" }]
         }]
       },
       "streamSettings": {
         "network": "raw",
-        "security": "reality",
-        "realitySettings": {
-          "show": false, "fingerprint": "$fpBro", "serverName": "$DOMAIN",
-          "password": "$xray_publicKey_vrv", "shortId": "$xray_shortIds_vrv", "spiderX": "/"
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "$DOMAIN",
+          "fingerprint": "$fpBro"
         }
       }
     }
@@ -902,7 +895,7 @@ EOF
     EXTRA_VAL="${NODE_EXTRA[$i]}"
     if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
-    # --- Config: Direct EU (идет напрямую на целевую ноду, её родной порт) ---
+    # --- Config: Direct EU (прямое подключение к целевой ноде в обход моста) ---
     OUT_DIRECT_EU=$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
@@ -923,6 +916,10 @@ EOF
           "path": "${NODE_PATH[$i]}"
         },
         "security": "${NODE_SEC[$i]}",
+        "tlsSettings": {
+          "serverName": "${NODE_SNI[$i]}",
+          "fingerprint": "${NODE_FP[$i]}"
+        },
         "realitySettings": {
           "show": false,
           "fingerprint": "${NODE_FP[$i]}",
@@ -937,10 +934,10 @@ EOF
 EOF
 )
 
-    # Генерируем 3 конфига на ноду и склеиваем в массив JSON
-    CLIENT_CONFIGS+="$(print_config "$OUT_REALITY_XHTTP" "🇷🇺 RU>EU xhttp | $REMARK_BASE")"
+    # Добавляем конфиги в массив JSON (XHTTP мост идет первым)
+    CLIENT_CONFIGS+="$(print_config "$OUT_TLS_XHTTP" "🇷🇺 RU>EU xhttp | $REMARK_BASE")"
     CLIENT_CONFIGS+=","
-    CLIENT_CONFIGS+="$(print_config "$OUT_REALITY_VISION" "🇷🇺 RU>EU raw | $REMARK_BASE")"
+    CLIENT_CONFIGS+="$(print_config "$OUT_TLS_VISION" "🇷🇺 RU>EU raw | $REMARK_BASE")"
     CLIENT_CONFIGS+=","
     CLIENT_CONFIGS+="$(print_config "$OUT_DIRECT_EU" "🇪🇺 EU dir | $REMARK_BASE")"
 
@@ -948,12 +945,12 @@ EOF
         CLIENT_CONFIGS+=","
     fi
 
-    # --- Генерируем ссылки vless:// для HTML странички (с портом моста) ---
-    link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:$SERVER_PORT?security=reality&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=stream-one&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#RU%3EEU_xhttp_$REMARK_BASE"
+    # Ссылки vless:// для HTML странички
+    link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&spx=%2F#RU%3EEU_xhttp_$REMARK_BASE"
 
-    link_raw="vless://${BRIDGE_UUID[$i]}@$DOMAIN:$SERVER_PORT?security=reality&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&pbk=${xray_publicKey_vrv}&sid=${xray_shortIds_vrv}&spx=%2F#RU%3EEU_raw_$REMARK_BASE"
+    link_raw="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#RU%3EEU_raw_$REMARK_BASE"
 
-    CONFIGS_ARRAY+=( "XHTTP (RU>EU $REMARK_BASE)|$link_xhttp" )
+    CONFIGS_ARRAY+=( "XHTTP TLS (RU>EU $REMARK_BASE)|$link_xhttp" )
     CONFIGS_ARRAY+=( "RAW VISION (RU>EU $REMARK_BASE)|$link_raw" )
     CONFIGS_ARRAY+=( "Direct EU ($REMARK_BASE)|${VLESS_URLS[$i]}" )
 done
@@ -1008,7 +1005,7 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </div>
 <p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включается, если вы пользовались сторонними сервисами.</p>
 
-<h2>➡️ Конфиги ($COUNT VPS x 3 протокола)</h2>
+<h2>➡️ Конфиги ($COUNT нод)</h2>
 EOF
 
 # Вывод строк конфигов
@@ -1029,18 +1026,6 @@ for item in "${CONFIGS_ARRAY[@]}"; do
 EOF
     ((idx++))
 done
-
-SOCKS5_url_tg="tg://socks?server=$DOMAIN&port=10443&user=${socksUser}&pass=${socksPasw}"
-SOCKS5_url="${socksUser}:${socksPasw}@$DOMAIN:10443"
-
-# Добавляем socks5 блок
-cat >> "$WEB_PATH/$path_subpage.html" <<EOF
-<div class="config-row">
-    <div class="config-label" title="Пора отказываться от него">socks5 WARNING</div>
-    <div class="config-code" id="socks5">${SOCKS5_url}</div>
-    <button class="btn-action copy-btn" onclick="copyText('socks5', this)">Copy</button>
-</div>
-EOF
 
 # Добавляем Web Proxy блок (чистые tg:// ссылки)
 if [ "$INSTALL_MTP" = true ]; then
@@ -1091,20 +1076,19 @@ fi
 echo -e "
 ${YEL}✅ Сгенерировано мостов: ${GRN}$COUNT${NC}
 
-${YEL}Ваша json страничка подписки ${NC}
+${YEL}Ваша json страничка подписки: ${NC}
 ${GRN}$subPageLink${NC}
 
-${YEL}Ссылка на сохраненные конфиги (Web UI) ${NC}
+${YEL}Ссылка на сохраненные конфиги (Web UI): ${NC}
 ${GRN}$configListLink ${NC}
 
 Скопируйте подписку в специализированное приложение:
 - iOS: Happ или v2RayTun или v2rayN
 - Android: Happ или v2RayTun или v2rayNG
 - Windows: конфиги Happ или winLoadXRAY или v2rayN
-	для vless v2RayTun или Throne
 
-Открыт локальный socks5 на порту 10443.
-Внутри клиента: socks5 на 10808, 2080 и http на 10809.
+На сервере-мосте открыты только порты 80 (HTTP) и 443 (HTTPS/TLS).
+SOCKS5 закрыт и работает строго локально (127.0.0.1:10443).
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
 "
