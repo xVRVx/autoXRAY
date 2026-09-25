@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 127-Bridge ${NC}"
+echo -e "${GRN}Версия: 129-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -238,7 +238,6 @@ echo -e "\n${YEL}Проверка и установка acme.sh...${NC}"
 curl -sL https://get.acme.sh | sh -s email=mail@$DOMAIN
 ACME_BIN="$HOME/.acme.sh/acme.sh"
 
-# Проверяем, существует ли уже выпущенный сертификат для этого домена
 CERT_EXISTS=false
 if $ACME_BIN --list | grep -q "$DOMAIN"; then
     echo -e "${GRN}Сертификат для $DOMAIN уже существует в acme.sh.${NC}"
@@ -246,7 +245,6 @@ if $ACME_BIN --list | grep -q "$DOMAIN"; then
 fi
 
 if [ "$CERT_EXISTS" = false ]; then
-    # Регистрируем аккаунт в ZeroSSL напрямую через ACME
     $ACME_BIN --register-account -m mail@$DOMAIN --server zerossl
 
     echo -e "\n${YEL}Выпуск сертификата (сначала ZeroSSL, затем Let's Encrypt)...${NC}"
@@ -259,12 +257,10 @@ if [ "$CERT_EXISTS" = false ]; then
         RET=$?
     fi
 else
-    # Если сертификат уже был выпущен ранее, считаем статус успешным
     RET=0
 fi
 
 if [ $RET -eq 0 ]; then
-    # Установка сертификата и настройка автообновления
     $ACME_BIN --install-cert -d "$DOMAIN" --ecc \
       --fullchain-file /var/lib/xray/cert/fullchain.pem \
       --key-file /var/lib/xray/cert/privkey.pem \
@@ -398,10 +394,28 @@ socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 # ==== СОЗДАНИЕ КОНФИГА СЕРВЕРА В ЦИКЛЕ ====
 ROUTING_RULES=""
 OUTBOUNDS=""
+CLIENTS_VISION=""
+CLIENTS_XHTTP=""
 
 for (( i=0; i<COUNT; i++ )); do
     ROUTE_ID=$((i + 1))
 
+    # Формируем список клиентов для inbounds сервера
+    CLIENTS_VISION+="$(cat <<EOF
+          {
+            "id": "${BRIDGE_UUID[$i]}",
+            "flow": "xtls-rprx-vision"
+          },
+EOF
+)"
+    CLIENTS_XHTTP+="$(cat <<EOF
+          {
+            "id": "${BRIDGE_UUID[$i]}"
+          },
+EOF
+)"
+
+    # Маршруты
     ROUTING_RULES+="$(cat <<EOF
       { "vlessRoute": "$ROUTE_ID", "outboundTag": "proxy-$i" },
 EOF
@@ -410,7 +424,31 @@ EOF
     EXTRA_VAL="${NODE_EXTRA[$i]}"
     if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
-    # Outbound поддерживает как TLS, так и Reality для целевых EU нод
+    # Разделение настроек безопасности (TLS или REALITY)
+    STREAM_SEC=""
+    if [ "${NODE_SEC[$i]}" == "reality" ]; then
+        STREAM_SEC=$(cat <<EOF
+        "realitySettings": {
+          "show": false,
+          "fingerprint": "${NODE_FP[$i]}",
+          "serverName": "${NODE_SNI[$i]}",
+          "publicKey": "${NODE_PBK[$i]}",
+          "shortId": "${NODE_SID[$i]}",
+          "spiderX": "${NODE_SPX[$i]}"
+        }
+EOF
+)
+    else
+        STREAM_SEC=$(cat <<EOF
+        "tlsSettings": {
+          "serverName": "${NODE_SNI[$i]}",
+          "fingerprint": "${NODE_FP[$i]}"
+        }
+EOF
+)
+    fi
+
+    # Генерация outbound
     OUTBOUNDS+="$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
@@ -433,19 +471,7 @@ EOF
           "path": "${NODE_PATH[$i]}"
         },
         "security": "${NODE_SEC[$i]}",
-        "tlsSettings": {
-          "serverName": "${NODE_SNI[$i]}",
-          "fingerprint": "${NODE_FP[$i]}"
-        },
-        "realitySettings": {
-          "show": false,
-          "fingerprint": "${NODE_FP[$i]}",
-          "serverName": "${NODE_SNI[$i]}",
-          "password": "${NODE_PBK[$i]}",
-          "shortId": "${NODE_SID[$i]}",
-          "mldsa65Verify": "",
-          "spiderX": "${NODE_SPX[$i]}"
-        }
+$STREAM_SEC
       }
     },
 EOF
@@ -453,6 +479,8 @@ EOF
 done
 
 ROUTING_RULES="${ROUTING_RULES%,}"
+CLIENTS_VISION="${CLIENTS_VISION%,}"
+CLIENTS_XHTTP="${CLIENTS_XHTTP%,}"
 
 # Создаем JSON конфигурацию сервера-моста
 cat << EOF > "$SCRIPT_DIR/config.json"
@@ -503,10 +531,7 @@ cat << EOF > "$SCRIPT_DIR/config.json"
       "protocol": "vless",
       "settings": {
         "clients": [
-          {
-            "flow": "xtls-rprx-vision",
-            "id": "$SERVER_UUID"
-          }
+$CLIENTS_VISION
         ],
         "decryption": "none",
         "fallbacks": [
@@ -550,9 +575,7 @@ cat << EOF > "$SCRIPT_DIR/config.json"
       "protocol": "vless",
       "settings": {
         "clients": [
-          {
-            "id": "$SERVER_UUID"
-          }
+$CLIENTS_XHTTP
         ],
         "decryption": "none"
       },
@@ -921,6 +944,29 @@ EOF
     EXTRA_VAL="${NODE_EXTRA[$i]}"
     if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
+    STREAM_SEC_CLIENT=""
+    if [ "${NODE_SEC[$i]}" == "reality" ]; then
+        STREAM_SEC_CLIENT=$(cat <<EOF
+        "realitySettings": {
+          "show": false,
+          "fingerprint": "${NODE_FP[$i]}",
+          "serverName": "${NODE_SNI[$i]}",
+          "publicKey": "${NODE_PBK[$i]}",
+          "shortId": "${NODE_SID[$i]}",
+          "spiderX": "${NODE_SPX[$i]}"
+        }
+EOF
+)
+    else
+        STREAM_SEC_CLIENT=$(cat <<EOF
+        "tlsSettings": {
+          "serverName": "${NODE_SNI[$i]}",
+          "fingerprint": "${NODE_FP[$i]}"
+        }
+EOF
+)
+    fi
+
     # --- Config: Direct EU (прямое подключение к целевой ноде в обход моста) ---
     OUT_DIRECT_EU=$(cat <<EOF
     {
@@ -942,19 +988,7 @@ EOF
           "path": "${NODE_PATH[$i]}"
         },
         "security": "${NODE_SEC[$i]}",
-        "tlsSettings": {
-          "serverName": "${NODE_SNI[$i]}",
-          "fingerprint": "${NODE_FP[$i]}"
-        },
-        "realitySettings": {
-          "show": false,
-          "fingerprint": "${NODE_FP[$i]}",
-          "serverName": "${NODE_SNI[$i]}",
-          "password": "${NODE_PBK[$i]}",
-          "shortId": "${NODE_SID[$i]}",
-          "mldsa65Verify": "",
-          "spiderX": "${NODE_SPX[$i]}"
-        }
+$STREAM_SEC_CLIENT
       }
     }
 EOF
@@ -1080,6 +1114,7 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
     <div class="config-label">Telegram Web Proxy</div>
     <div class="config-code" id="mtproto">${MTProto}</div>
     <button class="btn-action copy-btn" onclick="copyText('mtproto', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('mtproto')">QR</button>
     <a href="${MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление прокси в тг" style="text-decoration:none">✈️ Add to TG</a>
 </div>
 EOF
@@ -1091,7 +1126,6 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
     <div class="config-code" id="cAll" style="max-height:60px;white-space:pre-wrap;word-break:break-all">$ALL_LINKS_TEXT</div>
     <button class="btn-action copy-btn" onclick="copyText('cAll', this)">Copy ALL</button>
-    <button class="btn-action qr-btn" onclick="showQR('cAll')">QR</button>
 </div>
 
 <div><a style="color:white;margin:40px auto 20px;display:block;text-align:center;" href="https://github.com/xVRVx/autoXRAY">https://github.com/xVRVx/autoXRAY</a></div>
