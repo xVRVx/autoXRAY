@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 119 ${NC}"
+echo -e "${GRN}Версия: 120 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
@@ -215,7 +215,6 @@ map \$http_upgrade \$connection_upgrade {
 server {
     server_name $DOMAIN;
 
-    listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
     listen unix:/dev/shm/nginxTLS.sock proxy_protocol;
     listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
 
@@ -228,17 +227,6 @@ server {
 
     root /var/www/$DOMAIN;
     index index.html;
-
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-
-    ssl_session_timeout 1d;
-    ssl_session_cache shared:MozSSL:10m;
-    ssl_session_tickets off;
-
-    ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
-    ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
 
     location = /${path_subpage}.html {
         try_files \$uri =404;
