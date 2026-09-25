@@ -7,12 +7,11 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 129-Bridge ${NC}"
+echo -e "${GRN}Версия: 130-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
 
-# Проверка, что система именно Debian
 if [ ! -f /etc/debian_version ]; then
     echo -e "${RED}❌ Ошибка: этот скрипт предназначен только для Debian!${NC}"
     exit 1
@@ -32,7 +31,6 @@ if [ ${#VLESS_URLS[@]} -eq 0 ]; then
     exit 1
 fi
 
-# Функция URL-декодинга
 urldecode() {
     printf '%b' "${1//%/\\x}"
 }
@@ -40,12 +38,9 @@ urldecode() {
 COUNT=${#VLESS_URLS[@]}
 echo -e "${GRN}Обнаружено $COUNT vless ссылок для моста!${NC}"
 
-# Массивы для хранения параметров каждой ноды
-declare -a NODE_UUID NODE_ADDR NODE_PORT NODE_NAME NODE_TYPE NODE_SEC NODE_FP NODE_SNI NODE_PBK NODE_SID NODE_SPX NODE_MODE NODE_PATH NODE_EXTRA
-# Уникальные UUID для сервера-моста (RU)
+declare -a NODE_UUID NODE_ADDR NODE_PORT NODE_NAME NODE_TYPE NODE_SEC NODE_FP NODE_SNI NODE_MODE NODE_PATH NODE_EXTRA NODE_ALPN
 declare -a BRIDGE_UUID
 
-# Генерируем базовый UUID сервера для всех подключений
 SERVER_UUID=$(openssl rand -hex 16 | sed 's/\(........\)\(....\)\(....\)\(....\)\(............\)/\1-\2-\3-\4-\5/')
 g1="${SERVER_UUID:0:8}"
 g2="${SERVER_UUID:9:4}"
@@ -83,16 +78,14 @@ for (( i=0; i<COUNT; i++ )); do
         params["$key"]="$(urldecode "$value")"
     done
 
-    NODE_SEC[$i]="${params[security]}"
-    NODE_TYPE[$i]="${params[type]}"
-    NODE_PATH[$i]="${params[path]}"
-    NODE_MODE[$i]="${params[mode]}"
+    NODE_SEC[$i]="${params[security]:-tls}"
+    NODE_TYPE[$i]="${params[type]:-xhttp}"
+    NODE_PATH[$i]="${params[path]:-/}"
+    NODE_MODE[$i]="${params[mode]:-auto}"
     NODE_EXTRA[$i]="${params[extra]}"
-    NODE_SNI[$i]="${params[sni]}"
-    NODE_FP[$i]="${params[fp]}"
-    NODE_PBK[$i]="${params[pbk]}"
-    NODE_SID[$i]="${params[sid]}"
-    NODE_SPX[$i]="${params[spx]}"
+    NODE_SNI[$i]="${params[sni]:-${NODE_ADDR[$i]}}"
+    NODE_FP[$i]="${params[fp]:-firefox}"
+    NODE_ALPN[$i]="${params[alpn]}"
 
     ROUTE_ID=$((i + 1))
     HEX_ROUTE_ID=$(printf "%04x" $ROUTE_ID)
@@ -104,9 +97,7 @@ SERVER_PORT=443
 echo -e "${YEL}Подготовка официального репозитория Nginx для Debian...${NC}"
 apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring jq dnsutils openssl wget tar socat cron
 
-# Добавление ключа и репозитория nginx.org
 curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor --yes -o /usr/share/keyrings/nginx-archive-keyring.gpg
-
 echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian $(lsb_release -cs) nginx" \
     | tee /etc/apt/sources.list.d/nginx.list >/dev/null
 
@@ -123,15 +114,10 @@ DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]' | head -n 1)
 
 if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo -e "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
-    echo -e "${YEL}Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP ${NC}"
-    
-	read -p "Продолжить на ваш страх и риск? (y/N):" choice
-
+    read -p "Продолжить на ваш страх и риск? (y/N):" choice
 	if [[ ! "$choice" =~ ^[Yy]$ ]]; then
-		echo -e "${RED}Выполнение скрипта прервано.${NC}"
 		exit 1
 	fi
-    echo -e "${YEL}Продолжение выполнения скрипта...${NC}"
 fi
 
 # === ВОПРОСЫ ПОЛЬЗОВАТЕЛЮ ===
@@ -179,16 +165,14 @@ case $fp_choice in
     8) fpBro="qq" ;;
     *) fpBro="firefox" ;;
 esac
-# ============================
 
-# Включаем BBR и MTU Probing
+# BBR
 cat <<EOF > /etc/sysctl.d/999-autoXRAY.conf
 net.core.default_qdisc=fq
 net.ipv4.tcp_congestion_control=bbr
 net.ipv4.tcp_mtu_probing=1
 EOF
 sysctl --system >/dev/null 2>&1
-echo -e "${GRN}BBR и TCP MTU Probing активированы${NC}"
 
 cat <<EOF > /etc/security/limits.d/99-autoXRAY.conf
 *       soft    nofile  1048576
@@ -197,21 +181,15 @@ root    soft    nofile  1048576
 root    hard    nofile  1048576
 EOF
 ulimit -n 65535
-echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
 # Установка Xray
 bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.7.28
 
-# Создание директории сайта
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
-
-# Генерируем сайт маскировку
 bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page3.sh)" -- "$WEB_PATH"
 
-# ==========================================
-# Блок ACME.SH (Установка и выпуск сертификата)
-# ==========================================
+# ================= ACME.SH =================
 CONFIG_PATH="/etc/nginx/conf.d/default.conf"
 mkdir -p /var/www/html
 
@@ -219,40 +197,31 @@ cat <<EOF > "$CONFIG_PATH"
 server {
 	listen 80 default_server;
 	server_name _;
-
 	location /.well-known/acme-challenge/ {
 		root /var/www/html;
 		allow all;
 	}
-
 	location / {
 		return 301 https://\$host\$request_uri;
 	}
 }
 EOF
 systemctl reload nginx
-
 mkdir -p /var/lib/xray/cert/
 
-echo -e "\n${YEL}Проверка и установка acme.sh...${NC}"
 curl -sL https://get.acme.sh | sh -s email=mail@$DOMAIN
 ACME_BIN="$HOME/.acme.sh/acme.sh"
 
 CERT_EXISTS=false
 if $ACME_BIN --list | grep -q "$DOMAIN"; then
-    echo -e "${GRN}Сертификат для $DOMAIN уже существует в acme.sh.${NC}"
     CERT_EXISTS=true
 fi
 
 if [ "$CERT_EXISTS" = false ]; then
     $ACME_BIN --register-account -m mail@$DOMAIN --server zerossl
-
-    echo -e "\n${YEL}Выпуск сертификата (сначала ZeroSSL, затем Let's Encrypt)...${NC}"
     $ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server zerossl --keylength ec-256
     RET=$?
-
     if [ $RET -ne 0 ]; then
-        echo -e "${YEL}ZeroSSL не ответил, пробуем через Let's Encrypt...${NC}"
         $ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server letsencrypt --keylength ec-256
         RET=$?
     fi
@@ -265,50 +234,15 @@ if [ $RET -eq 0 ]; then
       --fullchain-file /var/lib/xray/cert/fullchain.pem \
       --key-file /var/lib/xray/cert/privkey.pem \
       --reloadcmd "chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl reload nginx; systemctl restart xray"
-
     chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
-
-    echo -e "\n${GRN}========================================"
-    echo    "✅  Сертификат успешно настроен и применен!"
-    echo    "✅  acme.sh настроил автообновление через cron"
-    echo    "========================================"
-    echo -e "${NC}"
 else
-    echo -e "\n${RED}========================================"
-    echo    "❌  ОШИБКА: не удалось выпустить сертификат через acme.sh"
-    echo    "========================================"
-    echo -e "${NC}"
+    echo -e "${RED}Ошибка выпуска сертификата!${NC}"
     exit 1
 fi
-# ==========================================
 
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 
-AUTH_VARIANTS=(
-    "ERR_INVALID_CREDENTIALS|The username or password you entered is incorrect."
-    "ERR_INVALID_CREDENTIALS|The identity or security key you provided is invalid."
-    "ERR_BAD_PASSWORD|Incorrect password. Please verify your credentials and retry."
-    "ERR_KEY_MISMATCH|The security key provided does not match the account identity."
-    "ERR_CREDENTIAL_REJECTED|Credential verification rejected by the authentication authority."
-    "ERR_PASSWORD_MISMATCH|The password provided does not match the registered key."
-    "ERR_INCORRECT_KEY|Incorrect security credentials provided for this principal."
-    "ERR_USER_NOT_FOUND|Principal identity not found in directory services."
-    "ERR_IDENTITY_NOT_FOUND|No account found matching the provided identity."
-    "ERR_PRINCIPAL_MISSING|User principal does not exist in this organizational realm."
-    "ERR_ACCOUNT_NOT_FOUND|Account identifier not recognized by the identity provider."
-    "ERR_UNKNOWN_USER|Unrecognized user identity. Please verify your login."
-    "ERR_LOOKUP_FAILED|User lookup failed: Specified identity does not exist."
-    "ERR_AUTH_FAILED|Authentication failed: The provided credentials do not match."
-    "ERR_DIRECTORY_MISMATCH|Credentials could not be verified against the corporate directory."
-    "ERR_RECORDS_MISMATCH|The security credentials entered do not match our records."
-)
-
-RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
-AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
-AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
-
-# Конфиг Nginx с сокетами и проксированием XHTTP 
 cat <<EOF > "$CONFIG_PATH"
 map \$http_upgrade \$connection_upgrade {
     default upgrade;
@@ -337,30 +271,15 @@ server {
 
     location = /${path_subpage}.json {
         add_header profile-title "base64:YXV0b1hSQVk=";
-        add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9pcDpjYXRlZ29yeS1hZHMiLCJnZW9zaXRlOndpbi1zcHkiXSwiQmxvY2tJcCI6W10sIkRvbWFpblN0cmF0ZWd5IjoiSVBJZk5vbk1hdGNoIiwiRmFrZUROUyI6ImZhbHNlIiwiVXNlQ2h1bmtGaWxlcyI6ImZhbHNlIn0";
-        add_header routing-enable 0;
         try_files \$uri =404;
     }
 
-    # Вход для XHTTP TLS (буферизация отключена)
     location /${path_xhttp} {
         proxy_pass http://127.0.0.1:8400;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
-
         proxy_buffering off;
         proxy_request_buffering off;
-    }
-
-    location /api/v1/authenticate {
-        limit_except POST {
-            deny all;
-        }
-        default_type application/json;
-        add_header Set-Cookie "X-Auth-Token=\$request_id; Path=/; HttpOnly; Secure; SameSite=Lax" always;
-        add_header X-Content-Type-Options "nosniff" always;
-        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
-        return 401 '{"success":false,"code":"$AUTH_CODE","message":"$AUTH_MSG","request_id":"\$request_id"}';
     }
 
 $NGINX_web_proxy
@@ -373,25 +292,20 @@ $NGINX_web_proxy
 server {
     listen 80;
     server_name $DOMAIN;
-
     location /.well-known/acme-challenge/ {
         root /var/www/html;
     }
-
     location / {
         return 301 https://\$host\$request_uri;
     }
 }
 EOF
-
 systemctl restart nginx
 
 SCRIPT_DIR=/usr/local/etc/xray
-
 socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
-# ==== СОЗДАНИЕ КОНФИГА СЕРВЕРА В ЦИКЛЕ ====
 ROUTING_RULES=""
 OUTBOUNDS=""
 CLIENTS_VISION=""
@@ -400,7 +314,6 @@ CLIENTS_XHTTP=""
 for (( i=0; i<COUNT; i++ )); do
     ROUTE_ID=$((i + 1))
 
-    # Формируем список клиентов для inbounds сервера
     CLIENTS_VISION+="$(cat <<EOF
           {
             "id": "${BRIDGE_UUID[$i]}",
@@ -415,7 +328,7 @@ EOF
 EOF
 )"
 
-    # Маршруты
+    # Ставим маршруты vlessRoute на первое место
     ROUTING_RULES+="$(cat <<EOF
       { "vlessRoute": "$ROUTE_ID", "outboundTag": "proxy-$i" },
 EOF
@@ -424,31 +337,6 @@ EOF
     EXTRA_VAL="${NODE_EXTRA[$i]}"
     if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
-    # Разделение настроек безопасности (TLS или REALITY)
-    STREAM_SEC=""
-    if [ "${NODE_SEC[$i]}" == "reality" ]; then
-        STREAM_SEC=$(cat <<EOF
-        "realitySettings": {
-          "show": false,
-          "fingerprint": "${NODE_FP[$i]}",
-          "serverName": "${NODE_SNI[$i]}",
-          "publicKey": "${NODE_PBK[$i]}",
-          "shortId": "${NODE_SID[$i]}",
-          "spiderX": "${NODE_SPX[$i]}"
-        }
-EOF
-)
-    else
-        STREAM_SEC=$(cat <<EOF
-        "tlsSettings": {
-          "serverName": "${NODE_SNI[$i]}",
-          "fingerprint": "${NODE_FP[$i]}"
-        }
-EOF
-)
-    fi
-
-    # Генерация outbound
     OUTBOUNDS+="$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
@@ -470,15 +358,18 @@ EOF
           "mode": "${NODE_MODE[$i]}",
           "path": "${NODE_PATH[$i]}"
         },
-        "security": "${NODE_SEC[$i]}",
-$STREAM_SEC
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "${NODE_SNI[$i]}",
+          "fingerprint": "${NODE_FP[$i]}",
+          "alpn": [ "h2", "http/1.1" ]
+        }
       }
     },
 EOF
 )"
 done
 
-ROUTING_RULES="${ROUTING_RULES%,}"
 CLIENTS_VISION="${CLIENTS_VISION%,}"
 CLIENTS_XHTTP="${CLIENTS_XHTTP%,}"
 
@@ -489,37 +380,13 @@ cat << EOF > "$SCRIPT_DIR/config.json"
     "dnsLog": false,
     "access": "/var/log/xray/access.log",
     "error": "/var/log/xray/error.log",
-    "loglevel": "none"
-  },
-  "burstObservatory": {
-    "pingConfig": {
-      "timeout": "3s",
-      "interval": "40s",
-      "sampling": 1,
-      "destination": "https://www.gstatic.com/generate_204",
-      "connectivity": ""
-    },
-    "subjectSelector": [
-      "proxy"
-    ]
+    "loglevel": "warning"
   },
   "dns": {
     "servers": [
-      {
-        "address": "https+local://77.88.8.8/dns-query",
-        "domains": [
-          "geosite:category-ru",
-          "geosite:yandex",
-          "geosite:vk",
-          "domain:ru",
-          "domain:su",
-          "domain:xn--p1ai"
-        ],
-        "skipFallback": true
-      },
-      "https://8.8.4.4/dns-query",
-      "https://8.8.8.8/dns-query",
-      "https://1.1.1.1/dns-query"
+      "https+local://77.88.8.8/dns-query",
+      "8.8.8.8",
+      "1.1.1.1"
     ],
     "queryStrategy": "UseIPv4"
   },
@@ -557,10 +424,7 @@ $CLIENTS_VISION
             }
           ],
           "minVersion": "1.2",
-          "cipherSuites": "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-          "alpn": [
-            "h2", "http/1.1"
-          ]
+          "alpn": [ "h2", "http/1.1" ]
         }
       },
       "sniffing": {
@@ -585,31 +449,11 @@ $CLIENTS_XHTTP
           "mode": "auto",
           "path": "/$path_xhttp"
         },
-        "security": "none",
-        "sockopt": {
-          "acceptProxyProtocol": false
-        }
+        "security": "none"
       },
       "sniffing": {
         "enabled": true,
         "destOverride": [ "http", "tls", "quic" ]
-      }
-    },
-    {
-      "tag": "RUsocks5",
-      "port": 10443,
-      "listen": "127.0.0.1",
-      "protocol": "mixed",
-      "settings": {
-        "ip": "127.0.0.1",
-        "udp": true,
-        "auth": "password",
-        "accounts": [
-          {
-            "user": "$socksUser",
-            "pass": "$socksPasw"
-          }
-        ]
       }
     }
   ],
@@ -630,104 +474,21 @@ $OUTBOUNDS
   "routing": {
     "domainMatcher": "hybrid",
     "domainStrategy": "IPIfNonMatch",
-    "balancers": [
-      {
-        "tag": "Super_Balancer",
-        "selector": [
-          "proxy"
-        ],
-        "strategy": {
-          "type": "leastLoad",
-          "settings": {
-            "maxRTT": "1s",
-            "expected": $COUNT,
-            "baselines": [
-              "1s"
-            ],
-            "tolerance": 0.01
-          }
-        },
-        "fallbackTag": "direct"
-      }
-    ],
     "rules": [
-      {
-        "ip": [
-          "8.8.8.8",
-          "8.8.4.4",
-          "1.1.1.1"
-        ],
-        "port": "53,443",
-        "balancerTag": "Super_Balancer"
-      },
-      {
-        "ip": [
-          "geoip:private"
-        ],
-        "outboundTag": "block"
-      },
-      {
-        "port": "25, 135, 137-139, 445",
-        "outboundTag": "block"
-      },
-      {
-        "protocol": [
-          "bittorrent"
-        ],
-        "outboundTag": "block"
-      },
-      {
-        "domain": [
-          "geosite:category-ads",
-          "geosite:win-spy",
-          "geosite:private"
-        ],
-        "outboundTag": "block"
-      },
-      {
-        "domain": [
-          "habr.com",
-          "apkmirror.com",
-          "ifconfig.me",
-          "checkip.amazonaws.com",
-          "pify.org",
-          "geosite:category-ip-geo-detect"
-        ],
-        "balancerTag": "Super_Balancer"
-      },
-      {
-        "domain": [
-          "testipv6.net",
-          "domain:ru",
-          "domain:su",
-          "domain:xn--p1ai",
-          "geosite:apple",
-          "geosite:apple-pki",
-          "geosite:yandex",
-          "geosite:vk",
-          "geosite:category-ru"
-        ],
-        "outboundTag": "direct"
-      },
-      {
-        "ip": [
-          "geoip:ru"
-        ],
-        "outboundTag": "direct"
-      },
-      {
-        "inboundTag": [
-          "RUsocks5"
-        ],
-        "balancerTag": "Super_Balancer"
-      },
 $ROUTING_RULES
+      {
+        "port": "53",
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [ "geoip:private" ],
+        "outboundTag": "block"
+      }
     ]
   }
 }
 EOF
 
-# Создаем JSON конфигурацию клиента
 print_config() {
   local PROXY_OUTBOUND="$1"
   local REMARK="$2"
@@ -762,38 +523,24 @@ print_config() {
     "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
-        "domain": [
-          "geosite:category-ads",
-          "geosite:win-spy"
-        ],
+        "domain": [ "geosite:category-ads", "geosite:win-spy" ],
         "outboundTag": "block"
       },
       {
-        "protocol": [
-          "bittorrent"
-        ],
+        "protocol": [ "bittorrent" ],
         "outboundTag": "direct"
       },
       {
-        "domain": [
-          "habr.com",
-          "apkmirror.com"
-        ],
+        "domain": [ "habr.com", "apkmirror.com" ],
         "outboundTag": "proxy"
       },
       {
         "domain": [
           "geosite:private",
-          "ifconfig.me",
-          "checkip.amazonaws.com",
-          "pify.org",
           "domain:ru",
           "domain:su",
           "domain:xn--p1ai",
-          "geosite:category-ip-geo-detect",
           "geosite:apple",
-          "geosite:apple-pki",
-          "geosite:f-droid",
           "geosite:yandex",
           "geosite:vk",
           "geosite:category-ru"
@@ -801,10 +548,7 @@ print_config() {
         "outboundTag": "direct"
       },
       {
-        "ip": [
-          "geoip:ru",
-          "geoip:private"
-        ],
+        "ip": [ "geoip:ru", "geoip:private" ],
         "outboundTag": "direct"
       }
     ]
@@ -815,48 +559,19 @@ print_config() {
       "protocol": "socks",
       "listen": "127.0.0.1",
       "port": 10808,
-      "settings": {
-        "udp": true
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [ "http", "tls", "quic" ]
-      }
-    },
-    {
-      "tag": "socks-sb",
-      "protocol": "socks",
-      "listen": "127.0.0.1",
-      "port": 2080,
-      "settings": {
-        "udp": true
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [ "http", "tls", "quic" ]
-      }
+      "settings": { "udp": true }
     },
     {
       "tag": "http-in",
       "protocol": "http",
       "listen": "127.0.0.1",
-      "port": 10809,
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [ "http", "tls", "quic" ]
-      }
+      "port": 10809
     }
   ],
   "outbounds": [
 $PROXY_OUTBOUND,
-    {
-      "tag": "direct",
-      "protocol": "freedom"
-    },
-    {
-      "tag": "block",
-      "protocol": "blackhole"
-    }
+    { "tag": "direct", "protocol": "freedom" },
+    { "tag": "block", "protocol": "blackhole" }
   ],
   "remarks": "$REMARK"
 }
@@ -867,12 +582,10 @@ CLIENT_CONFIGS=""
 declare -a CONFIGS_ARRAY
 ALL_LINKS_TEXT=""
 
-# Цикл генерации клиентов по каждой ноде
 for (( i=0; i<COUNT; i++ )); do
     REMARK_BASE="${NODE_NAME[$i]}"
     if [ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
 
-    # --- Config: Bridge XHTTP TLS (основной канал моста через 443 порт) ---
     OUT_TLS_XHTTP=$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
@@ -916,7 +629,6 @@ for (( i=0; i<COUNT; i++ )); do
 EOF
 )
 
-    # --- Config: Bridge RAW Vision (альтернативный скоростной канал) ---
     OUT_TLS_VISION=$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
@@ -944,30 +656,6 @@ EOF
     EXTRA_VAL="${NODE_EXTRA[$i]}"
     if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
 
-    STREAM_SEC_CLIENT=""
-    if [ "${NODE_SEC[$i]}" == "reality" ]; then
-        STREAM_SEC_CLIENT=$(cat <<EOF
-        "realitySettings": {
-          "show": false,
-          "fingerprint": "${NODE_FP[$i]}",
-          "serverName": "${NODE_SNI[$i]}",
-          "publicKey": "${NODE_PBK[$i]}",
-          "shortId": "${NODE_SID[$i]}",
-          "spiderX": "${NODE_SPX[$i]}"
-        }
-EOF
-)
-    else
-        STREAM_SEC_CLIENT=$(cat <<EOF
-        "tlsSettings": {
-          "serverName": "${NODE_SNI[$i]}",
-          "fingerprint": "${NODE_FP[$i]}"
-        }
-EOF
-)
-    fi
-
-    # --- Config: Direct EU (прямое подключение к целевой ноде в обход моста) ---
     OUT_DIRECT_EU=$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
@@ -987,14 +675,17 @@ EOF
           "mode": "${NODE_MODE[$i]}",
           "path": "${NODE_PATH[$i]}"
         },
-        "security": "${NODE_SEC[$i]}",
-$STREAM_SEC_CLIENT
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "${NODE_SNI[$i]}",
+          "fingerprint": "${NODE_FP[$i]}",
+          "alpn": [ "h2", "http/1.1" ]
+        }
       }
     }
 EOF
 )
 
-    # Добавляем конфиги в массив JSON (XHTTP мост идет первым)
     CLIENT_CONFIGS+="$(print_config "$OUT_TLS_XHTTP" "🇷🇺 RU>EU xhttp | $REMARK_BASE")"
     CLIENT_CONFIGS+=","
     CLIENT_CONFIGS+="$(print_config "$OUT_TLS_VISION" "🇷🇺 RU>EU raw | $REMARK_BASE")"
@@ -1005,9 +696,7 @@ EOF
         CLIENT_CONFIGS+=","
     fi
 
-    # Ссылки vless:// для HTML странички
     link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&spx=%2F#RU%3EEU_xhttp_$REMARK_BASE"
-
     link_raw="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#RU%3EEU_raw_$REMARK_BASE"
 
     CONFIGS_ARRAY+=( "XHTTP TLS (RU>EU $REMARK_BASE)|$link_xhttp" )
@@ -1015,11 +704,9 @@ EOF
     CONFIGS_ARRAY+=( "Direct EU ($REMARK_BASE)|${VLESS_URLS[$i]}" )
 done
 
-# Записываем массив в файл подписки
 echo "[$CLIENT_CONFIGS]" > "$WEB_PATH/$path_subpage.json"
 
 systemctl restart xray
-echo -e "Перезапуск XRAY"
 
 subPageLink="https://$DOMAIN/$path_subpage.json"
 configListLink="https://$DOMAIN/$path_subpage.html"
@@ -1028,11 +715,9 @@ if [ "$INSTALL_MTP" = true ]; then
     echo -e "\n\n${GRN}Устанавливаем Telegram Web Proxy ${NC}"
     source <(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/web-proxy-test.sh)
 else
-    echo -e "\n\n${YEL}Установка Telegram Web Proxy пропущена.${NC}"
     MTProto=""
 fi
 
-echo -e "\n\n${GRN}Создаем страницу подписки ${NC}"
 cat > "$WEB_PATH/$path_subpage.html" <<'EOF'
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
@@ -1088,7 +773,6 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <h2>➡️ Конфиги ($COUNT нод)</h2>
 EOF
 
-# Вывод строк конфигов
 idx=1
 for item in "${CONFIGS_ARRAY[@]}"; do
     title="${item%%|*}"
@@ -1107,20 +791,17 @@ EOF
     ((idx++))
 done
 
-# Добавляем Web Proxy блок (чистые tg:// ссылки)
 if [ "$INSTALL_MTP" = true ]; then
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
     <div class="config-label">Telegram Web Proxy</div>
     <div class="config-code" id="mtproto">${MTProto}</div>
     <button class="btn-action copy-btn" onclick="copyText('mtproto', this)">Copy</button>
-    <button class="btn-action qr-btn" onclick="showQR('mtproto')">QR</button>
     <a href="${MTProto}" target="_blank" class="btn-action qr-btn" title="автодобавление прокси в тг" style="text-decoration:none">✈️ Add to TG</a>
 </div>
 EOF
 fi
 
-# Дописываем конец страницы
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <h2>💠 Все конфиги вместе</h2>
 <div class="config-row">
@@ -1134,18 +815,13 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </body></html>
 EOF
 
-# --- ФИНАЛЬНАЯ ПРОВЕРКА ---
 echo -e "\n${YEL}=== Финальная проверка статусов ===${NC}"
-
 if [ "$INSTALL_MTP" = true ]; then
     if systemctl is-active --quiet telemt; then echo -e "Telemt: ${GRN}RUNNING${NC}"; else echo -e "Telemt: ${RED}STOPPED/ERROR${NC}"; fi
     if systemctl is-active --quiet tproxy-server; then echo -e "WebProxy: ${GRN}RUNNING${NC}"; else echo -e "WebProxy: ${RED}STOPPED/ERROR${NC}"; fi
 fi
-
-if systemctl is-active --quiet nginx; then
-    echo -e "Nginx: ${GRN}RUNNING${NC}" ; else echo -e "Nginx: ${RED}STOPPED/ERROR${NC}"; fi
-if systemctl is-active --quiet xray; then
-    echo -e "XRAY: ${GRN}RUNNING${NC}"; else echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"; fi
+if systemctl is-active --quiet nginx; then echo -e "Nginx: ${GRN}RUNNING${NC}" ; else echo -e "Nginx: ${RED}STOPPED/ERROR${NC}"; fi
+if systemctl is-active --quiet xray; then echo -e "XRAY: ${GRN}RUNNING${NC}"; else echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"; fi
 
 echo -e "\n"
 if [ "$INSTALL_MTP" = true ]; then
@@ -1161,13 +837,6 @@ ${GRN}$subPageLink${NC}
 
 ${YEL}Ссылка на сохраненные конфиги (Web UI): ${NC}
 ${GRN}$configListLink ${NC}
-
-Скопируйте подписку в специализированное приложение:
-- iOS: Happ или v2RayTun или v2rayN
-- Android: Happ или v2RayTun или v2rayNG
-- Windows: конфиги Happ или winLoadXRAY или v2rayN
-
-На сервере-мосте открыты только порты 80 (HTTP) и 443 (HTTPS/TLS).
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
 "
