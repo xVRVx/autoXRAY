@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 125-Bridge ${NC}"
+echo -e "${GRN}Версия: 126-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -234,21 +234,33 @@ systemctl reload nginx
 
 mkdir -p /var/lib/xray/cert/
 
-echo -e "\n${YEL}Установка acme.sh...${NC}"
+echo -e "\n${YEL}Проверка и установка acme.sh...${NC}"
 curl -sL https://get.acme.sh | sh -s email=mail@$DOMAIN
 ACME_BIN="$HOME/.acme.sh/acme.sh"
 
-# Регистрируем аккаунт в ZeroSSL (нативно через ACME, без блокировок API)
-$ACME_BIN --register-account -m mail@$DOMAIN --server zerossl
+# Проверяем, существует ли уже выпущенный сертификат для этого домена
+CERT_EXISTS=false
+if $ACME_BIN --list | grep -q "$DOMAIN"; then
+    echo -e "${GRN}Сертификат для $DOMAIN уже существует в acme.sh.${NC}"
+    CERT_EXISTS=true
+fi
 
-echo -e "\n${YEL}Выпуск сертификата (сначала ZeroSSL, затем Let's Encrypt)...${NC}"
-$ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server zerossl --keylength ec-256
+if [ "$CERT_EXISTS" = false ]; then
+    # Регистрируем аккаунт в ZeroSSL напрямую через ACME
+    $ACME_BIN --register-account -m mail@$DOMAIN --server zerossl
 
-RET=$?
-if [ $RET -ne 0 ]; then
-    echo -e "${YEL}ZeroSSL не ответил, пробуем через Let's Encrypt...${NC}"
-    $ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server letsencrypt --keylength ec-256
+    echo -e "\n${YEL}Выпуск сертификата (сначала ZeroSSL, затем Let's Encrypt)...${NC}"
+    $ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server zerossl --keylength ec-256
     RET=$?
+
+    if [ $RET -ne 0 ]; then
+        echo -e "${YEL}ZeroSSL не ответил, пробуем через Let's Encrypt...${NC}"
+        $ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server letsencrypt --keylength ec-256
+        RET=$?
+    fi
+else
+    # Если сертификат уже был выпущен ранее, считаем статус успешным
+    RET=0
 fi
 
 if [ $RET -eq 0 ]; then
@@ -261,7 +273,7 @@ if [ $RET -eq 0 ]; then
     chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
 
     echo -e "\n${GRN}========================================"
-    echo    "✅  Сертификат успешно выпущен и установлен!"
+    echo    "✅  Сертификат успешно настроен и применен!"
     echo    "✅  acme.sh настроил автообновление через cron"
     echo    "========================================"
     echo -e "${NC}"
