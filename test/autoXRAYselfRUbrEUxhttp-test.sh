@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 122-Bridge ${NC}"
+echo -e "${GRN}Версия: 123-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -102,7 +102,7 @@ done
 SERVER_PORT=443
 
 echo -e "${YEL}Подготовка официального репозитория Nginx для Debian...${NC}"
-apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring jq dnsutils openssl certbot wget tar
+apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring jq dnsutils openssl wget tar socat cron
 
 # Добавление ключа и репозитория nginx.org
 curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor --yes -o /usr/share/keyrings/nginx-archive-keyring.gpg
@@ -116,6 +116,7 @@ echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 
 apt-get update
 apt-get install -y nginx
 systemctl enable --now nginx
+systemctl enable --now cron
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]' | head -n 1)
@@ -208,8 +209,9 @@ mkdir -p "$WEB_PATH"
 # Генерируем сайт маскировку
 bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page3.sh)" -- "$WEB_PATH"
 
-# Блок CERTBOT - START
-# В официальной сборке Nginx для Debian конфиг всегда в conf.d/default.conf
+# ==========================================
+# Блок ACME.SH (Установка и выпуск сертификата)
+# ==========================================
 CONFIG_PATH="/etc/nginx/conf.d/default.conf"
 mkdir -p /var/www/html
 
@@ -232,39 +234,45 @@ systemctl reload nginx
 
 mkdir -p /var/lib/xray/cert/
 
-if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
-    cp -L /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
-    cp -L /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
-    chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
-fi
+echo -e "\n${YEL}Установка acme.sh...${NC}"
+curl -sL https://get.acme.sh | sh -s email=mail@$DOMAIN
+ACME_BIN="$HOME/.acme.sh/acme.sh"
 
-certbot certonly --webroot -w /var/www/html \
-  -d $DOMAIN \
-  -m mail@$DOMAIN \
-  --agree-tos --non-interactive \
-  --deploy-hook "systemctl reload nginx; cp -L /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem; cp -L /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl restart xray"
+# Регистрируем аккаунт в ZeroSSL (нативно через ACME, без блокировок API)
+$ACME_BIN --register-account -m mail@$DOMAIN --server zerossl
+
+echo -e "\n${YEL}Выпуск сертификата (сначала ZeroSSL, затем Let's Encrypt)...${NC}"
+$ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server zerossl --keylength ec-256
 
 RET=$?
+if [ $RET -ne 0 ]; then
+    echo -e "${YEL}ZeroSSL не ответил, пробуем через Let's Encrypt...${NC}"
+    $ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server letsencrypt --keylength ec-256
+    RET=$?
+fi
 
 if [ $RET -eq 0 ]; then
-  cp -L /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
-  cp -L /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
-  chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
+    # Установка сертификата и настройка автообновления
+    $ACME_BIN --install-cert -d "$DOMAIN" --ecc \
+      --fullchain-file /var/lib/xray/cert/fullchain.pem \
+      --key-file /var/lib/xray/cert/privkey.pem \
+      --reloadcmd "chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl reload nginx; systemctl restart xray"
 
-  echo -e "\n${GRN}========================================"
-  echo    "✅  Команда certbot успешно выполнена"
-  echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
-  echo    "========================================"
-  echo -e "${NC}"
+    chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
+
+    echo -e "\n${GRN}========================================"
+    echo    "✅  Сертификат успешно выпущен и установлен!"
+    echo    "✅  acme.sh настроил автообновление через cron"
+    echo    "========================================"
+    echo -e "${NC}"
 else
-  echo -e "\n${RED}========================================"
-  echo    "❌  CERTBOT ЗАВЕРШИЛСЯ С ОШИБКОЙ"
-  echo    "❌  Если сервер в РФ — используйте ZeroSSL / proxy!"
-  echo    "========================================"
-  echo -e "${NC}"
-  exit 1
+    echo -e "\n${RED}========================================"
+    echo    "❌  ОШИБКА: не удалось выпустить сертификат через acme.sh"
+    echo    "========================================"
+    echo -e "${NC}"
+    exit 1
 fi
-# Блок CERTBOT - END
+# ==========================================
 
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)

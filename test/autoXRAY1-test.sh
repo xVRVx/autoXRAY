@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 122 ${NC}"
+echo -e "${GRN}Версия: 123 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -929,7 +929,7 @@ $linkTLS1
 ${YEL}HYSTERIA2 (Порт 443 UDP) ${NC}
 $hy2
 
-${YEL}VLESS XHTTP TLS EXTRA (Порт 443 TCP) ${NC}
+${YEL}VLESS XHTTP TLS EXTRA (Порт 443 TCP - для моста) ${NC}
 $linkTLS2
 
 ${YEL}Ваша json страничка подписки ${NC}
