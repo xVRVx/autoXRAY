@@ -7,10 +7,16 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 119-Bridge ${NC}"
+echo -e "${GRN}Версия: 122-Bridge ${NC}"
 sleep 1
 
-[[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
+[[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
+
+# Проверка, что система именно Debian
+if [ ! -f /etc/debian_version ]; then
+    echo -e "${RED}❌ Ошибка: этот скрипт предназначен только для Debian!${NC}"
+    exit 1
+fi
 
 DOMAIN=$1
 shift
@@ -95,8 +101,20 @@ done
 
 SERVER_PORT=443
 
-echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
-apt-get update && apt-get install curl jq dnsutils openssl nginx certbot wget tar -y
+echo -e "${YEL}Подготовка официального репозитория Nginx для Debian...${NC}"
+apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring jq dnsutils openssl certbot wget tar
+
+# Добавление ключа и репозитория nginx.org
+curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor --yes -o /usr/share/keyrings/nginx-archive-keyring.gpg
+
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian $(lsb_release -cs) nginx" \
+    | tee /etc/apt/sources.list.d/nginx.list >/dev/null
+
+echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" \
+    | tee /etc/apt/preferences.d/99nginx >/dev/null
+
+apt-get update
+apt-get install -y nginx
 systemctl enable --now nginx
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
@@ -180,14 +198,20 @@ EOF
 ulimit -n 65535
 echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
 
+# Установка Xray
+bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.7.28
+
+# Создание директории сайта
+WEB_PATH="/var/www/$DOMAIN"
+mkdir -p "$WEB_PATH"
+
+# Генерируем сайт маскировку
+bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page3.sh)" -- "$WEB_PATH"
+
 # Блок CERTBOT - START
-if [ -f /etc/nginx/sites-available/default ]; then
-    CONFIG_PATH="/etc/nginx/sites-available/default"
-	echo -e "${GRN}Обнаружена стандартная сборка nginx. ${NC}"
-elif [ -f /etc/nginx/conf.d/default.conf ]; then
-    CONFIG_PATH="/etc/nginx/conf.d/default.conf"
-	echo -e "${YEL}Обнаружена нестандартная сборка nginx. Предварительная настройка NGINX для CERTBOT ${NC}"
-	mkdir -p /var/www/html
+# В официальной сборке Nginx для Debian конфиг всегда в conf.d/default.conf
+CONFIG_PATH="/etc/nginx/conf.d/default.conf"
+mkdir -p /var/www/html
 
 cat <<EOF > "$CONFIG_PATH"
 server {
@@ -204,37 +228,38 @@ server {
 	}
 }
 EOF
-	systemctl reload nginx
-else
-    echo -e "${RED}Не найден ни один default конфиг nginx${NC}"
-    exit 1
-fi
+systemctl reload nginx
 
 mkdir -p /var/lib/xray/cert/
 
 if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
-    cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
-    cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
-    chmod 744 /var/lib/xray/cert/privkey.pem
-    chmod 744 /var/lib/xray/cert/fullchain.pem
+    cp -L /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
+    cp -L /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
+    chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
 fi
 
 certbot certonly --webroot -w /var/www/html \
   -d $DOMAIN \
   -m mail@$DOMAIN \
   --agree-tos --non-interactive \
-  --deploy-hook "systemctl reload nginx; cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem; cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/fullchain.pem; systemctl restart xray"
+  --deploy-hook "systemctl reload nginx; cp -L /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem; cp -L /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl restart xray"
 
 RET=$?
 
 if [ $RET -eq 0 ]; then
+  cp -L /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
+  cp -L /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
+  chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
+
   echo -e "\n${GRN}========================================"
+  echo    "✅  Команда certbot успешно выполнена"
   echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
   echo    "========================================"
   echo -e "${NC}"
 else
   echo -e "\n${RED}========================================"
   echo    "❌  CERTBOT ЗАВЕРШИЛСЯ С ОШИБКОЙ"
+  echo    "❌  Если сервер в РФ — используйте ZeroSSL / proxy!"
   echo    "========================================"
   echo -e "${NC}"
   exit 1
@@ -267,7 +292,7 @@ RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
 AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
 AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
-# Конфиг Nginx с сокетами и проксированием XHTTP
+# Конфиг Nginx с сокетами и проксированием XHTTP (без мертвого ssl-сокета)
 cat <<EOF > "$CONFIG_PATH"
 map \$http_upgrade \$connection_upgrade {
     default upgrade;
@@ -277,7 +302,6 @@ map \$http_upgrade \$connection_upgrade {
 server {
     server_name $DOMAIN;
 
-    listen unix:/dev/shm/nginx.sock ssl http2 proxy_protocol;
     listen unix:/dev/shm/nginxTLS.sock proxy_protocol;
     listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
 
@@ -291,33 +315,25 @@ server {
     root /var/www/$DOMAIN;
     index index.html;
 
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-
-    ssl_session_timeout 1d;
-    ssl_session_cache shared:MozSSL:10m;
-    ssl_session_tickets off;
-
-    ssl_certificate "/etc/letsencrypt/live/$DOMAIN/fullchain.pem";
-    ssl_certificate_key "/etc/letsencrypt/live/$DOMAIN/privkey.pem";
-
     location = /${path_subpage}.html {
         try_files \$uri =404;
     }
 
     location = /${path_subpage}.json {
         add_header profile-title "base64:YXV0b1hSQVk=";
-        add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9zaXRlOmNhdGVnb3J5LWFkcyIsImdlb3NpdGU6d2luLXNweSJdLCJCbG9ja0lwIjpbXSwiRG9tYWluU3RyYXRlZ3kiOiJJUElmTm9uTWF0Y2giLCJGYWtlRE5TIjoiZmFsc2UiLCJVc2VDaHVua0ZpbGVzIjoiZmFsc2UifQ";
+        add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9pcDpjYXRlZ29yeS1hZHMiLCJnZW9zaXRlOndpbi1zcHkiXSwiQmxvY2tJcCI6W10sIkRvbWFpblN0cmF0ZWd5IjoiSVBJZk5vbk1hdGNoIiwiRmFrZUROUyI6ImZhbHNlIiwiVXNlQ2h1bmtGaWxlcyI6ImZhbHNlIn0";
         add_header routing-enable 0;
         try_files \$uri =404;
     }
 
-    # Вход для XHTTP TLS
+    # Вход для XHTTP TLS (буферизация отключена)
     location /${path_xhttp} {
         proxy_pass http://127.0.0.1:8400;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
+
+        proxy_buffering off;
+        proxy_request_buffering off;
     }
 
     location /api/v1/authenticate {
@@ -353,16 +369,6 @@ server {
 EOF
 
 systemctl restart nginx
-
-# Создание директории сайта
-WEB_PATH="/var/www/$DOMAIN"
-mkdir -p "$WEB_PATH"
-
-# Генерируем сайт маскировку
-bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page3.sh)" -- "$WEB_PATH"
-
-# Установка Xray
-bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.7.28
 
 SCRIPT_DIR=/usr/local/etc/xray
 

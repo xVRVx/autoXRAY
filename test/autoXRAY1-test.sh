@@ -7,10 +7,16 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 120 ${NC}"
+echo -e "${GRN}Версия: 122 ${NC}"
 sleep 1
 
-[[ $EUID -eq 0 ]] || { echo -e "${RED}❌ скрипту нужны root права ${NC}"; exit 1; }
+[[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
+
+# Проверка, что система именно Debian
+if [ ! -f /etc/debian_version ]; then
+    echo -e "${RED}❌ Ошибка: этот скрипт предназначен только для Debian!${NC}"
+    exit 1
+fi
 
 DOMAIN=$1
 
@@ -19,8 +25,20 @@ if [ -z "$DOMAIN" ]; then
     exit 1
 fi
 
-echo -e "${YEL}Обновление и установка необходимых пакетов...${NC}"
-apt-get update && apt-get install curl jq dnsutils openssl nginx certbot wget tar -y
+echo -e "${YEL}Подготовка официального репозитория Nginx для Debian...${NC}"
+apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring jq dnsutils openssl certbot wget tar
+
+# Добавление ключа и репозитория nginx.org
+curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor --yes -o /usr/share/keyrings/nginx-archive-keyring.gpg
+
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian $(lsb_release -cs) nginx" \
+    | tee /etc/apt/sources.list.d/nginx.list >/dev/null
+
+echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" \
+    | tee /etc/apt/preferences.d/99nginx >/dev/null
+
+apt-get update
+apt-get install -y nginx
 systemctl enable --now nginx
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
@@ -115,13 +133,9 @@ bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/g
 bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.7.28
 
 # Блок CERTBOT - START
-if [ -f /etc/nginx/sites-available/default ]; then
-    CONFIG_PATH="/etc/nginx/sites-available/default"
-	echo -e "${GRN}Обнаружена стандартная сборка nginx. ${NC}"
-elif [ -f /etc/nginx/conf.d/default.conf ]; then
-    CONFIG_PATH="/etc/nginx/conf.d/default.conf"
-	echo -e "${YEL}Обнаружена нестандартная сборка nginx. Предварительная настройка NGINX для CERTBOT ${NC}"
-	mkdir -p /var/www/html
+# В официальной сборке Nginx для Debian конфиг всегда в conf.d/default.conf
+CONFIG_PATH="/etc/nginx/conf.d/default.conf"
+mkdir -p /var/www/html
 
 cat <<EOF > "$CONFIG_PATH"
 server {
@@ -138,11 +152,7 @@ server {
 	}
 }
 EOF
-	systemctl reload nginx
-else
-    echo -e "${RED}Не найден ни один default конфиг nginx${NC}"
-    exit 1
-fi
+systemctl reload nginx
 
 mkdir -p /var/lib/xray/cert/
 
@@ -205,7 +215,7 @@ RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
 AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
 AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
-# Конфиг Nginx (без gRPC)
+# Конфиг Nginx
 cat <<EOF > "$CONFIG_PATH"
 map \$http_upgrade \$connection_upgrade {
     default upgrade;
@@ -234,7 +244,7 @@ server {
 
     location = /${path_subpage}.json {
         add_header profile-title "base64:YXV0b1hSQVk=";
-        add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9zaXRlOmNhdGVnb3J5LWFkcyIsImdlb3NpdGU6d2luLXNweSJdLCJCbG9ja0lwIjpbXSwiRG9tYWluU3RyYXRlZ3kiOiJJUElmTm9uTWF0Y2giLCJGYWtlRE5TIjoiZmFsc2UiLCJVc2VDaHVua0ZpbGVzIjoiZmFsc2UifQ";
+        add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9pcDpjYXRlZ29yeS1hZHMiLCJnZW9zaXRlOndpbi1zcHkiXSwiQmxvY2tJcCI6W10sIkRvbWFpblN0cmF0ZWd5IjoiSVBJZk5vbk1hdGNoIiwiRmFrZUROUyI6ImZhbHNlIiwiVXNlQ2h1bmtGaWxlcyI6ImZhbHNlIn0";
         add_header routing-enable 0;
         try_files \$uri =404;
     }
@@ -244,6 +254,9 @@ server {
         proxy_pass http://127.0.0.1:8400;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
+
+        proxy_buffering off;
+        proxy_request_buffering off;
     }
 
     # Для сайта
@@ -397,8 +410,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           ]
         },
         "hysteriaSettings": {
-          "version": 2,
-          "auth": "${xray_shortIds_vrv}"
+          "version": 2
         },
         "finalmask": {
           "quicParams": {
@@ -407,6 +419,14 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
             "brutalDown": "70 mbps"
           }
         }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
       }
     },
     {
@@ -700,9 +720,9 @@ HYSTERIA2='{
 		"serverName": "$DOMAIN",
 		"alpn": [
 			"h3"
-		]
+		],
+		"fingerprint": "$fpBro"
 	},
-	"fingerprint": "$fpBro",
 	"hysteriaSettings": {
 		"version": 2,
 		"auth": "${xray_shortIds_vrv}"
