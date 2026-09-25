@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 123 ${NC}"
+echo -e "${GRN}Версия: 124 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -26,7 +26,7 @@ if [ -z "$DOMAIN" ]; then
 fi
 
 echo -e "${YEL}Подготовка официального репозитория Nginx для Debian...${NC}"
-apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring jq dnsutils openssl certbot wget tar
+apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring jq dnsutils openssl wget tar socat cron
 
 # Добавление ключа и репозитория nginx.org
 curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor --yes -o /usr/share/keyrings/nginx-archive-keyring.gpg
@@ -40,6 +40,7 @@ echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 
 apt-get update
 apt-get install -y nginx
 systemctl enable --now nginx
+systemctl enable --now cron
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]' | head -n 1)
@@ -132,8 +133,9 @@ bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/g
 # Установка Xray
 bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.7.28
 
-# Блок CERTBOT - START
-# В официальной сборке Nginx для Debian конфиг всегда в conf.d/default.conf
+# ==========================================
+# Блок ACME.SH (Установка и выпуск сертификата)
+# ==========================================
 CONFIG_PATH="/etc/nginx/conf.d/default.conf"
 mkdir -p /var/www/html
 
@@ -156,38 +158,45 @@ systemctl reload nginx
 
 mkdir -p /var/lib/xray/cert/
 
-if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
-    cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem
-    cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem
-    chmod 744 /var/lib/xray/cert/privkey.pem
-    chmod 744 /var/lib/xray/cert/fullchain.pem
-fi
+echo -e "\n${YEL}Установка acme.sh...${NC}"
+curl -sL https://get.acme.sh | sh -s email=mail@$DOMAIN
+ACME_BIN="$HOME/.acme.sh/acme.sh"
 
-certbot certonly --webroot -w /var/www/html \
-  -d $DOMAIN \
-  -m mail@$DOMAIN \
-  --agree-tos --non-interactive \
-  --deploy-hook "systemctl reload nginx; cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /var/lib/xray/cert/fullchain.pem; cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/privkey.pem; chmod 744 /var/lib/xray/cert/fullchain.pem; systemctl restart xray"
+# Регистрируем аккаунт в ZeroSSL напрямую через ACME
+$ACME_BIN --register-account -m mail@$DOMAIN --server zerossl
+
+echo -e "\n${YEL}Выпуск сертификата (сначала ZeroSSL, затем Let's Encrypt)...${NC}"
+$ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server zerossl --keylength ec-256
 
 RET=$?
+if [ $RET -ne 0 ]; then
+    echo -e "${YEL}ZeroSSL не ответил, пробуем через Let's Encrypt...${NC}"
+    $ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server letsencrypt --keylength ec-256
+    RET=$?
+fi
 
 if [ $RET -eq 0 ]; then
-  echo -e "\n${GRN}========================================"
-  echo    "✅  Команда certbot успешно выполнена"
-  echo    "✅  Сертификат https от letsencrypt ПОЛУЧЕН"
-  echo    "========================================"
-  echo -e "${NC}"
+    # Установка сертификата и настройка автообновления
+    $ACME_BIN --install-cert -d "$DOMAIN" --ecc \
+      --fullchain-file /var/lib/xray/cert/fullchain.pem \
+      --key-file /var/lib/xray/cert/privkey.pem \
+      --reloadcmd "chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl reload nginx; systemctl restart xray"
+
+    chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
+
+    echo -e "\n${GRN}========================================"
+    echo    "✅  Сертификат успешно выпущен и установлен!"
+    echo    "✅  acme.sh настроил автообновление через cron"
+    echo    "========================================"
+    echo -e "${NC}"
 else
-  echo -e "\n${RED}========================================"
-  echo    "❌  CERTBOT ЗАВЕРШИЛСЯ С ОШИБКОЙ"
-  echo    "❌  Сертификат https от letsencrypt НЕ ПОЛУЧЕН!"
-  echo    "❌  Смотрите выше логи процесса получения сертификата"
-  echo    "❌  Код возврата: $RET"
-  echo    "========================================"
-  echo -e "${NC}"
-  exit 1
+    echo -e "\n${RED}========================================"
+    echo    "❌  ОШИБКА: не удалось выпустить сертификат через acme.sh"
+    echo    "========================================"
+    echo -e "${NC}"
+    exit 1
 fi
-# Блок CERTBOT - END
+# ==========================================
 
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
@@ -779,7 +788,7 @@ OUT_XHTTP='{
   echo ","
   print_config "$HYSTERIA2"      "🇪🇺 HYSTERIA2 (UDP 443)"
   echo ","
-  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS (443)"
+  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA (443)"
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
 
@@ -945,7 +954,5 @@ ${GRN}$configListLink ${NC}
 	для vless v2RayTun или Throne
 
 Внутри клиента открыт socks5 на 10808, 2080 и http на 10809.
-(На сервере порт SOCKS5 закрыт и доступен только локально на 127.0.0.1:10443)
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
-"

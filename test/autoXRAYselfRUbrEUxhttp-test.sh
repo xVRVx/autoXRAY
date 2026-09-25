@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 123-Bridge ${NC}"
+echo -e "${GRN}Версия: 124-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -300,7 +300,7 @@ RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
 AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
 AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
-# Конфиг Nginx с сокетами и проксированием XHTTP (без мертвого ssl-сокета)
+# Конфиг Nginx с сокетами и проксированием XHTTP 
 cat <<EOF > "$CONFIG_PATH"
 map \$http_upgrade \$connection_upgrade {
     default upgrade;
@@ -1102,7 +1102,6 @@ ${GRN}$configListLink ${NC}
 - Windows: конфиги Happ или winLoadXRAY или v2rayN
 
 На сервере-мосте открыты только порты 80 (HTTP) и 443 (HTTPS/TLS).
-SOCKS5 закрыт и работает строго локально (127.0.0.1:10443).
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
 "
