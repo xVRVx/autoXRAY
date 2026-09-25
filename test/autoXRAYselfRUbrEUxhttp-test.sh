@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 130-Bridge ${NC}"
+echo -e "${GRN}Версия: 131-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -328,7 +328,7 @@ EOF
 EOF
 )"
 
-    # Ставим маршруты vlessRoute на первое место
+    # Маршруты vlessRoute выносятся первыми
     ROUTING_RULES+="$(cat <<EOF
       { "vlessRoute": "$ROUTE_ID", "outboundTag": "proxy-$i" },
 EOF
@@ -382,11 +382,35 @@ cat << EOF > "$SCRIPT_DIR/config.json"
     "error": "/var/log/xray/error.log",
     "loglevel": "warning"
   },
+  "burstObservatory": {
+    "pingConfig": {
+      "timeout": "3s",
+      "interval": "40s",
+      "sampling": 1,
+      "destination": "https://www.gstatic.com/generate_204",
+      "connectivity": ""
+    },
+    "subjectSelector": [
+      "proxy"
+    ]
+  },
   "dns": {
     "servers": [
-      "https+local://77.88.8.8/dns-query",
-      "8.8.8.8",
-      "1.1.1.1"
+      {
+        "address": "https+local://77.88.8.8/dns-query",
+        "domains": [
+          "geosite:category-ru",
+          "geosite:yandex",
+          "geosite:vk",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai"
+        ],
+        "skipFallback": true
+      },
+      "https://8.8.4.4/dns-query",
+      "https://8.8.8.8/dns-query",
+      "https://1.1.1.1/dns-query"
     ],
     "queryStrategy": "UseIPv4"
   },
@@ -424,6 +448,7 @@ $CLIENTS_VISION
             }
           ],
           "minVersion": "1.2",
+          "cipherSuites": "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
           "alpn": [ "h2", "http/1.1" ]
         }
       },
@@ -455,6 +480,23 @@ $CLIENTS_XHTTP
         "enabled": true,
         "destOverride": [ "http", "tls", "quic" ]
       }
+    },
+    {
+      "tag": "RUsocks5",
+      "port": 10443,
+      "listen": "127.0.0.1",
+      "protocol": "mixed",
+      "settings": {
+        "ip": "127.0.0.1",
+        "udp": true,
+        "auth": "password",
+        "accounts": [
+          {
+            "user": "$socksUser",
+            "pass": "$socksPasw"
+          }
+        ]
+      }
     }
   ],
   "outbounds": [
@@ -474,15 +516,97 @@ $OUTBOUNDS
   "routing": {
     "domainMatcher": "hybrid",
     "domainStrategy": "IPIfNonMatch",
+    "balancers": [
+      {
+        "tag": "Super_Balancer",
+        "selector": [
+          "proxy"
+        ],
+        "strategy": {
+          "type": "leastLoad",
+          "settings": {
+            "maxRTT": "1s",
+            "expected": $COUNT,
+            "baselines": [
+              "1s"
+            ],
+            "tolerance": 0.01
+          }
+        },
+        "fallbackTag": "direct"
+      }
+    ],
     "rules": [
 $ROUTING_RULES
       {
-        "port": "53",
+        "inboundTag": [
+          "RUsocks5"
+        ],
+        "balancerTag": "Super_Balancer"
+      },
+      {
+        "ip": [
+          "8.8.8.8",
+          "8.8.4.4",
+          "1.1.1.1"
+        ],
+        "port": "53,443",
+        "balancerTag": "Super_Balancer"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "port": "25, 135, 137-139, 445",
+        "outboundTag": "block"
+      },
+      {
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "domain": [
+          "geosite:category-ads",
+          "geosite:win-spy",
+          "geosite:private"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "domain": [
+          "habr.com",
+          "apkmirror.com",
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
+          "geosite:category-ip-geo-detect"
+        ],
+        "balancerTag": "Super_Balancer"
+      },
+      {
+        "domain": [
+          "testipv6.net",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:category-ru"
+        ],
         "outboundTag": "direct"
       },
       {
-        "ip": [ "geoip:private" ],
-        "outboundTag": "block"
+        "ip": [
+          "geoip:ru"
+        ],
+        "outboundTag": "direct"
       }
     ]
   }
