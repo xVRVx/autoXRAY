@@ -798,11 +798,11 @@ HYSTERIA2='{
 # Порядок в клиентском конфиге: XHTTP -> RAW VISION -> HYSTERIA2
 (
   echo "["
-  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA (443 - для моста)"
+  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA"
   echo ","
-  print_config "$OUT_VISION"    "🇪🇺 VLESS RAW TLS VISION (443)"
+  print_config "$OUT_VISION"    "🇪🇺 VLESS RAW TLS VISION"
   echo ","
-  print_config "$HYSTERIA2"      "🇪🇺 HYSTERIA2 (UDP 443)"
+  print_config "$HYSTERIA2"      "🇪🇺 HYSTERIA2"
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
 
