@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 134-Bridge ${NC}"
+echo -e "${GRN}Версия: 135-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -278,7 +278,7 @@ server {
     }
 
     location /${path_xhttp} {
-        proxy_pass http://127.0.0.1:8400;
+        proxy_pass http://127.0.0.1:3333;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_buffering off;
@@ -457,7 +457,7 @@ $CLIENTS_VISION
     },
     {
       "tag": "RUbrEUxhttpTLS",
-      "port": 8400,
+      "port": 3333,
       "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
