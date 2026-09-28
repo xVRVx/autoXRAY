@@ -118,19 +118,14 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 systemctl disable nginx; systemctl stop nginx; apt remove nginx -y; ~/.acme.sh/acme.sh --uninstall 2>/dev/null
 ```
 
-**Удаляем WARP-cli**
-```
-echo -e "y" | bash <(curl -fsSL https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) u
-```
-
 **Удаляем XRAY**
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
 ```
 
-**Удаляем MTProto Telemt**
+**Удаляем web-proxy**
 ```
-systemctl stop telemt; systemctl disable telemt; rm -f /etc/systemd/system/telemt.service /bin/telemt; systemctl daemon-reload
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/refs/heads/main/test/telegram/web-proxy-uninstal.sh)"
 ```
 
 ## Создание конфигов для нескольких пользователей
@@ -189,20 +184,8 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/bridgeT
 
 ===========================================================================
 
-## Рекдактирование маршрутов WARP-cli
-В конфиге /usr/local/etc/xray/config.json находим 
-```bash
-	{
-	  "outboundTag": "warp",
-	  "domain": ["2ip.io","habr.com","geosite:google-gemini","geosite:canva","geosite:openai","geosite:whatsapp","geosite:category-ru"]
-	}
-```
-**Чтобы включить**: меняем "outboundTag": "direct" на "outboundTag": "warp"
-
-
-**Чтобы редактировать**: меняем строку "domain"
-
-После изменений ядро надо перезапустить: **systemctl restart xray**
+## Можно поставить WARP
+[Читайте тут](https://raw.githubusercontent.com/xVRVx/autoXRAY/refs/heads/main/test/warp/warp-readme.md)
 
 ===========================================================================
 # Сборка с web proxy для ТГ
