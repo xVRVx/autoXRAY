@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 133 ${NC}"
+echo -e "${GRN}Версия: 134 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -239,6 +239,9 @@ AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
 # Конфиг Nginx
 cat <<EOF > "$CONFIG_PATH"
+http2 on;
+server_tokens off;
+
 map \$http_upgrade \$connection_upgrade {
     default upgrade;
     ''      close;
@@ -246,9 +249,7 @@ map \$http_upgrade \$connection_upgrade {
 
 server {
     server_name $DOMAIN;
-
-    listen unix:/dev/shm/nginxTLS.sock proxy_protocol;
-    listen unix:/dev/shm/nginx_h2.sock http2 proxy_protocol;
+    listen unix:/dev/shm/nginx.sock proxy_protocol;
 
     set_real_ip_from unix:;
     real_ip_header proxy_protocol;
@@ -366,12 +367,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "decryption": "none",
         "fallbacks": [
           {
-            "alpn": "h2",
-            "dest": "/dev/shm/nginx_h2.sock",
-            "xver": 2
-          },
-          {
-            "dest": "/dev/shm/nginxTLS.sock",
+            "dest": "/dev/shm/nginx.sock",
             "xver": 2
           }
         ]
