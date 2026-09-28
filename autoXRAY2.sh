@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 136 ${NC}"
+echo -e "${GRN}Версия: 137 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -344,6 +344,15 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   },
   "dns": {
     "servers": [
+      {
+        "address": "https+local://xbox-dns.ru/dns-query",
+        "domains": [
+          "geosite:google-gemini"
+        ],
+        "finalQuery": true,
+        "skipFallback": true,
+        "queryStrategy": "UseIPv4"
+      },
       "https+local://8.8.4.4/dns-query",
       "https+local://8.8.8.8/dns-query",
       "https+local://1.1.1.1/dns-query",
