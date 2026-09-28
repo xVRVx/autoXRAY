@@ -7,15 +7,15 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 132-Bridge ${NC}"
+echo -e "${GRN}Версия: 133-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
 
-if [ ! -f /etc/debian_version ]; then
-    echo -e "${RED}❌ Ошибка: этот скрипт предназначен только для Debian!${NC}"
-    exit 1
-fi
+# Компактная проверка ОС (Debian / Ubuntu)
+. /etc/os-release 2>/dev/null
+[[ "$ID" =~ ^(debian|ubuntu)$ ]] || { echo -e "${RED}❌ Ошибка: поддерживаются только Debian и Ubuntu!${NC}"; exit 1; }
+[[ "$ID" == "ubuntu" ]] && echo -e "${YEL}⚠️ Внимание: запуск на Ubuntu. Рекомендованная система: Debian 12/13.${NC}"
 
 DOMAIN=$1
 shift
@@ -94,11 +94,13 @@ done
 
 SERVER_PORT=443
 
-echo -e "${YEL}Подготовка официального репозитория Nginx для Debian...${NC}"
-apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring jq dnsutils openssl wget tar socat cron
+KEYRING_PKG=$([ "$ID" = "ubuntu" ] && echo "ubuntu-keyring" || echo "debian-archive-keyring")
+
+echo -e "${YEL}Подготовка официального репозитория Nginx для $ID ($VERSION_CODENAME)...${NC}"
+apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release $KEYRING_PKG jq dnsutils openssl wget tar socat cron
 
 curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor --yes -o /usr/share/keyrings/nginx-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian $(lsb_release -cs) nginx" \
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/$ID $VERSION_CODENAME nginx" \
     | tee /etc/apt/sources.list.d/nginx.list >/dev/null
 
 echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" \
@@ -741,6 +743,7 @@ CLIENT_CONFIGS=""
 declare -a CONFIGS_ARRAY
 ALL_LINKS_TEXT=""
 
+# Порядок для каждой ноды: XHTTP -> RAW VISION -> DIRECT EU
 for (( i=0; i<COUNT; i++ )); do
     REMARK_BASE="${NODE_NAME[$i]}"
     if [ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi

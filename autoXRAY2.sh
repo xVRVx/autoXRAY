@@ -7,16 +7,15 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 132 ${NC}"
+echo -e "${GRN}Версия: 133 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
 
-# Проверка, что система именно Debian
-if [ ! -f /etc/debian_version ]; then
-    echo -e "${RED}❌ Ошибка: этот скрипт предназначен только для Debian!${NC}"
-    exit 1
-fi
+# Компактная проверка ОС (Debian / Ubuntu)
+. /etc/os-release 2>/dev/null
+[[ "$ID" =~ ^(debian|ubuntu)$ ]] || { echo -e "${RED}❌ Ошибка: поддерживаются только Debian и Ubuntu!${NC}"; exit 1; }
+[[ "$ID" == "ubuntu" ]] && echo -e "${YEL}⚠️ Внимание: запуск на Ubuntu. Рекомендованная система: Debian 12/13.${NC}"
 
 DOMAIN=$1
 
@@ -25,13 +24,15 @@ if [ -z "$DOMAIN" ]; then
     exit 1
 fi
 
-echo -e "${YEL}Подготовка официального репозитория Nginx для Debian...${NC}"
-apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring jq dnsutils openssl wget tar socat cron
+KEYRING_PKG=$([ "$ID" = "ubuntu" ] && echo "ubuntu-keyring" || echo "debian-archive-keyring")
+
+echo -e "${YEL}Подготовка официального репозитория Nginx для $ID ($VERSION_CODENAME)...${NC}"
+apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release $KEYRING_PKG jq dnsutils openssl wget tar socat cron
 
 # Добавление ключа и репозитория nginx.org
 curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor --yes -o /usr/share/keyrings/nginx-archive-keyring.gpg
 
-echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian $(lsb_release -cs) nginx" \
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/$ID $VERSION_CODENAME nginx" \
     | tee /etc/apt/sources.list.d/nginx.list >/dev/null
 
 echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" \
@@ -265,7 +266,7 @@ server {
 
     location = /${path_subpage}.json {
         add_header profile-title "base64:YXV0b1hSQVk=";
-        add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9pcDpjYXRlZ29yeS1hZHMiLCJnZW9zaXRlOndpbi1zcHkiXSwiQmxvY2tJcCI6W10sIkRvbWFpblN0cmF0ZWd5IjoiSVBJZk5vbk1hdGNoIiwiRmFrZUROUyI6ImZhbHNlIiwiVXNlQ2h1bmtGaWxlcyI6ImZhbHNlIn0";
+        add_header routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU1RvbWFpbiI6Imh0dHBzOi8vY2xvdWRmbGFyZS1kbnMuY29tL2Rucy1xdWVyeSIsIkRvbWVzdGljRE5TSVAiOiIxLjEuMS4xIiwiR2VvaXB1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdC9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ2VvaXAuZGF0IiwiR2Vvc2l0ZXVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Mb3lhbHNvbGRpZXIvdjJyYXktcnVsZXMtZGF0L3JlbGVhc2VzL2xhdGVzdC9kb3dubG9hZC9nZW9zaXRlLmRhdCIsIkxhc3RVcGRhdGVkIjoiMTc3NTIwNjEwOCIsIkRuc0hvc3RzIjp7fSwiRGlyZWN0U2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1ydSIsImdlb3NpdGU6cHJpdmF0ZSJdLCJEaXJlY3RJcCI6WyJnZW9pcDpwcml2YXRlIl0sIlByb3h5U2l0ZXMiOltdLCJQcm94eUlwIjpbXSwiQmxvY2tTaXRlcyI6WyJnZW9pcDpjYXRlZ29yeS1hZHMiLCJnZW9zaXRlOndpbi1zcHkiXSwiQmxvY2tJcCI6W10sIkRvbWFpblN0cmF0ZWd5IjoiSVBJZk5vbk1hdGNoIiwiRmFrZUROUyI6ImZhbHNlIiwiVXNlQ2h1bmtGaWxlcyI6ImZhbHNlIn0";
         add_header routing-enable 0;
         try_files \$uri =404;
     }
@@ -704,61 +705,7 @@ print_config() {
 TPL
 }
 
-# --- Config 1: VLESS RAW TLS VISION (Port 443 TCP)
-OUT_VISION='{
-  "tag": "proxy",
-  "protocol": "vless",
-  "settings": {
-    "vnext": [{
-      "address": "$DOMAIN",
-      "port": 443,
-      "users": [{ "id": "${xray_uuid_vrv}", "flow": "xtls-rprx-vision", "encryption": "none" }]
-    }]
-  },
-  "streamSettings": {
-    "network": "raw",
-    "security": "tls",
-    "tlsSettings": {
-      "serverName": "$DOMAIN",
-      "fingerprint": "$fpBro"
-    }
-  }
-}'
-
-# --- Config 2: HYSTERIA2 (Port 443 UDP)
-HYSTERIA2='{
-"tag": "proxy",
-"protocol": "hysteria",
-"settings": {
-	"address": "$DOMAIN",
-	"port": 443,
-	"version": 2
-},
-"streamSettings": {
-	"network": "hysteria",
-	"security": "tls",
-	"tlsSettings": {
-		"serverName": "$DOMAIN",
-		"alpn": [
-			"h3"
-		],
-		"fingerprint": "$fpBro"
-	},
-	"hysteriaSettings": {
-		"version": 2,
-		"auth": "${xray_shortIds_vrv}"
-	},
-	"finalmask": {
-		"quicParams": {
-			"congestion": "brutal",
-			"brutalUp": "70 mbps",
-			"brutalDown": "70 mbps"
-		}
-	}
-}
-}'
-
-# --- Config 3: VLESS XHTTP TLS (Port 443 TCP)
+# --- Config 1: VLESS XHTTP TLS (Port 443 TCP)
 OUT_XHTTP='{
   "tag": "proxy",
   "protocol": "vless",
@@ -794,13 +741,68 @@ OUT_XHTTP='{
   }
 }'
 
+# --- Config 2: VLESS RAW TLS VISION (Port 443 TCP)
+OUT_VISION='{
+  "tag": "proxy",
+  "protocol": "vless",
+  "settings": {
+    "vnext": [{
+      "address": "$DOMAIN",
+      "port": 443,
+      "users": [{ "id": "${xray_uuid_vrv}", "flow": "xtls-rprx-vision", "encryption": "none" }]
+    }]
+  },
+  "streamSettings": {
+    "network": "raw",
+    "security": "tls",
+    "tlsSettings": {
+      "serverName": "$DOMAIN",
+      "fingerprint": "$fpBro"
+    }
+  }
+}'
+
+# --- Config 3: HYSTERIA2 (Port 443 UDP)
+HYSTERIA2='{
+"tag": "proxy",
+"protocol": "hysteria",
+"settings": {
+	"address": "$DOMAIN",
+	"port": 443,
+	"version": 2
+},
+"streamSettings": {
+	"network": "hysteria",
+	"security": "tls",
+	"tlsSettings": {
+		"serverName": "$DOMAIN",
+		"alpn": [
+			"h3"
+		],
+		"fingerprint": "$fpBro"
+	},
+	"hysteriaSettings": {
+		"version": 2,
+		"auth": "${xray_shortIds_vrv}"
+	},
+	"finalmask": {
+		"quicParams": {
+			"congestion": "brutal",
+			"brutalUp": "70 mbps",
+			"brutalDown": "70 mbps"
+		}
+	}
+}
+}'
+
+# Порядок в клиентском конфиге: XHTTP -> RAW VISION -> HYSTERIA2
 (
   echo "["
+  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA (443 - для моста)"
+  echo ","
   print_config "$OUT_VISION"    "🇪🇺 VLESS RAW TLS VISION (443)"
   echo ","
   print_config "$HYSTERIA2"      "🇪🇺 HYSTERIA2 (UDP 443)"
-  echo ","
-  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA (443)"
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
 
@@ -810,16 +812,16 @@ echo -e "Перезапуск XRAY"
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
-hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:443/?sni=$DOMAIN&alpn=h3#Hysteria2"
-linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
 linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessXHTTPtls-autoXRAY"
+linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
+hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:443/?sni=$DOMAIN&alpn=h3#Hysteria2"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 CONFIGS_ARRAY=(
+    "VLESS XHTTP TLS EXTRA (для моста)|$linkTLS2"
     "VLESS RAW TLS VISION|$linkTLS1"
     "HYSTERIA2|$hy2"
-    "VLESS XHTTP TLS EXTRA|$linkTLS2"
 )
 ALL_LINKS_TEXT=""
 
@@ -891,7 +893,7 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <h2>➡️ Конфиги</h2>
 EOF
 
-# Цикл генерации строк конфигов
+# Цикл генерации строк конфигов (XHTTP -> RAW VISION -> HY2)
 idx=1
 for item in "${CONFIGS_ARRAY[@]}"; do
     title="${item%%|*}"
@@ -963,14 +965,14 @@ if [ "$INSTALL_MTP" = true ]; then
     echo -e "${CYAN}$MTProto${NC}\n"
 fi
 
-echo -e "${YEL}VLESS RAW TLS VISION (Порт 443 TCP) ${NC}
+echo -e "${YEL}VLESS XHTTP TLS EXTRA (Порт 443 TCP - для моста) ${NC}
+$linkTLS2
+
+${YEL}VLESS RAW TLS VISION (Порт 443 TCP) ${NC}
 $linkTLS1
 
 ${YEL}HYSTERIA2 (Порт 443 UDP) ${NC}
 $hy2
-
-${YEL}VLESS XHTTP TLS EXTRA (Порт 443 TCP - для моста) ${NC}
-$linkTLS2
 
 ${YEL}Ваша json страничка подписки ${NC}
 $subPageLink
