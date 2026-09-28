@@ -509,7 +509,20 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     {
       "tag": "block",
       "protocol": "blackhole"
-    }
+    },
+	{
+	  "tag": "warp",
+	  "protocol": "socks",
+	  "settings": {
+		"servers": [
+		  {
+			"address": "127.0.0.1",
+			"port": 40000
+		  }
+		]
+	  },
+	  "targetStrategy": "ForceIPv4v6"
+	}
   ],
   "routing": {
     "domainStrategy": "IPIfNonMatch",
