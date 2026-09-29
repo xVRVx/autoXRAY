@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 141 ${NC}"
+echo -e "${GRN}Версия: 143 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -268,19 +268,18 @@ server {
         try_files \$uri =404;
     }
 
-    # XHTTP endpoint (режим auto)
+    # XHTTP endpoint (режим stream-up через gRPC-модуль Nginx)
     location /${path_xhttp} {
-        proxy_pass http://127.0.0.1:3333;
-        proxy_http_version 1.1;
-        proxy_set_header Connection "";
-        proxy_set_header Host \$host;
-
-        proxy_buffering off;
-        proxy_request_buffering off;
         client_max_body_size 0;
+        client_body_timeout 1h;
+        grpc_read_timeout 1h;
+        grpc_send_timeout 1h;
 
-        proxy_read_timeout 1h;
-        proxy_send_timeout 1h;
+        grpc_set_header Host \$host;
+        grpc_set_header X-Real-IP \$remote_addr;
+        grpc_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+
+        grpc_pass grpc://127.0.0.1:3333;
     }
 
     # Для сайта
@@ -473,7 +472,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-          "mode": "auto",
+          "mode": "stream-up",
           "path": "/${path_xhttp}"
         },
         "security": "none",
@@ -724,7 +723,7 @@ print_config() {
 TPL
 }
 
-# --- Config 1: VLESS XHTTP TLS (Port 443 TCP - mode: auto)
+# --- Config 1: VLESS XHTTP TLS (Port 443 TCP - mode: stream-up via gRPC + xmux)
 OUT_XHTTP='{
   "tag": "proxy",
   "protocol": "vless",
@@ -738,21 +737,28 @@ OUT_XHTTP='{
   "streamSettings": {
     "network": "xhttp",
     "xhttpSettings": {
-      "mode": "auto",
+      "mode": "stream-up",
       "path": "/${path_xhttp}",
       "extra": {
-        "xPaddingBytes": "100-1000",
-        "scMaxEachPostBytes": 1000000,
-        "scMinPostsIntervalMs": 10,
-        "scMaxBufferedPosts": 50
+        "noGRPCHeader": false,
+        "xPaddingBytes": "400-800",
+        "scMaxEachPostBytes": 1500000,
+        "scMinPostsIntervalMs": 20,
+        "scStreamUpServerSecs": "60-240",
+        "xmux": {
+          "maxConcurrency": "3-5",
+          "cMaxReuseTimes": "1000-3000",
+          "hMaxRequestTimes": "400-700",
+          "hMaxReusableSecs": "1200-1800",
+          "hKeepAlivePeriod": 0
+        }
       }
     },
     "security": "tls",
     "tlsSettings": {
       "serverName": "$DOMAIN",
       "alpn": [
-        "h2",
-        "http/1.1"
+        "h2"
       ],
       "fingerprint": "$fpBro"
     }
@@ -816,7 +822,7 @@ HYSTERIA2='{
 # Порядок в клиентском конфиге: XHTTP -> RAW VISION -> HYSTERIA2
 (
   echo "["
-  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS auto"
+  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS stream-up"
   echo ","
   print_config "$OUT_VISION"    "🇪🇺 VLESS RAW TLS VISION"
   echo ","
@@ -830,14 +836,14 @@ echo -e "Перезапуск XRAY"
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
-linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2,http/1.1&type=xhttp&mode=auto&path=%2F${path_xhttp}&extra=%7B%22xPaddingBytes%22%3A%22100-1000%22%2C%22scMaxEachPostBytes%22%3A1000000%2C%22scMinPostsIntervalMs%22%3A10%2C%22scMaxBufferedPosts%22%3A50%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-auto"
+linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F${path_xhttp}&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%223-5%22%2C%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%2C%22hKeepAlivePeriod%22%3A0%7D%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-stream-up"
 linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
 hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:443/?sni=$DOMAIN&alpn=h3#Hysteria2"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 CONFIGS_ARRAY=(
-    "VLESS XHTTP TLS auto|$linkTLS2"
+    "VLESS XHTTP TLS stream-up (для моста)|$linkTLS2"
     "VLESS RAW TLS VISION|$linkTLS1"
     "HYSTERIA2|$hy2"
 )
@@ -983,7 +989,7 @@ if [ "$INSTALL_MTP" = true ]; then
     echo -e "${CYAN}$MTProto${NC}\n"
 fi
 
-echo -e "${YEL}VLESS XHTTP TLS auto (Порт 443 TCP) ${NC}
+echo -e "${YEL}VLESS XHTTP TLS stream-up (Порт 443 TCP - для моста) ${NC}
 $linkTLS2
 
 ${YEL}VLESS RAW TLS VISION (Порт 443 TCP) ${NC}
@@ -1006,5 +1012,4 @@ ${GRN}$configListLink ${NC}
 
 Внутри клиента открыт socks5 на 10808, 2080 и http на 10809.
 
-${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
-"
+${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}"
