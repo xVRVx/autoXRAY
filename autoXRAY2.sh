@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 137 ${NC}"
+echo -e "${GRN}Версия: 138 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -163,7 +163,6 @@ echo -e "\n${YEL}Проверка и установка acme.sh...${NC}"
 curl -sL https://get.acme.sh | sh -s email=mail@$DOMAIN
 ACME_BIN="$HOME/.acme.sh/acme.sh"
 
-# Проверяем, существует ли уже выпущенный сертификат для этого домена
 CERT_EXISTS=false
 if $ACME_BIN --list | grep -q "$DOMAIN"; then
     echo -e "${GRN}Сертификат для $DOMAIN уже существует в acme.sh.${NC}"
@@ -171,7 +170,6 @@ if $ACME_BIN --list | grep -q "$DOMAIN"; then
 fi
 
 if [ "$CERT_EXISTS" = false ]; then
-    # Регистрируем аккаунт в ZeroSSL напрямую через ACME
     $ACME_BIN --register-account -m mail@$DOMAIN --server zerossl
 
     echo -e "\n${YEL}Выпуск сертификата (сначала ZeroSSL, затем Let's Encrypt)...${NC}"
@@ -184,12 +182,10 @@ if [ "$CERT_EXISTS" = false ]; then
         RET=$?
     fi
 else
-    # Если сертификат уже был выпущен ранее, считаем статус успешным
     RET=0
 fi
 
 if [ $RET -eq 0 ]; then
-    # Установка сертификата и настройка автообновления
     $ACME_BIN --install-cert -d "$DOMAIN" --ecc \
       --fullchain-file /var/lib/xray/cert/fullchain.pem \
       --key-file /var/lib/xray/cert/privkey.pem \
@@ -272,14 +268,19 @@ server {
         try_files \$uri =404;
     }
 
-    # XHTTP endpoint
+    # XHTTP endpoint (оптимизировано под stream-up)
     location /${path_xhttp} {
         proxy_pass http://127.0.0.1:3333;
         proxy_http_version 1.1;
+        proxy_set_header Connection "";
         proxy_set_header Host \$host;
 
         proxy_buffering off;
         proxy_request_buffering off;
+        client_max_body_size 0;
+
+        proxy_read_timeout 1h;
+        proxy_send_timeout 1h;
     }
 
     # Для сайта
@@ -472,7 +473,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-          "mode": "auto",
+          "mode": "stream-up",
           "path": "/${path_xhttp}"
         },
         "security": "none",
@@ -737,25 +738,20 @@ OUT_XHTTP='{
   "streamSettings": {
     "network": "xhttp",
     "xhttpSettings": {
-		"extra": {
-			"headers": {},
-			"noGRPCHeader": false,
-			"scMaxEachPostBytes": 1500000,
-			"scMinPostsIntervalMs": 20,
-			"scStreamUpServerSecs": "60-240",
-			"xPaddingBytes": "400-800",
-			"xmux": {
-				"cMaxReuseTimes": "1000-3000",
-				"hKeepAlivePeriod": 0,
-				"hMaxRequestTimes": "400-700",
-				"hMaxReusableSecs": "1200-1800",
-				"maxConcurrency": "3-5",
-				"maxConnections": 0
-			}
-		},
-	"mode": "auto", "path": "/${path_xhttp}" },
+      "mode": "stream-up",
+      "path": "/${path_xhttp}",
+      "extra": {
+        "xPaddingBytes": "100-1000"
+      }
+    },
     "security": "tls",
-    "tlsSettings": { "serverName": "$DOMAIN", "fingerprint": "$fpBro" }
+    "tlsSettings": {
+      "serverName": "$DOMAIN",
+      "alpn": [
+        "h2"
+      ],
+      "fingerprint": "$fpBro"
+    }
   }
 }'
 
@@ -816,7 +812,7 @@ HYSTERIA2='{
 # Порядок в клиентском конфиге: XHTTP -> RAW VISION -> HYSTERIA2
 (
   echo "["
-  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS EXTRA"
+  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS stream-up"
   echo ","
   print_config "$OUT_VISION"    "🇪🇺 VLESS RAW TLS VISION"
   echo ","
@@ -830,14 +826,14 @@ echo -e "Перезапуск XRAY"
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
-linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F${path_xhttp}&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessXHTTPtls-autoXRAY"
+linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F${path_xhttp}&extra=%7B%22xPaddingBytes%22%3A%22100-1000%22%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-stream-up"
 linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
 hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:443/?sni=$DOMAIN&alpn=h3#Hysteria2"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 CONFIGS_ARRAY=(
-    "VLESS XHTTP TLS EXTRA (для моста)|$linkTLS2"
+    "VLESS XHTTP TLS stream-up (для моста)|$linkTLS2"
     "VLESS RAW TLS VISION|$linkTLS1"
     "HYSTERIA2|$hy2"
 )
@@ -983,7 +979,7 @@ if [ "$INSTALL_MTP" = true ]; then
     echo -e "${CYAN}$MTProto${NC}\n"
 fi
 
-echo -e "${YEL}VLESS XHTTP TLS EXTRA (Порт 443 TCP - для моста) ${NC}
+echo -e "${YEL}VLESS XHTTP TLS stream-up (Порт 443 TCP - для моста) ${NC}
 $linkTLS2
 
 ${YEL}VLESS RAW TLS VISION (Порт 443 TCP) ${NC}
