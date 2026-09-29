@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 137-Bridge ${NC}"
+echo -e "${GRN}Версия: 138-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -777,7 +777,8 @@ for (( i=0; i<COUNT; i++ )); do
             "noGRPCHeader": false,
             "xPaddingBytes": "400-800",
             "scMaxEachPostBytes": 1500000,
-            "scMinPostsIntervalMs": 20,
+            "scMinPostsIntervalMs": 10,
+            "scMaxBufferedPosts": 50,
             "scStreamUpServerSecs": "60-240",
             "xmux": {
               "maxConcurrency": "3-5",
@@ -860,7 +861,7 @@ EOF
         CLIENT_CONFIGS+=","
     fi
 
-    link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%223-5%22%2C%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%2C%22hKeepAlivePeriod%22%3A0%7D%7D&sni=$DOMAIN&fp=$fpBro#RU%3EEU_xhttp_$REMARK_BASE"
+    link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A10%2C%22scMaxBufferedPosts%22%3A50%2C%22scStreamUpServerSecs%22%3A%2260-240%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%223-5%22%2C%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%2C%22hKeepAlivePeriod%22%3A0%7D%7D&sni=$DOMAIN&fp=$fpBro#RU%3EEU_xhttp_$REMARK_BASE"
     link_raw="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#RU%3EEU_raw_$REMARK_BASE"
 
     CONFIGS_ARRAY+=( "XHTTP TLS stream-up (RU>EU $REMARK_BASE)|$link_xhttp" )
@@ -1002,4 +1003,5 @@ ${GRN}$subPageLink${NC}
 ${YEL}Ссылка на сохраненные конфиги (Web UI): ${NC}
 ${GRN}$configListLink ${NC}
 
-${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}"
+${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
+"
