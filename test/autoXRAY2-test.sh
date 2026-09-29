@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 144-test ${NC}"
+echo -e "${GRN}Версия: 142-test ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -723,7 +723,7 @@ print_config() {
 TPL
 }
 
-# --- Config 1: VLESS XHTTP TLS (Port 443 TCP - mode: stream-up via gRPC + xmux)
+# --- Config 1: VLESS XHTTP TLS (Port 443 TCP - mode: stream-up via gRPC)
 OUT_XHTTP='{
   "tag": "proxy",
   "protocol": "vless",
@@ -740,20 +740,9 @@ OUT_XHTTP='{
       "mode": "stream-up",
       "path": "/${path_xhttp}",
       "extra": {
-        "headers": {},
         "noGRPCHeader": false,
-        "xPaddingBytes": "400-800",
-        "scMaxEachPostBytes": 1500000,
-        "scMinPostsIntervalMs": 20,
-        "scStreamUpServerSecs": "60-240",
-        "xmux": {
-          "maxConnections": "2-3",
-          "maxConcurrency": "3-5",
-          "cMaxReuseTimes": "1000-3000",
-          "hMaxRequestTimes": "400-700",
-          "hMaxReusableSecs": "1200-1800",
-          "hKeepAlivePeriod": 0
-        }
+        "xPaddingBytes": "100-1000",
+        "scStreamUpServerSecs": "60-240"
       }
     },
     "security": "tls",
@@ -838,7 +827,7 @@ echo -e "Перезапуск XRAY"
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
-linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F${path_xhttp}&extra=%7B%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%2C%22xmux%22%3A%7B%22maxConnections%22%3A%222-3%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%2C%22hKeepAlivePeriod%22%3A0%7D%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-stream-up"
+linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F${path_xhttp}&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22100-1000%22%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-stream-up"
 linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
 hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:443/?sni=$DOMAIN&alpn=h3#Hysteria2"
 
