@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 139 ${NC}"
+echo -e "${GRN}Версия: 140 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -268,7 +268,7 @@ server {
         try_files \$uri =404;
     }
 
-    # XHTTP endpoint (режим stream-one)
+    # XHTTP endpoint (режим auto)
     location /${path_xhttp} {
         proxy_pass http://127.0.0.1:3333;
         proxy_http_version 1.1;
@@ -473,7 +473,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-          "mode": "stream-one",
+          "mode": "auto",
           "path": "/${path_xhttp}"
         },
         "security": "none",
@@ -724,7 +724,7 @@ print_config() {
 TPL
 }
 
-# --- Config 1: VLESS XHTTP TLS (Port 443 TCP)
+# --- Config 1: VLESS XHTTP TLS (Port 443 TCP - mode: auto)
 OUT_XHTTP='{
   "tag": "proxy",
   "protocol": "vless",
@@ -738,17 +738,21 @@ OUT_XHTTP='{
   "streamSettings": {
     "network": "xhttp",
     "xhttpSettings": {
-      "mode": "stream-one",
+      "mode": "auto",
       "path": "/${path_xhttp}",
       "extra": {
-        "xPaddingBytes": "100-1000"
+        "xPaddingBytes": "100-1000",
+        "scMaxEachPostBytes": 1000000,
+        "scMinPostsIntervalMs": 10,
+        "scMaxBufferedPosts": 50
       }
     },
     "security": "tls",
     "tlsSettings": {
       "serverName": "$DOMAIN",
       "alpn": [
-        "h2"
+        "h2",
+        "http/1.1"
       ],
       "fingerprint": "$fpBro"
     }
@@ -812,7 +816,7 @@ HYSTERIA2='{
 # Порядок в клиентском конфиге: XHTTP -> RAW VISION -> HYSTERIA2
 (
   echo "["
-  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS stream-one"
+  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS auto"
   echo ","
   print_config "$OUT_VISION"    "🇪🇺 VLESS RAW TLS VISION"
   echo ","
@@ -826,14 +830,14 @@ echo -e "Перезапуск XRAY"
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
-linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-one&path=%2F${path_xhttp}&extra=%7B%22xPaddingBytes%22%3A%22100-1000%22%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-stream-one"
+linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2,http/1.1&type=xhttp&mode=auto&path=%2F${path_xhttp}&extra=%7B%22xPaddingBytes%22%3A%22100-1000%22%2C%22scMaxEachPostBytes%22%3A1000000%2C%22scMinPostsIntervalMs%22%3A10%2C%22scMaxBufferedPosts%22%3A50%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-auto"
 linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
 hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:443/?sni=$DOMAIN&alpn=h3#Hysteria2"
 
 configListLink="https://$DOMAIN/$path_subpage.html"
 
 CONFIGS_ARRAY=(
-    "VLESS XHTTP TLS stream-one (для моста)|$linkTLS2"
+    "VLESS XHTTP TLS auto|$linkTLS2"
     "VLESS RAW TLS VISION|$linkTLS1"
     "HYSTERIA2|$hy2"
 )
@@ -979,7 +983,7 @@ if [ "$INSTALL_MTP" = true ]; then
     echo -e "${CYAN}$MTProto${NC}\n"
 fi
 
-echo -e "${YEL}VLESS XHTTP TLS stream-one (Порт 443 TCP - для моста) ${NC}
+echo -e "${YEL}VLESS XHTTP TLS auto (Порт 443 TCP) ${NC}
 $linkTLS2
 
 ${YEL}VLESS RAW TLS VISION (Порт 443 TCP) ${NC}
@@ -1003,4 +1007,3 @@ ${GRN}$configListLink ${NC}
 Внутри клиента открыт socks5 на 10808, 2080 и http на 10809.
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
-"
