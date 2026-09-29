@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 136-Bridge ${NC}"
+echo -e "${GRN}Версия: 137-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -277,12 +277,18 @@ server {
         try_files \$uri =404;
     }
 
+    # XHTTP endpoint (режим stream-up через gRPC-модуль Nginx)
     location /${path_xhttp} {
-        proxy_pass http://127.0.0.1:3333;
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_buffering off;
-        proxy_request_buffering off;
+        client_max_body_size 0;
+        client_body_timeout 1h;
+        grpc_read_timeout 1h;
+        grpc_send_timeout 1h;
+
+        grpc_set_header Host \$host;
+        grpc_set_header X-Real-IP \$remote_addr;
+        grpc_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+
+        grpc_pass grpc://127.0.0.1:3333;
     }
 
 $NGINX_web_proxy
@@ -469,7 +475,7 @@ $CLIENTS_XHTTP
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-          "mode": "auto",
+          "mode": "stream-up",
           "path": "/$path_xhttp"
         },
         "security": "none"
@@ -761,24 +767,24 @@ for (( i=0; i<COUNT; i++ )); do
         "security": "tls",
         "tlsSettings": {
           "serverName": "$DOMAIN",
+          "alpn": [ "h2" ],
           "fingerprint": "$fpBro"
         },
         "xhttpSettings": {
-          "mode": "auto",
+          "mode": "stream-up",
           "path": "/$path_xhttp",
           "extra": {
             "noGRPCHeader": false,
+            "xPaddingBytes": "400-800",
             "scMaxEachPostBytes": 1500000,
             "scMinPostsIntervalMs": 20,
             "scStreamUpServerSecs": "60-240",
-            "xPaddingBytes": "400-800",
             "xmux": {
+              "maxConcurrency": "3-5",
               "cMaxReuseTimes": "1000-3000",
-              "hKeepAlivePeriod": 0,
               "hMaxRequestTimes": "400-700",
               "hMaxReusableSecs": "1200-1800",
-              "maxConcurrency": "3-5",
-              "maxConnections": 0
+              "hKeepAlivePeriod": 0
             }
           }
         }
@@ -854,10 +860,10 @@ EOF
         CLIENT_CONFIGS+=","
     fi
 
-    link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&type=xhttp&headerType=&path=%2F$path_xhttp&host=&mode=auto&extra=%7B%22xmux%22%3A%7B%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22maxConcurrency%22%3A%223-5%22%2C%22maxConnections%22%3A0%2C%22hKeepAlivePeriod%22%3A0%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%7D%2C%22headers%22%3A%7B%7D%2C%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%7D&sni=$DOMAIN&fp=$fpBro&spx=%2F#RU%3EEU_xhttp_$REMARK_BASE"
+    link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A20%2C%22scStreamUpServerSecs%22%3A%2260-240%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%223-5%22%2C%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%2C%22hKeepAlivePeriod%22%3A0%7D%7D&sni=$DOMAIN&fp=$fpBro#RU%3EEU_xhttp_$REMARK_BASE"
     link_raw="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#RU%3EEU_raw_$REMARK_BASE"
 
-    CONFIGS_ARRAY+=( "XHTTP TLS (RU>EU $REMARK_BASE)|$link_xhttp" )
+    CONFIGS_ARRAY+=( "XHTTP TLS stream-up (RU>EU $REMARK_BASE)|$link_xhttp" )
     CONFIGS_ARRAY+=( "RAW VISION (RU>EU $REMARK_BASE)|$link_raw" )
     CONFIGS_ARRAY+=( "Direct EU ($REMARK_BASE)|${VLESS_URLS[$i]}" )
 done
@@ -996,5 +1002,4 @@ ${GRN}$subPageLink${NC}
 ${YEL}Ссылка на сохраненные конфиги (Web UI): ${NC}
 ${GRN}$configListLink ${NC}
 
-${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
-"
+${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}"
