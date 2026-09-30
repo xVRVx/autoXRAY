@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 145 - test ${NC}"
+echo -e "${GRN}Версия: 146 - test ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -106,7 +106,7 @@ case $fp_choice in
 esac
 # ============================
 
-# Включаем BBR и MTU Probing
+# Включаем BBR, MTU Probing и расширенные TCP-буферы ядра
 cat <<EOF > /etc/sysctl.d/999-autoXRAY.conf
 net.core.default_qdisc=fq
 net.ipv4.tcp_congestion_control=bbr
@@ -237,7 +237,7 @@ RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
 AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
 AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
-# Конфиг Nginx с расширенными буферами для максимального аплоада
+# Конфиг Nginx с ОЗУ-буферами для высокой скорости отдачи
 cat <<EOF > "$CONFIG_PATH"
 http2 on;
 server_tokens off;
@@ -272,7 +272,7 @@ server {
         try_files \$uri =404;
     }
 
-    # XHTTP endpoint (оптимизированные буферы под высокий upload)
+    # XHTTP endpoint (режим stream-up через gRPC-модуль Nginx с буферами 4M)
     location /${path_xhttp} {
         client_max_body_size 0;
         client_body_timeout 1h;
@@ -340,7 +340,7 @@ socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 # Экспортируем переменные для envsubst
 export xray_uuid_vrv xray_shortIds_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw fpBro
 
-# Создаем JSON конфигурацию сервера Xray (mode: auto в инбаунде xhttp)
+# Создаем JSON конфигурацию сервера Xray
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
   "log": {
@@ -351,15 +351,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   },
   "dns": {
     "servers": [
-      {
-        "address": "https+local://xbox-dns.ru/dns-query",
-        "domains": [
-          "geosite:google-gemini"
-        ],
-        "finalQuery": true,
-        "skipFallback": true,
-        "queryStrategy": "UseIPv4"
-      },
       "https+local://8.8.4.4/dns-query",
       "https+local://8.8.8.8/dns-query",
       "https+local://1.1.1.1/dns-query",
@@ -479,7 +470,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-          "mode": "auto",
+          "mode": "stream-up",
           "path": "/${path_xhttp}"
         },
         "security": "none",
@@ -730,161 +721,47 @@ print_config() {
 TPL
 }
 
-# --- 10 ТЕСТОВЫХ ВАРИАНТОВ XHTTP ВЫГРУЗКИ ---
-
-# 1. stream-up (стандартный буфер 2MB)
-OUT_XHTTP_1='{
-  "tag": "proxy", "protocol": "vless",
-  "settings": { "vnext": [{ "address": "$DOMAIN", "port": 443, "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }] }] },
+# --- Config 1: VLESS XHTTP TLS (Оптимальный для личного сервера: Stealth + High Upload)
+OUT_XHTTP='{
+  "tag": "proxy",
+  "protocol": "vless",
+  "settings": {
+    "vnext": [{
+      "address": "$DOMAIN",
+      "port": 443,
+      "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }]
+    }]
+  },
   "streamSettings": {
     "network": "xhttp",
     "xhttpSettings": {
-      "mode": "stream-up", "path": "/${path_xhttp}",
-      "extra": { "noGRPCHeader": false, "xPaddingBytes": "100-300", "scMaxEachPostBytes": 2000000, "scMinPostsIntervalMs": 5, "scStreamUpServerSecs": "120-300" }
-    },
-    "security": "tls", "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
-  }
-}'
-
-# 2. stream-up Heavy (большой размер POST - 10MB)
-OUT_XHTTP_2='{
-  "tag": "proxy", "protocol": "vless",
-  "settings": { "vnext": [{ "address": "$DOMAIN", "port": 443, "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }] }] },
-  "streamSettings": {
-    "network": "xhttp",
-    "xhttpSettings": {
-      "mode": "stream-up", "path": "/${path_xhttp}",
-      "extra": { "noGRPCHeader": false, "xPaddingBytes": "0", "scMaxEachPostBytes": 10485760, "scMinPostsIntervalMs": 1, "scStreamUpServerSecs": "300" }
-    },
-    "security": "tls", "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
-  }
-}'
-
-# 3. stream-up + xmux High Concurrency (высокий параллелизм xmux 8-16)
-OUT_XHTTP_3='{
-  "tag": "proxy", "protocol": "vless",
-  "settings": { "vnext": [{ "address": "$DOMAIN", "port": 443, "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }] }] },
-  "streamSettings": {
-    "network": "xhttp",
-    "xhttpSettings": {
-      "mode": "stream-up", "path": "/${path_xhttp}",
-      "extra": {
-        "noGRPCHeader": false, "scMaxEachPostBytes": 4000000,
-        "xmux": { "maxConcurrency": "8-16", "cMaxReuseTimes": "2000-5000", "hMaxRequestTimes": "1000", "hMaxReusableSecs": "1800" }
-      }
-    },
-    "security": "tls", "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
-  }
-}'
-
-# 4. stream-up NO-PADD (без паддинга, нулевой интервал между пакетами)
-OUT_XHTTP_4='{
-  "tag": "proxy", "protocol": "vless",
-  "settings": { "vnext": [{ "address": "$DOMAIN", "port": 443, "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }] }] },
-  "streamSettings": {
-    "network": "xhttp",
-    "xhttpSettings": {
-      "mode": "stream-up", "path": "/${path_xhttp}",
-      "extra": { "noGRPCHeader": false, "xPaddingBytes": "0", "scMaxEachPostBytes": 5000000, "scMinPostsIntervalMs": 0, "scMaxBufferedPosts": 100 }
-    },
-    "security": "tls", "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
-  }
-}'
-
-# 5. stream-one (один цельный двунаправленный стрим HTTP/2)
-OUT_XHTTP_5='{
-  "tag": "proxy", "protocol": "vless",
-  "settings": { "vnext": [{ "address": "$DOMAIN", "port": 443, "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }] }] },
-  "streamSettings": {
-    "network": "xhttp",
-    "xhttpSettings": {
-      "mode": "stream-one", "path": "/${path_xhttp}",
-      "extra": { "noGRPCHeader": false, "xPaddingBytes": "100-300" }
-    },
-    "security": "tls", "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
-  }
-}'
-
-# 6. stream-one + xmux
-OUT_XHTTP_6='{
-  "tag": "proxy", "protocol": "vless",
-  "settings": { "vnext": [{ "address": "$DOMAIN", "port": 443, "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }] }] },
-  "streamSettings": {
-    "network": "xhttp",
-    "xhttpSettings": {
-      "mode": "stream-one", "path": "/${path_xhttp}",
+      "mode": "stream-up",
+      "path": "/${path_xhttp}",
       "extra": {
         "noGRPCHeader": false,
-        "xmux": { "maxConcurrency": "4-8", "cMaxReuseTimes": "1000", "hMaxReusableSecs": "1800" }
+        "xPaddingBytes": "150-400",
+        "scMaxEachPostBytes": 3000000,
+        "scMinPostsIntervalMs": 0,
+        "scStreamUpServerSecs": "90-180",
+        "xmux": {
+          "maxConcurrency": "2-4",
+          "cMaxReuseTimes": "800-1500",
+          "hMaxReusableSecs": "900-1200"
+        }
       }
     },
-    "security": "tls", "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
+    "security": "tls",
+    "tlsSettings": {
+      "serverName": "$DOMAIN",
+      "alpn": [
+        "h2"
+      ],
+      "fingerprint": "$fpBro"
+    }
   }
 }'
 
-# 7. packet-up (потоковая передача пакетами)
-OUT_XHTTP_7='{
-  "tag": "proxy", "protocol": "vless",
-  "settings": { "vnext": [{ "address": "$DOMAIN", "port": 443, "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }] }] },
-  "streamSettings": {
-    "network": "xhttp",
-    "xhttpSettings": {
-      "mode": "packet-up", "path": "/${path_xhttp}",
-      "extra": { "noGRPCHeader": false, "scMaxEachPostBytes": 3000000 }
-    },
-    "security": "tls", "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
-  }
-}'
-
-# 8. auto mode (автоматический выбор режима клиентом)
-OUT_XHTTP_8='{
-  "tag": "proxy", "protocol": "vless",
-  "settings": { "vnext": [{ "address": "$DOMAIN", "port": 443, "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }] }] },
-  "streamSettings": {
-    "network": "xhttp",
-    "xhttpSettings": {
-      "mode": "auto", "path": "/${path_xhttp}",
-      "extra": { "noGRPCHeader": false }
-    },
-    "security": "tls", "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
-  }
-}'
-
-# 9. stream-up No xmux (без мультиплексирования, изоляция сокетов)
-OUT_XHTTP_9='{
-  "tag": "proxy", "protocol": "vless",
-  "settings": { "vnext": [{ "address": "$DOMAIN", "port": 443, "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }] }] },
-  "streamSettings": {
-    "network": "xhttp",
-    "xhttpSettings": {
-      "mode": "stream-up", "path": "/${path_xhttp}",
-      "extra": {
-        "noGRPCHeader": false, "scMaxEachPostBytes": 5000000,
-        "xmux": { "maxConcurrency": 1, "cMaxReuseTimes": 1 }
-      }
-    },
-    "security": "tls", "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
-  }
-}'
-
-# 10. stream-up Ultra (15MB буфер + повышенные лимиты)
-OUT_XHTTP_10='{
-  "tag": "proxy", "protocol": "vless",
-  "settings": { "vnext": [{ "address": "$DOMAIN", "port": 443, "users": [{ "id": "${xray_uuid_vrv}", "encryption": "none" }] }] },
-  "streamSettings": {
-    "network": "xhttp",
-    "xhttpSettings": {
-      "mode": "stream-up", "path": "/${path_xhttp}",
-      "extra": {
-        "noGRPCHeader": false, "scMaxEachPostBytes": 15000000, "scMinPostsIntervalMs": 0, "scMaxBufferedPosts": 200, "scStreamUpServerSecs": "600",
-        "xmux": { "maxConcurrency": "4-8", "cMaxReuseTimes": "5000" }
-      }
-    },
-    "security": "tls", "tlsSettings": { "serverName": "$DOMAIN", "alpn": ["h2"], "fingerprint": "$fpBro" }
-  }
-}'
-
-# Референсы: VLESS RAW Vision и Hysteria2
+# --- Config 2: VLESS RAW TLS VISION (Port 443 TCP)
 OUT_VISION='{
   "tag": "proxy",
   "protocol": "vless",
@@ -905,6 +782,7 @@ OUT_VISION='{
   }
 }'
 
+# --- Config 3: HYSTERIA2 (Port 443 UDP)
 HYSTERIA2='{
 "tag": "proxy",
 "protocol": "hysteria",
@@ -937,69 +815,31 @@ HYSTERIA2='{
 }
 }'
 
-# Сборка файла подписки JSON
+# Порядок в клиентском конфиге: XHTTP -> RAW VISION -> HYSTERIA2
 (
   echo "["
-  print_config "$OUT_XHTTP_1"   "1. XHTTP stream-up (Default)"
-  echo ","
-  print_config "$OUT_XHTTP_2"   "2. XHTTP stream-up (10MB Post)"
-  echo ","
-  print_config "$OUT_XHTTP_3"   "3. XHTTP stream-up (xmux 8-16)"
-  echo ","
-  print_config "$OUT_XHTTP_4"   "4. XHTTP stream-up (No-Padding)"
-  echo ","
-  print_config "$OUT_XHTTP_5"   "5. XHTTP stream-one"
-  echo ","
-  print_config "$OUT_XHTTP_6"   "6. XHTTP stream-one (xmux)"
-  echo ","
-  print_config "$OUT_XHTTP_7"   "7. XHTTP packet-up"
-  echo ","
-  print_config "$OUT_XHTTP_8"   "8. XHTTP auto"
-  echo ","
-  print_config "$OUT_XHTTP_9"   "9. XHTTP stream-up (No xmux)"
-  echo ","
-  print_config "$OUT_XHTTP_10"  "10. XHTTP stream-up (Ultra 15MB)"
+  print_config "$OUT_XHTTP"     "🇪🇺 VLESS XHTTP TLS stream-up"
   echo ","
   print_config "$OUT_VISION"    "🇪🇺 VLESS RAW TLS VISION"
   echo ","
-  print_config "$HYSTERIA2"     "🇪🇺 HYSTERIA2"
+  print_config "$HYSTERIA2"      "🇪🇺 HYSTERIA2"
   echo "]"
 ) | envsubst > "$WEB_PATH/$path_subpage.json"
 
 systemctl restart xray
 echo -e "Перезапуск XRAY"
 
-# Формирование ссылок URI для подключения
+# Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
-configListLink="https://$DOMAIN/$path_subpage.html"
 
-base_url="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&sni=$DOMAIN&fp=$fpBro&path=%2F${path_xhttp}"
-
-l_xh1="${base_url}&mode=stream-up&extra=%7B%22scMaxEachPostBytes%22%3A2000000%2C%22scMinPostsIntervalMs%22%3A5%7D#1-xhttp-stream-up-default"
-l_xh2="${base_url}&mode=stream-up&extra=%7B%22scMaxEachPostBytes%22%3A10485760%2C%22scMinPostsIntervalMs%22%3A1%7D#2-xhttp-stream-up-10MB"
-l_xh3="${base_url}&mode=stream-up&extra=%7B%22scMaxEachPostBytes%22%3A4000000%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%228-16%22%7D%7D#3-xhttp-stream-up-xmux8-16"
-l_xh4="${base_url}&mode=stream-up&extra=%7B%22xPaddingBytes%22%3A%220%22%2C%22scMaxEachPostBytes%22%3A5000000%2C%22scMinPostsIntervalMs%22%3A0%7D#4-xhttp-stream-up-nopadding"
-l_xh5="${base_url}&mode=stream-one#5-xhttp-stream-one"
-l_xh6="${base_url}&mode=stream-one&extra=%7B%22xmux%22%3A%7B%22maxConcurrency%22%3A%224-8%22%7D%7D#6-xhttp-stream-one-xmux"
-l_xh7="${base_url}&mode=packet-up&extra=%7B%22scMaxEachPostBytes%22%3A3000000%7D#7-xhttp-packet-up"
-l_xh8="${base_url}&mode=auto#8-xhttp-auto"
-l_xh9="${base_url}&mode=stream-up&extra=%7B%22xmux%22%3A%7B%22maxConcurrency%22%3A1%7D%7D#9-xhttp-stream-up-noxmux"
-l_xh10="${base_url}&mode=stream-up&extra=%7B%22scMaxEachPostBytes%22%3A15000000%2C%22scMinPostsIntervalMs%22%3A0%2C%22scMaxBufferedPosts%22%3A200%7D#10-xhttp-stream-up-ultra15MB"
-
+linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F${path_xhttp}&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A0%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-stream-up"
 linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
 hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:443/?sni=$DOMAIN&alpn=h3#Hysteria2"
 
+configListLink="https://$DOMAIN/$path_subpage.html"
+
 CONFIGS_ARRAY=(
-    "1. XHTTP stream-up (Default)|$l_xh1"
-    "2. XHTTP stream-up (10MB Post)|$l_xh2"
-    "3. XHTTP stream-up (xmux 8-16)|$l_xh3"
-    "4. XHTTP stream-up (No-Padding)|$l_xh4"
-    "5. XHTTP stream-one (Full Stream)|$l_xh5"
-    "6. XHTTP stream-one (xmux)|$l_xh6"
-    "7. XHTTP packet-up|$l_xh7"
-    "8. XHTTP auto|$l_xh8"
-    "9. XHTTP stream-up (No xmux)|$l_xh9"
-    "10. XHTTP stream-up (Ultra 15MB)|$l_xh10"
+    "VLESS XHTTP TLS stream-up (для моста)|$linkTLS2"
     "VLESS RAW TLS VISION|$linkTLS1"
     "HYSTERIA2|$hy2"
 )
@@ -1013,7 +853,7 @@ else
     MTProto=""
 fi
 
-# --- ЗАПИСЬ HEAD (СТАТИКА, СТИЛИ И JS) ---
+# --- ЗАПИСЬ HEAD (СТАТИКА, МИНИФИЦИРОВАННЫЕ СТИЛИ И JS) ---
 cat > "$WEB_PATH/$path_subpage.html" <<'EOF'
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
@@ -1052,7 +892,7 @@ EOF
 # --- ЗАПИСЬ BODY (ДИНАМИЧЕСКИЕ ДАННЫЕ) ---
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 
-<h2>📂 Ссылка на подписку (готовый конфиг клиента со всеми 12 профилями)</h2>
+<h2>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h2>
 <div class="config-row">
     <div class="config-label">Subscription</div>
     <div class="config-code" id="subLink">$subPageLink</div>
@@ -1067,13 +907,13 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
     <a href="happ://add/$subPageLink" class="btn">⚡ Add to HAPP</a>
     <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Download App</a>
 </div>
-<p>Маршрутизация встроена в профиль. В клиенте можно по очереди переключать 10 конфигураций XHTTP и проверять скорость Speedtest Upload.</p>
+<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включается, если вы пользовались сторонними сервисами.</p>
 
 
-<h2>➡️ Тестовые конфигурации</h2>
+<h2>➡️ Конфиги</h2>
 EOF
 
-# Цикл генерации строк конфигов
+# Цикл генерации строк конфигов (XHTTP -> RAW VISION -> HY2)
 idx=1
 for item in "${CONFIGS_ARRAY[@]}"; do
     title="${item%%|*}"
@@ -1092,7 +932,7 @@ EOF
     ((idx++))
 done
 
-# Добавляем Web Proxy блок
+# Добавляем Web Proxy блок (чистые tg:// ссылки)
 if [ "$INSTALL_MTP" = true ]; then
 cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 <div class="config-row">
@@ -1145,16 +985,28 @@ if [ "$INSTALL_MTP" = true ]; then
     echo -e "${CYAN}$MTProto${NC}\n"
 fi
 
-echo -e "${YEL}Ссылка на страницу со всеми 10 ключами:${NC}
-${GRN}$configListLink${NC}
+echo -e "${YEL}VLESS XHTTP TLS stream-up (Порт 443 TCP - для моста) ${NC}
+$linkTLS2
 
-${YEL}Прямая подписка (JSON для клиента):${NC}
-${GRN}$subPageLink${NC}
+${YEL}VLESS RAW TLS VISION (Порт 443 TCP) ${NC}
+$linkTLS1
 
-${CYAN}Рекомендация по тестам отдачи:${NC}
-1. Проверьте профиль ${GRN}#5 (stream-one)${NC} — он работает без нарезки на чанки и обычно дает максимум гигабита.
-2. Проверьте профили ${GRN}#2 и #10 (10MB / 15MB)${NC} — они проверяют пропускную способность увеличенных POST-запросов.
-3. Проверьте профиль ${GRN}#8 (auto)${NC} — автоматическое согласование протокола между клиентом и Xray.
+${YEL}HYSTERIA2 (Порт 443 UDP) ${NC}
+$hy2
+
+${YEL}Ваша json страничка подписки ${NC}
+$subPageLink
+
+${YEL}Ссылка на сохраненные конфиги ${NC}
+${GRN}$configListLink ${NC}
+
+Скопируйте подписку в специализированное приложение:
+- iOS: Happ или v2RayTun или v2rayN
+- Android: Happ или v2RayTun или v2rayNG
+- Windows: конфиги Happ или winLoadXRAY или v2rayN
+	для vless v2RayTun или Throne
+
+Внутри клиента открыт socks5 на 10808, 2080 и http на 10809.
 
 ${GRN}Поддержать автора: https://github.com/xVRVx/autoXRAY ${NC}
 "
