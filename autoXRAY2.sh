@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 144 ${NC}"
+echo -e "${GRN}Версия: 145 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -27,7 +27,7 @@ fi
 KEYRING_PKG=$([ "$ID" = "ubuntu" ] && echo "ubuntu-keyring" || echo "debian-archive-keyring")
 
 echo -e "${YEL}Подготовка официального репозитория Nginx для $ID ($VERSION_CODENAME)...${NC}"
-apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release $KEYRING_PKG jq dnsutils openssl wget tar socat cron
+apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release $KEYRING_PKG jq dnsutils openssl wget tar socat cron gettext-base
 
 # Добавление ключа и репозитория nginx.org
 curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor --yes -o /usr/share/keyrings/nginx-archive-keyring.gpg
@@ -106,14 +106,18 @@ case $fp_choice in
 esac
 # ============================
 
-# Включаем BBR и MTU Probing
+# Включаем BBR, MTU Probing и расширенные TCP-буферы ядра
 cat <<EOF > /etc/sysctl.d/999-autoXRAY.conf
 net.core.default_qdisc=fq
 net.ipv4.tcp_congestion_control=bbr
 net.ipv4.tcp_mtu_probing=1
+net.core.rmem_max=16777216
+net.core.wmem_max=16777216
+net.ipv4.tcp_rmem=4096 87380 16777216
+net.ipv4.tcp_wmem=4096 65536 16777216
 EOF
 sysctl --system >/dev/null 2>&1
-echo -e "${GRN}BBR и TCP MTU Probing активированы${NC}"
+echo -e "${GRN}BBR, TCP буферы и MTU Probing активированы${NC}"
 
 cat <<EOF > /etc/security/limits.d/99-autoXRAY.conf
 *       soft    nofile  1048576
@@ -233,7 +237,7 @@ RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
 AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
 AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
-# Конфиг Nginx
+# Конфиг Nginx с ОЗУ-буферами для высокой скорости отдачи
 cat <<EOF > "$CONFIG_PATH"
 http2 on;
 server_tokens off;
@@ -268,12 +272,15 @@ server {
         try_files \$uri =404;
     }
 
-    # XHTTP endpoint (режим stream-up через gRPC-модуль Nginx)
+    # XHTTP endpoint (режим stream-up через gRPC-модуль Nginx с буферами 4M)
     location /${path_xhttp} {
         client_max_body_size 0;
         client_body_timeout 1h;
+        client_body_buffer_size 4m;
+
         grpc_read_timeout 1h;
         grpc_send_timeout 1h;
+        grpc_buffer_size 4m;
 
         grpc_set_header Host \$host;
         grpc_set_header X-Real-IP \$remote_addr;
@@ -333,7 +340,7 @@ socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 # Экспортируем переменные для envsubst
 export xray_uuid_vrv xray_shortIds_vrv DOMAIN path_subpage path_xhttp WEB_PATH socksUser socksPasw fpBro
 
-# Создаем JSON конфигурацию сервера Xray (только Vision, Hy2, XHTTP, local SOCKS5)
+# Создаем JSON конфигурацию сервера Xray
 cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
   "log": {
@@ -344,15 +351,6 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
   },
   "dns": {
     "servers": [
-      {
-        "address": "https+local://xbox-dns.ru/dns-query",
-        "domains": [
-          "geosite:google-gemini"
-        ],
-        "finalQuery": true,
-        "skipFallback": true,
-        "queryStrategy": "UseIPv4"
-      },
       "https+local://8.8.4.4/dns-query",
       "https+local://8.8.8.8/dns-query",
       "https+local://1.1.1.1/dns-query",
@@ -442,8 +440,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "finalmask": {
           "quicParams": {
             "congestion": "brutal",
-            "brutalUp": "70 mbps",
-            "brutalDown": "70 mbps"
+            "brutalUp": "100 mbps",
+            "brutalDown": "100 mbps"
           }
         }
       },
@@ -723,7 +721,7 @@ print_config() {
 TPL
 }
 
-# --- Config 1: VLESS XHTTP TLS (Port 443 TCP - mode: stream-up via gRPC + xmux)
+# --- Config 1: VLESS XHTTP TLS (Оптимальный для личного сервера: Stealth + High Upload)
 OUT_XHTTP='{
   "tag": "proxy",
   "protocol": "vless",
@@ -741,17 +739,14 @@ OUT_XHTTP='{
       "path": "/${path_xhttp}",
       "extra": {
         "noGRPCHeader": false,
-        "xPaddingBytes": "400-800",
-        "scMaxEachPostBytes": 1500000,
-        "scMinPostsIntervalMs": 10,
-        "scMaxBufferedPosts": 50,
-        "scStreamUpServerSecs": "60-240",
+        "xPaddingBytes": "150-400",
+        "scMaxEachPostBytes": 3000000,
+        "scMinPostsIntervalMs": 0,
+        "scStreamUpServerSecs": "90-180",
         "xmux": {
-          "maxConcurrency": "3-5",
-          "cMaxReuseTimes": "1000-3000",
-          "hMaxRequestTimes": "400-700",
-          "hMaxReusableSecs": "1200-1800",
-          "hKeepAlivePeriod": 0
+          "maxConcurrency": "2-4",
+          "cMaxReuseTimes": "800-1500",
+          "hMaxReusableSecs": "900-1200"
         }
       }
     },
@@ -813,8 +808,8 @@ HYSTERIA2='{
 	"finalmask": {
 		"quicParams": {
 			"congestion": "brutal",
-			"brutalUp": "70 mbps",
-			"brutalDown": "70 mbps"
+			"brutalUp": "100 mbps",
+			"brutalDown": "100 mbps"
 		}
 	}
 }
@@ -837,7 +832,7 @@ echo -e "Перезапуск XRAY"
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
-linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F${path_xhttp}&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A10%2C%22scMaxBufferedPosts%22%3A50%2C%22scStreamUpServerSecs%22%3A%2260-240%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%223-5%22%2C%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%2C%22hKeepAlivePeriod%22%3A0%7D%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-stream-up"
+linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F${path_xhttp}&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A0%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-stream-up"
 linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
 hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:443/?sni=$DOMAIN&alpn=h3#Hysteria2"
 
