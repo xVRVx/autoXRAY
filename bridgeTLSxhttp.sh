@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 138-Bridge ${NC}"
+echo -e "${GRN}Версия: 139-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -97,7 +97,7 @@ SERVER_PORT=443
 KEYRING_PKG=$([ "$ID" = "ubuntu" ] && echo "ubuntu-keyring" || echo "debian-archive-keyring")
 
 echo -e "${YEL}Подготовка официального репозитория Nginx для $ID ($VERSION_CODENAME)...${NC}"
-apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release $KEYRING_PKG jq dnsutils openssl wget tar socat cron
+apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release $KEYRING_PKG jq dnsutils openssl wget tar socat cron gettext-base
 
 curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor --yes -o /usr/share/keyrings/nginx-archive-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/$ID $VERSION_CODENAME nginx" \
@@ -168,11 +168,15 @@ case $fp_choice in
     *) fpBro="firefox" ;;
 esac
 
-# BBR
+# BBR, MTU Probing и оптимизация буферов сокетов для моста
 cat <<EOF > /etc/sysctl.d/999-autoXRAY.conf
 net.core.default_qdisc=fq
 net.ipv4.tcp_congestion_control=bbr
 net.ipv4.tcp_mtu_probing=1
+net.core.rmem_max=16777216
+net.core.wmem_max=16777216
+net.ipv4.tcp_rmem=4096 87380 16777216
+net.ipv4.tcp_wmem=4096 65536 16777216
 EOF
 sysctl --system >/dev/null 2>&1
 
@@ -277,12 +281,15 @@ server {
         try_files \$uri =404;
     }
 
-    # XHTTP endpoint (режим stream-up через gRPC-модуль Nginx)
+    # XHTTP endpoint (оптимизированные буферы под высокий upload)
     location /${path_xhttp} {
         client_max_body_size 0;
         client_body_timeout 1h;
+        client_body_buffer_size 4m;
+
         grpc_read_timeout 1h;
         grpc_send_timeout 1h;
+        grpc_buffer_size 4m;
 
         grpc_set_header Host \$host;
         grpc_set_header X-Real-IP \$remote_addr;
@@ -669,6 +676,8 @@ print_config() {
           "domain:su",
           "domain:xn--p1ai",
           "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:f-droid",
           "geosite:yandex",
           "geosite:vk",
           "geosite:category-ru"
@@ -775,17 +784,14 @@ for (( i=0; i<COUNT; i++ )); do
           "path": "/$path_xhttp",
           "extra": {
             "noGRPCHeader": false,
-            "xPaddingBytes": "400-800",
-            "scMaxEachPostBytes": 1500000,
-            "scMinPostsIntervalMs": 10,
-            "scMaxBufferedPosts": 50,
-            "scStreamUpServerSecs": "60-240",
+            "xPaddingBytes": "150-400",
+            "scMaxEachPostBytes": 3000000,
+            "scMinPostsIntervalMs": 0,
+            "scStreamUpServerSecs": "90-180",
             "xmux": {
-              "maxConcurrency": "3-5",
-              "cMaxReuseTimes": "1000-3000",
-              "hMaxRequestTimes": "400-700",
-              "hMaxReusableSecs": "1200-1800",
-              "hKeepAlivePeriod": 0
+              "maxConcurrency": "2-4",
+              "cMaxReuseTimes": "800-1500",
+              "hMaxReusableSecs": "900-1200"
             }
           }
         }
@@ -861,7 +867,7 @@ EOF
         CLIENT_CONFIGS+=","
     fi
 
-    link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22400-800%22%2C%22scMaxEachPostBytes%22%3A1500000%2C%22scMinPostsIntervalMs%22%3A10%2C%22scMaxBufferedPosts%22%3A50%2C%22scStreamUpServerSecs%22%3A%2260-240%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%223-5%22%2C%22cMaxReuseTimes%22%3A%221000-3000%22%2C%22hMaxRequestTimes%22%3A%22400-700%22%2C%22hMaxReusableSecs%22%3A%221200-1800%22%2C%22hKeepAlivePeriod%22%3A0%7D%7D&sni=$DOMAIN&fp=$fpBro#RU%3EEU_xhttp_$REMARK_BASE"
+    link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A0%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#RU%3EEU_xhttp_$REMARK_BASE"
     link_raw="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#RU%3EEU_raw_$REMARK_BASE"
 
     CONFIGS_ARRAY+=( "XHTTP TLS stream-up (RU>EU $REMARK_BASE)|$link_xhttp" )
