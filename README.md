@@ -39,10 +39,10 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 
 **EU VPS (самые стабильные DE)**
 - [netgrid](https://netgrid.host/ru?from=5893) - промо от 2€. | DE/NL/CZ/PL/USA и др.
+- [hostoff](https://hostoff.net/vps?ref=CODE197DF457) - хороший канал
 - [notbad](https://my.notbad.cloud/?from=188) - от 4$, есть оплата рублями, хороший курс и канал. | DE/NL
 - [senko.digital](https://senko.digital/?ref=47670) - от 2€, есть днс-хостинг и домены для selfsteel, есть оплата СБП. | DE/NL/FI
 - [serv.host](https://serv.host/?from=44424) - от 360 руб./мес. | RU/DE/NL/FI и др.
-- [intezio](https://intezio.net/?ref=3d2bf6736da6) - промо от 179 руб. | DE/NL
 - [XorekCloud](https://xorek.cloud/?from=28522) - полноценный тариф за 249 руб./мес. (промо за 149). | DE/NL
 
 Если брать NL-локацию, то, возможно, получится урвать ВПС без рекламы на ютубе.
