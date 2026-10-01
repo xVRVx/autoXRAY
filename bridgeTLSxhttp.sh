@@ -782,11 +782,11 @@ if [ $COUNT -gt 1 ]; then
 EOF
 )
 
-    CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_AUTO_XHTTP" "RU_EU Автобалансир")" )
+    CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_AUTO_XHTTP" "🇷🇺 RU>EU Автобалансир")" )
 
-    link_auto_xhttp="vless://${BASE_BRIDGE_UUID}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A0%2C%22scMaxBufferedPosts%22%3A50%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#RU_EU_%D0%90%D0%B2%D1%82%D0%BE%D0%B1%D0%B0%D0%BB%D0%B0%D0%BD%D1%81%D0%B8%D1%80"
+    link_auto_xhttp="vless://${BASE_BRIDGE_UUID}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A0%2C%22scMaxBufferedPosts%22%3A50%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#%F0%9F%87%B7%F0%9F%87%BA%20RU%3EEU%20%D0%90%D0%B2%D1%82%D0%BE%D0%B1%D0%B0%D0%BB%D0%B0%D0%BD%D1%81%D0%B8%D1%80"
 
-    CONFIGS_ARRAY+=( "RU_EU Автобалансир|$link_auto_xhttp" )
+    CONFIGS_ARRAY+=( "🇷🇺 RU>EU Автобалансир|$link_auto_xhttp" )
 fi
 
 # ================= 2. ПРОФИЛИ КОНКРЕТНЫХ НОД =================
