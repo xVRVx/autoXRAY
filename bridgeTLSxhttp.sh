@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 147-Bridge ${NC}"
+echo -e "${GRN}Версия: 148-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -694,7 +694,7 @@ print_config() {
     },
     {
       "tag": "socks-sb",
-      "protocol": "socks",
+      "protocol": "mixed",
       "listen": "127.0.0.1",
       "port": 2080,
       "settings": {
