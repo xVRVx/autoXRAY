@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 141-Bridge ${NC}"
+echo -e "${GRN}Версия: 142-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -727,7 +727,7 @@ declare -a CLIENT_JSON_PROFILES
 declare -a CONFIGS_ARRAY
 ALL_LINKS_TEXT=""
 
-# ================= 1. ПРОФИЛИ АВТО-БАЛАНСИРОВЩИКА (если нод > 1) =================
+# ================= 1. ПРОФИЛЬ АВТО-БАЛАНСИРОВЩИКА (если нод > 1) =================
 if [ $COUNT -gt 1 ]; then
     OUT_AUTO_XHTTP=$(cat <<EOF
     {
@@ -771,38 +771,11 @@ if [ $COUNT -gt 1 ]; then
 EOF
 )
 
-    OUT_AUTO_VISION=$(cat <<EOF
-    {
-      "mux": { "concurrency": -1, "enabled": false },
-      "tag": "proxy",
-      "protocol": "vless",
-      "settings": {
-        "vnext":[{
-          "address": "$DOMAIN",
-          "port": 443,
-          "users":[{ "id": "${BASE_BRIDGE_UUID}", "flow": "xtls-rprx-vision", "encryption": "none" }]
-        }]
-      },
-      "streamSettings": {
-        "network": "raw",
-        "security": "tls",
-        "tlsSettings": {
-          "serverName": "$DOMAIN",
-          "fingerprint": "$fpBro"
-        }
-      }
-    }
-EOF
-)
+    CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_AUTO_XHTTP" "RU_EU Автобалансир")" )
 
-    CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_AUTO_XHTTP" "🇷🇺 RU>EU xhttp | ⚡ AUTO (Балансир)")" )
-    CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_AUTO_VISION" "🇷🇺 RU>EU raw | ⚡ AUTO (Балансир)")" )
+    link_auto_xhttp="vless://${BASE_BRIDGE_UUID}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A0%2C%22scMaxBufferedPosts%22%3A50%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#RU_EU_%D0%90%D0%B2%D1%82%D0%BE%D0%B1%D0%B0%D0%BB%D0%B0%D0%BD%D1%81%D0%B8%D1%80"
 
-    link_auto_xhttp="vless://${BASE_BRIDGE_UUID}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A0%2C%22scMaxBufferedPosts%22%3A50%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#RU%3EEU_xhttp_AUTO_Balancer"
-    link_auto_raw="vless://${BASE_BRIDGE_UUID}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#RU%3EEU_raw_AUTO_Balancer"
-
-    CONFIGS_ARRAY+=( "XHTTP TLS stream-up (RU>EU ⚡ AUTO Balancer)|$link_auto_xhttp" )
-    CONFIGS_ARRAY+=( "RAW VISION (RU>EU ⚡ AUTO Balancer)|$link_auto_raw" )
+    CONFIGS_ARRAY+=( "RU_EU Автобалансир|$link_auto_xhttp" )
 fi
 
 # ================= 2. ПРОФИЛИ КОНКРЕТНЫХ НОД =================
