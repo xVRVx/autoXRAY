@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 146 ${NC}"
+echo -e "${GRN}Версия: 147 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -634,6 +634,7 @@ print_config() {
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
+          "2ip.io",
           "domain:ru",
           "domain:su",
           "domain:xn--p1ai",

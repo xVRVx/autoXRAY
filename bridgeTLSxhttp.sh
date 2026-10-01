@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 140-Bridge ${NC}"
+echo -e "${GRN}Версия: 147-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -41,12 +41,14 @@ echo -e "${GRN}Обнаружено $COUNT vless ссылок для моста!
 declare -a NODE_UUID NODE_ADDR NODE_PORT NODE_NAME NODE_TYPE NODE_SEC NODE_FP NODE_SNI NODE_MODE NODE_PATH NODE_EXTRA NODE_ALPN
 declare -a BRIDGE_UUID
 
+# Базовый UUID: 3-я группа байт зарезервирована под vlessRoute (0000)
 SERVER_UUID=$(openssl rand -hex 16 | sed 's/\(........\)\(....\)\(....\)\(....\)\(............\)/\1-\2-\3-\4-\5/')
 g1="${SERVER_UUID:0:8}"
 g2="${SERVER_UUID:9:4}"
-g3="${SERVER_UUID:14:4}"
 g4="${SERVER_UUID:19:4}"
 g5="${SERVER_UUID:24:12}"
+
+BASE_BRIDGE_UUID="${g1}-${g2}-0000-${g4}-${g5}"
 
 for (( i=0; i<COUNT; i++ )); do
     url="${VLESS_URLS[$i]}"
@@ -281,7 +283,7 @@ server {
         try_files \$uri =404;
     }
 
-    # XHTTP endpoint (оптимизированные буферы под высокий upload)
+    # XHTTP endpoint
     location /${path_xhttp} {
         client_max_body_size 0;
         client_body_timeout 1h;
@@ -325,27 +327,11 @@ socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
 ROUTING_RULES=""
 OUTBOUNDS=""
-CLIENTS_VISION=""
-CLIENTS_XHTTP=""
 
 for (( i=0; i<COUNT; i++ )); do
     ROUTE_ID=$((i + 1))
 
-    CLIENTS_VISION+="$(cat <<EOF
-          {
-            "id": "${BRIDGE_UUID[$i]}",
-            "flow": "xtls-rprx-vision"
-          },
-EOF
-)"
-    CLIENTS_XHTTP+="$(cat <<EOF
-          {
-            "id": "${BRIDGE_UUID[$i]}"
-          },
-EOF
-)"
-
-    # Маршруты vlessRoute выносятся первыми
+    # Принудительный маршрут для клиентов, выбравших конкретную ноду
     ROUTING_RULES+="$(cat <<EOF
       { "vlessRoute": "$ROUTE_ID", "outboundTag": "proxy-$i" },
 EOF
@@ -386,9 +372,6 @@ EOF
 EOF
 )"
 done
-
-CLIENTS_VISION="${CLIENTS_VISION%,}"
-CLIENTS_XHTTP="${CLIENTS_XHTTP%,}"
 
 # Создаем JSON конфигурацию сервера-моста
 cat << EOF > "$SCRIPT_DIR/config.json"
@@ -439,7 +422,10 @@ cat << EOF > "$SCRIPT_DIR/config.json"
       "protocol": "vless",
       "settings": {
         "clients": [
-$CLIENTS_VISION
+          {
+            "id": "${BASE_BRIDGE_UUID}",
+            "flow": "xtls-rprx-vision"
+          }
         ],
         "decryption": "none",
         "fallbacks": [
@@ -476,7 +462,9 @@ $CLIENTS_VISION
       "protocol": "vless",
       "settings": {
         "clients": [
-$CLIENTS_XHTTP
+          {
+            "id": "${BASE_BRIDGE_UUID}"
+          }
         ],
         "decryption": "none"
       },
@@ -549,22 +537,6 @@ $OUTBOUNDS
       }
     ],
     "rules": [
-$ROUTING_RULES
-      {
-        "inboundTag": [
-          "RUsocks5"
-        ],
-        "balancerTag": "Super_Balancer"
-      },
-      {
-        "ip": [
-          "8.8.8.8",
-          "8.8.4.4",
-          "1.1.1.1"
-        ],
-        "port": "53,443",
-        "balancerTag": "Super_Balancer"
-      },
       {
         "ip": [
           "geoip:private"
@@ -591,23 +563,18 @@ $ROUTING_RULES
       },
       {
         "domain": [
-          "habr.com",
-          "apkmirror.com",
+          "testipv6.net",
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
-          "geosite:category-ip-geo-detect"
-        ],
-        "balancerTag": "Super_Balancer"
-      },
-      {
-        "domain": [
-          "testipv6.net",
+          "2ip.io",
           "domain:ru",
           "domain:su",
           "domain:xn--p1ai",
+          "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
+          "geosite:f-droid",
           "geosite:yandex",
           "geosite:vk",
           "geosite:category-ru"
@@ -619,6 +586,17 @@ $ROUTING_RULES
           "geoip:ru"
         ],
         "outboundTag": "direct"
+      },
+$ROUTING_RULES
+      {
+        "inboundTag": [
+          "RUsocks5"
+        ],
+        "balancerTag": "Super_Balancer"
+      },
+      {
+        "network": "tcp,udp",
+        "balancerTag": "Super_Balancer"
       }
     ]
   }
@@ -673,9 +651,14 @@ print_config() {
       {
         "domain": [
           "geosite:private",
+          "ifconfig.me",
+          "checkip.amazonaws.com",
+          "pify.org",
+          "2ip.io",
           "domain:ru",
           "domain:su",
           "domain:xn--p1ai",
+          "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:f-droid",
@@ -751,11 +734,62 @@ $PROXY_OUTBOUND,
 TPL
 }
 
-CLIENT_CONFIGS=""
+declare -a CLIENT_JSON_PROFILES
 declare -a CONFIGS_ARRAY
 ALL_LINKS_TEXT=""
 
-# Порядок для каждой ноды: XHTTP -> RAW VISION -> DIRECT EU
+# ================= 1. ПРОФИЛЬ АВТО-БАЛАНСИРОВЩИКА (если нод > 1) =================
+if [ $COUNT -gt 1 ]; then
+    OUT_AUTO_XHTTP=$(cat <<EOF
+    {
+      "mux": { "concurrency": -1, "enabled": false },
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext":[{
+          "address": "$DOMAIN",
+          "port": 443,
+          "users":[{ "id": "${BASE_BRIDGE_UUID}", "encryption": "none" }]
+        }]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "$DOMAIN",
+          "alpn": [ "h2" ],
+          "fingerprint": "$fpBro"
+        },
+        "xhttpSettings": {
+          "mode": "stream-up",
+          "path": "/$path_xhttp",
+          "extra": {
+            "noGRPCHeader": false,
+            "xPaddingBytes": "150-400",
+            "scMaxEachPostBytes": 3000000,
+            "scMinPostsIntervalMs": 0,
+            "scMaxBufferedPosts": 50,
+            "scStreamUpServerSecs": "90-180",
+            "xmux": {
+              "maxConcurrency": "2-4",
+              "cMaxReuseTimes": "800-1500",
+              "hMaxReusableSecs": "900-1200"
+            }
+          }
+        }
+      }
+    }
+EOF
+)
+
+    CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_AUTO_XHTTP" "RU_EU Автобалансир")" )
+
+    link_auto_xhttp="vless://${BASE_BRIDGE_UUID}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A0%2C%22scMaxBufferedPosts%22%3A50%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#RU_EU_%D0%90%D0%B2%D1%82%D0%BE%D0%B1%D0%B0%D0%BB%D0%B0%D0%BD%D1%81%D0%B8%D1%80"
+
+    CONFIGS_ARRAY+=( "RU_EU Автобалансир|$link_auto_xhttp" )
+fi
+
+# ================= 2. ПРОФИЛИ КОНКРЕТНЫХ НОД =================
 for (( i=0; i<COUNT; i++ )); do
     REMARK_BASE="${NODE_NAME[$i]}"
     if [ -z "$REMARK_BASE" ]; then REMARK_BASE="Node_$i"; fi
@@ -859,15 +893,9 @@ EOF
 EOF
 )
 
-    CLIENT_CONFIGS+="$(print_config "$OUT_TLS_XHTTP" "🇷🇺 RU>EU xhttp | $REMARK_BASE")"
-    CLIENT_CONFIGS+=","
-    CLIENT_CONFIGS+="$(print_config "$OUT_TLS_VISION" "🇷🇺 RU>EU raw | $REMARK_BASE")"
-    CLIENT_CONFIGS+=","
-    CLIENT_CONFIGS+="$(print_config "$OUT_DIRECT_EU" "🇪🇺 EU dir | $REMARK_BASE")"
-
-    if [ $i -lt $((COUNT-1)) ]; then
-        CLIENT_CONFIGS+=","
-    fi
+    CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_TLS_XHTTP" "🇷🇺 RU>EU xhttp | $REMARK_BASE")" )
+    CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_TLS_VISION" "🇷🇺 RU>EU raw | $REMARK_BASE")" )
+    CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_DIRECT_EU" "🇪🇺 EU dir | $REMARK_BASE")" )
 
     link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A0%2C%22scMaxBufferedPosts%22%3A50%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#RU%3EEU_xhttp_$REMARK_BASE"
     link_raw="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#RU%3EEU_raw_$REMARK_BASE"
@@ -877,7 +905,8 @@ EOF
     CONFIGS_ARRAY+=( "Direct EU ($REMARK_BASE)|${VLESS_URLS[$i]}" )
 done
 
-echo "[$CLIENT_CONFIGS]" > "$WEB_PATH/$path_subpage.json"
+# Корректное объединение JSON массива профилей
+( IFS=$','; echo "[${CLIENT_JSON_PROFILES[*]}]" ) > "$WEB_PATH/$path_subpage.json"
 
 systemctl restart xray
 
@@ -943,7 +972,7 @@ cat >> "$WEB_PATH/$path_subpage.html" <<EOF
 </div>
 <p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включается, если вы пользовались сторонними сервисами.</p>
 
-<h2>➡️ Конфиги ($COUNT нод)</h2>
+<h2>➡️ Конфиги</h2>
 EOF
 
 idx=1
