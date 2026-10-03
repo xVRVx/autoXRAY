@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 149-Bridge ${NC}"
+echo -e "${GRN}Версия: 150-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -286,12 +286,12 @@ server {
     # XHTTP endpoint
     location /${path_xhttp} {
         client_max_body_size 0;
-        client_body_timeout 1h;
-        client_body_buffer_size 4m;
+        client_body_buffer_size 512k;
+        grpc_buffer_size 64k;
 
-        grpc_read_timeout 1h;
-        grpc_send_timeout 1h;
-        grpc_buffer_size 4m;
+        client_body_timeout 120s;
+        grpc_read_timeout 180s;
+        grpc_send_timeout 180s;
         grpc_socket_keepalive on;
 
         grpc_set_header Host \$host;
@@ -766,9 +766,9 @@ if [ $COUNT -gt 1 ]; then
           "extra": {
             "noGRPCHeader": false,
             "xPaddingBytes": "150-400",
-            "scMaxEachPostBytes": 3000000,
+            "scMaxEachPostBytes": 500000,
             "scMinPostsIntervalMs": "5-15",
-            "scMaxBufferedPosts": 50,
+            "scMaxBufferedPosts": 20,
             "scStreamUpServerSecs": "90-180",
             "xmux": {
               "maxConcurrency": "2-4",
@@ -784,7 +784,7 @@ EOF
 
     CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_AUTO_XHTTP" "🇷🇺 RU>EU Автобалансир")" )
 
-    link_auto_xhttp="vless://${BASE_BRIDGE_UUID}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A%225-15%22%2C%22scMaxBufferedPosts%22%3A50%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#%F0%9F%87%B7%F0%9F%87%BA%20RU%3EEU%20%D0%90%D0%B2%D1%82%D0%BE%D0%B1%D0%B0%D0%BB%D0%B0%D0%BD%D1%81%D0%B8%D1%80"
+    link_auto_xhttp="vless://${BASE_BRIDGE_UUID}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A500000%2C%22scMinPostsIntervalMs%22%3A%225-15%22%2C%22scMaxBufferedPosts%22%3A20%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#%F0%9F%87%B7%F0%9F%87%BA%20RU%3EEU%20%D0%90%D0%B2%D1%82%D0%BE%D0%B1%D0%B0%D0%BB%D0%B0%D0%BD%D1%81%D0%B8%D1%80"
 
     CONFIGS_ARRAY+=( "🇷🇺 RU>EU Автобалансир|$link_auto_xhttp" )
 fi
@@ -820,9 +820,9 @@ for (( i=0; i<COUNT; i++ )); do
           "extra": {
             "noGRPCHeader": false,
             "xPaddingBytes": "150-400",
-            "scMaxEachPostBytes": 3000000,
+            "scMaxEachPostBytes": 500000,
             "scMinPostsIntervalMs": "5-15",
-            "scMaxBufferedPosts": 50,
+            "scMaxBufferedPosts": 20,
             "scStreamUpServerSecs": "90-180",
             "xmux": {
               "maxConcurrency": "2-4",
@@ -897,7 +897,7 @@ EOF
     CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_TLS_VISION" "🇷🇺 RU>EU raw | $REMARK_BASE")" )
     CLIENT_JSON_PROFILES+=( "$(print_config "$OUT_DIRECT_EU" "🇪🇺 EU dir | $REMARK_BASE")" )
 
-    link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A%225-15%22%2C%22scMaxBufferedPosts%22%3A50%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#RU%3EEU_xhttp_$REMARK_BASE"
+    link_xhttp="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F$path_xhttp&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A500000%2C%22scMinPostsIntervalMs%22%3A%225-15%22%2C%22scMaxBufferedPosts%22%3A20%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#RU%3EEU_xhttp_$REMARK_BASE"
     link_raw="vless://${BRIDGE_UUID[$i]}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#RU%3EEU_raw_$REMARK_BASE"
 
     CONFIGS_ARRAY+=( "XHTTP TLS stream-up (RU>EU $REMARK_BASE)|$link_xhttp" )
