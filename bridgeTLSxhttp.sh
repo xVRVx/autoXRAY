@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 151-Bridge ${NC}"
+echo -e "${GRN}Версия: 152-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -332,7 +332,7 @@ server {
 
         grpc_set_header Host \$host;
         grpc_set_header X-Real-IP \$remote_addr;
-        grpc_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        grpc_set_header X-Forwarded-For \$remote_addr;
 
         grpc_pass grpc://127.0.0.1:3333;
     }
@@ -539,7 +539,11 @@ cat << EOF > "$SCRIPT_DIR/config.json"
           "mode": "stream-up",
           "path": "/$path_xhttp"
         },
-        "security": "none"
+        "security": "none",
+        "sockopt": {
+          "acceptProxyProtocol": false,
+          "trustedXForwardedFor": [ "X-Real-IP" ]
+        }
       },
       "sniffing": {
         "enabled": true,
@@ -569,8 +573,11 @@ $OUTBOUNDS
     {
       "tag": "direct",
       "protocol": "freedom",
-      "settings": {
-        "domainStrategy": "ForceIPv4"
+      "settings": {},
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIPv4"
+        }
       }
     },
     {
