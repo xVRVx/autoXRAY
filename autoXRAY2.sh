@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 150 ${NC}"
+echo -e "${GRN}Версия: 151 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -163,9 +163,25 @@ systemctl reload nginx
 
 mkdir -p /var/lib/xray/cert/
 
-echo -e "\n${YEL}Проверка и установка acme.sh...${NC}"
-curl -sL https://get.acme.sh | sh -s email=mail@$DOMAIN
 ACME_BIN="$HOME/.acme.sh/acme.sh"
+
+if [ ! -f "$ACME_BIN" ]; then
+    echo -e "${YEL}Установка acme.sh...${NC}"
+
+    # 1. Основной вариант: через GitHub raw
+    curl -fsSL --connect-timeout 10 https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh | sh -s -- --install-online -m mail@$DOMAIN
+
+    # 2. Фоллбек: через get.acme.sh
+    if [ ! -f "$ACME_BIN" ]; then
+        echo -e "${YEL}Попытка через get.acme.sh...${NC}"
+        curl -fsSL --connect-timeout 10 https://get.acme.sh | sh -s email=mail@$DOMAIN
+    fi
+fi
+
+if [ ! -f "$ACME_BIN" ]; then
+    echo -e "${RED}❌ Не удалось установить acme.sh!${NC}"
+    exit 1
+fi
 
 CERT_EXISTS=false
 if $ACME_BIN --list | grep -q "$DOMAIN"; then
@@ -193,9 +209,9 @@ if [ $RET -eq 0 ]; then
     $ACME_BIN --install-cert -d "$DOMAIN" --ecc \
       --fullchain-file /var/lib/xray/cert/fullchain.pem \
       --key-file /var/lib/xray/cert/privkey.pem \
-      --reloadcmd "chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl reload nginx; systemctl restart xray"
+      --reloadcmd "chmod 644 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl reload nginx; systemctl restart xray"
 
-    chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
+    chmod 644 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
 
     echo -e "\n${GRN}========================================"
     echo    "✅  Сертификат успешно настроен и применен!"

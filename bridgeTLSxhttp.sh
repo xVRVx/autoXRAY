@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 150-Bridge ${NC}"
+echo -e "${GRN}Версия: 151-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -17,14 +17,15 @@ sleep 1
 [[ "$ID" =~ ^(debian|ubuntu)$ ]] || { echo -e "${RED}❌ Ошибка: поддерживаются только Debian и Ubuntu!${NC}"; exit 1; }
 [[ "$ID" == "ubuntu" ]] && echo -e "${YEL}⚠️ Внимание: запуск на Ubuntu. Рекомендованная система: Debian 12/13.${NC}"
 
+if [ -z "$1" ]; then
+    echo -e "${RED}❌ Ошибка: домен не задан.${NC}"
+    echo -e "${YEL}Использование: $0 domain.com \"vless://...\" [\"vless://...\"]${NC}"
+    exit 1
+fi
+
 DOMAIN=$1
 shift
 VLESS_URLS=("$@")
-
-if [ -z "$DOMAIN" ]; then
-    echo -e "${RED}❌ Ошибка: домен не задан.${NC}"
-    exit 1
-fi
 
 if [ ${#VLESS_URLS[@]} -eq 0 ]; then
     echo -e "${RED}❌ Ошибка: конфиги vless не заданы. Укажите хотя бы одну vless:// ссылку.${NC}"
@@ -39,6 +40,7 @@ COUNT=${#VLESS_URLS[@]}
 echo -e "${GRN}Обнаружено $COUNT vless ссылок для моста!${NC}"
 
 declare -a NODE_UUID NODE_ADDR NODE_PORT NODE_NAME NODE_TYPE NODE_SEC NODE_FP NODE_SNI NODE_MODE NODE_PATH NODE_EXTRA NODE_ALPN
+declare -a NODE_FLOW NODE_ALPN_JSON
 declare -a BRIDGE_UUID
 
 # Базовый UUID: 3-я группа байт зарезервирована под vlessRoute (0000)
@@ -58,10 +60,14 @@ for (( i=0; i<COUNT; i++ )); do
     fi
 
     url_body="${url#vless://}"
-    node_name_enc="${url_body##*#}"
-    NODE_NAME[$i]="$(urldecode "$node_name_enc")"
+    if [[ "$url_body" == *"#"* ]]; then
+        node_name_enc="${url_body##*#}"
+        NODE_NAME[$i]="$(urldecode "$node_name_enc")"
+        url_body="${url_body%%#*}"
+    else
+        NODE_NAME[$i]="Node_$((i + 1))"
+    fi
 
-    url_body="${url_body%%#*}"
     NODE_UUID[$i]="${url_body%@*}"
     host_port_query="${url_body#*@}"
 
@@ -88,6 +94,19 @@ for (( i=0; i<COUNT; i++ )); do
     NODE_SNI[$i]="${params[sni]:-${NODE_ADDR[$i]}}"
     NODE_FP[$i]="${params[fp]:-firefox}"
     NODE_ALPN[$i]="${params[alpn]}"
+    NODE_FLOW[$i]="${params[flow]}"
+
+    # Формирование валидного JSON-массива для ALPN
+    if [ -n "${NODE_ALPN[$i]}" ]; then
+        IFS=',' read -ra alpn_parts <<< "${NODE_ALPN[$i]}"
+        alpn_formatted=()
+        for a in "${alpn_parts[@]}"; do
+            alpn_formatted+=("\"$a\"")
+        done
+        NODE_ALPN_JSON[$i]="[ $(IFS=,; echo "${alpn_formatted[*]}") ]"
+    else
+        NODE_ALPN_JSON[$i]='[ "h2", "http/1.1" ]'
+    fi
 
     ROUTE_ID=$((i + 1))
     HEX_ROUTE_ID=$(printf "%04x" $ROUTE_ID)
@@ -119,9 +138,9 @@ DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]' | head -n 1)
 if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo -e "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
     read -p "Продолжить на ваш страх и риск? (y/N):" choice
-	if [[ ! "$choice" =~ ^[Yy]$ ]]; then
-		exit 1
-	fi
+    if [[ ! "$choice" =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
 fi
 
 # === ВОПРОСЫ ПОЛЬЗОВАТЕЛЮ ===
@@ -217,8 +236,25 @@ EOF
 systemctl reload nginx
 mkdir -p /var/lib/xray/cert/
 
-curl -sL https://get.acme.sh | sh -s email=mail@$DOMAIN
 ACME_BIN="$HOME/.acme.sh/acme.sh"
+
+if [ ! -f "$ACME_BIN" ]; then
+    echo -e "${YEL}Установка acme.sh...${NC}"
+
+    # 1. Основной вариант: через GitHub raw
+    curl -fsSL --connect-timeout 10 https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh | sh -s -- --install-online -m mail@$DOMAIN
+
+    # 2. Фоллбек: через get.acme.sh
+    if [ ! -f "$ACME_BIN" ]; then
+        echo -e "${YEL}Попытка через get.acme.sh...${NC}"
+        curl -fsSL --connect-timeout 10 https://get.acme.sh | sh -s email=mail@$DOMAIN
+    fi
+fi
+
+if [ ! -f "$ACME_BIN" ]; then
+    echo -e "${RED}❌ Не удалось установить acme.sh!${NC}"
+    exit 1
+fi
 
 CERT_EXISTS=false
 if $ACME_BIN --list | grep -q "$DOMAIN"; then
@@ -241,8 +277,8 @@ if [ $RET -eq 0 ]; then
     $ACME_BIN --install-cert -d "$DOMAIN" --ecc \
       --fullchain-file /var/lib/xray/cert/fullchain.pem \
       --key-file /var/lib/xray/cert/privkey.pem \
-      --reloadcmd "chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl reload nginx; systemctl restart xray"
-    chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
+      --reloadcmd "chmod 644 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl reload nginx; systemctl restart xray"
+    chmod 644 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
 else
     echo -e "${RED}Ошибка выпуска сертификата!${NC}"
     exit 1
@@ -325,20 +361,60 @@ SCRIPT_DIR=/usr/local/etc/xray
 socksUser=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 6)
 socksPasw=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 16)
 
+# Функция сборки streamSettings для подключения к EU ноде (TLS или none)
+build_node_stream_settings() {
+    local idx=$1
+    local net="${NODE_TYPE[$idx]}"
+    local sec="${NODE_SEC[$idx]}"
+    local extra_val="${NODE_EXTRA[$idx]}"
+    if [ -z "$extra_val" ]; then extra_val="null"; fi
+
+    local stream_json="\"network\": \"$net\""
+
+    if [ "$net" = "xhttp" ]; then
+        stream_json+=",
+        \"xhttpSettings\": {
+          \"extra\": $extra_val,
+          \"mode\": \"${NODE_MODE[$idx]}\",
+          \"path\": \"${NODE_PATH[$idx]}\"
+        }"
+    fi
+
+    if [ "$sec" = "tls" ]; then
+        stream_json+=",
+        \"security\": \"tls\",
+        \"tlsSettings\": {
+          \"serverName\": \"${NODE_SNI[$idx]}\",
+          \"fingerprint\": \"${NODE_FP[$idx]}\",
+          \"alpn\": ${NODE_ALPN_JSON[$idx]}
+        }"
+    else
+        stream_json+=",
+        \"security\": \"none\""
+    fi
+
+    echo "$stream_json"
+}
+
 ROUTING_RULES=""
 OUTBOUNDS=""
 
 for (( i=0; i<COUNT; i++ )); do
     ROUTE_ID=$((i + 1))
 
-    # Принудительный маршрут для клиентов, выбравших конкретную ноду
     ROUTING_RULES+="$(cat <<EOF
       { "vlessRoute": "$ROUTE_ID", "outboundTag": "proxy-$i" },
 EOF
 )"
 
-    EXTRA_VAL="${NODE_EXTRA[$i]}"
-    if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
+    # Динамическая сборка объекта пользователя с учетом flow из ссылки
+    USER_SETTINGS="{ \"id\": \"${NODE_UUID[$i]}\", \"encryption\": \"none\""
+    if [ -n "${NODE_FLOW[$i]}" ]; then
+        USER_SETTINGS+=", \"flow\": \"${NODE_FLOW[$i]}\""
+    fi
+    USER_SETTINGS+=" }"
+
+    STREAM_CFG="$(build_node_stream_settings "$i")"
 
     OUTBOUNDS+="$(cat <<EOF
     {
@@ -349,24 +425,13 @@ EOF
         "vnext":[
           {
             "port": ${NODE_PORT[$i]},
-            "users":[ { "id": "${NODE_UUID[$i]}", "encryption": "none" } ],
+            "users":[ $USER_SETTINGS ],
             "address": "${NODE_ADDR[$i]}"
           }
         ]
       },
       "streamSettings": {
-        "network": "${NODE_TYPE[$i]}",
-        "xhttpSettings": {
-          "extra": $EXTRA_VAL,
-          "mode": "${NODE_MODE[$i]}",
-          "path": "${NODE_PATH[$i]}"
-        },
-        "security": "tls",
-        "tlsSettings": {
-          "serverName": "${NODE_SNI[$i]}",
-          "fingerprint": "${NODE_FP[$i]}",
-          "alpn": [ "h2", "http/1.1" ]
-        }
+        $STREAM_CFG
       }
     },
 EOF
@@ -860,8 +925,13 @@ EOF
 EOF
 )
 
-    EXTRA_VAL="${NODE_EXTRA[$i]}"
-    if [ -z "$EXTRA_VAL" ]; then EXTRA_VAL="null"; fi
+    USER_SETTINGS="{ \"id\": \"${NODE_UUID[$i]}\", \"encryption\": \"none\""
+    if [ -n "${NODE_FLOW[$i]}" ]; then
+        USER_SETTINGS+=", \"flow\": \"${NODE_FLOW[$i]}\""
+    fi
+    USER_SETTINGS+=" }"
+
+    STREAM_CFG="$(build_node_stream_settings "$i")"
 
     OUT_DIRECT_EU=$(cat <<EOF
     {
@@ -872,22 +942,11 @@ EOF
         "vnext":[{
           "address": "${NODE_ADDR[$i]}",
           "port": ${NODE_PORT[$i]},
-          "users":[{ "id": "${NODE_UUID[$i]}", "encryption": "none" }]
+          "users":[ $USER_SETTINGS ]
         }]
       },
       "streamSettings": {
-        "network": "${NODE_TYPE[$i]}",
-        "xhttpSettings": {
-          "extra": $EXTRA_VAL,
-          "mode": "${NODE_MODE[$i]}",
-          "path": "${NODE_PATH[$i]}"
-        },
-        "security": "tls",
-        "tlsSettings": {
-          "serverName": "${NODE_SNI[$i]}",
-          "fingerprint": "${NODE_FP[$i]}",
-          "alpn": [ "h2", "http/1.1" ]
-        }
+        $STREAM_CFG
       }
     }
 EOF
