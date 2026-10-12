@@ -1,5 +1,5 @@
 # === Telegram Web Proxy (TeleMT Classic + tproxy-server) ===
-echo -e "${GRN}Версия: 115 ${NC}"
+echo -e "${GRN}Версия: 116 ${NC}"
 sleep 1
 echo -e "\n${GRN}=== Установка бэкенда TeleMT и Web Proxy шлюза ===${NC}"
 
@@ -10,11 +10,16 @@ systemctl stop telemt tproxy-server 2>/dev/null || true
 SECRET=$(openssl rand -hex 16)
 
 # 1. Установка TeleMT (бэкенд на 127.0.0.1:9000 в Classic MTProto режиме)
+echo -e "${GRN}[1/4] Загрузка TeleMT...${NC}"
 ARCH_TYPE=$(uname -m)
 LIBC_TYPE=$(ldd --version 2>&1 | grep -iq musl && echo musl || echo gnu)
 
-wget -qO- "https://github.com/telemt/telemt/releases/latest/download/telemt-${ARCH_TYPE}-linux-${LIBC_TYPE}.tar.gz" | tar -xz -C /tmp
-mv /tmp/telemt /usr/local/bin/telemt
+rm -f /tmp/telemt
+curl -fsSL --retry 2 "https://github.com/telemt/telemt/releases/latest/download/telemt-${ARCH_TYPE}-linux-${LIBC_TYPE}.tar.gz" | tar -xz -C /tmp \
+    || { echo -e "${RED}❌ Ошибка скачивания TeleMT${NC}"; exit 1; }
+
+[ -f /tmp/telemt ] || { echo -e "${RED}❌ Бинарник TeleMT не найден в архиве${NC}"; exit 1; }
+mv -f /tmp/telemt /usr/local/bin/telemt
 chmod +x /usr/local/bin/telemt
 
 mkdir -p /etc/telemt /opt/telemt
@@ -83,25 +88,51 @@ EOF
 systemctl daemon-reload
 systemctl enable --now telemt
 
-# 2. Загрузка и сборка tproxy-server (без зависимости от git)
+# 2. Загрузка тулчейна Go и сборка tproxy-server
 echo -e "${GRN}[2/4] Загрузка и сборка tproxy-server...${NC}"
 GO_ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-mkdir -p /opt/go
-curl -sL "https://go.dev/dl/go1.22.6.linux-${GO_ARCH}.tar.gz" | tar -C /opt/go --strip-components=1 -xz
+GO_TGZ="go1.22.6.linux-${GO_ARCH}.tar.gz"
 
-# Скачиваем архив исходников напрямую через curl
-rm -rf /tmp/tproxy-source
-mkdir -p /tmp/tproxy-source
-curl -sL "https://github.com/telegramdesktop/tproxy-server/archive/refs/heads/master.tar.gz" | tar -xz -C /tmp/tproxy-source --strip-components=1
+case "$GO_ARCH" in
+    amd64) GO_SHA256="999805bed7d9039ec3da1a53bfbcafc13e367da52aa823cb60b68ba22d44c616" ;;
+    arm64) GO_SHA256="c15fa895341b8eaf7f219fada25c36a610eb042985dc1a912410c1c90098eaf2" ;;
+    *) echo -e "${RED}❌ Неподдерживаемая архитектура: $GO_ARCH${NC}"; exit 1 ;;
+esac
 
-# Статическая сборка (CGO_ENABLED=0 не требует gcc/make)
+rm -rf /opt/go /tmp/go.tgz /tmp/tproxy-source
+mkdir -p /opt/go /tmp/tproxy-source
+
+# Скачивание Go: пробуем go.dev, при сбое — зеркало aliyun
+for url in "https://go.dev/dl/$GO_TGZ" "https://mirrors.aliyun.com/golang/$GO_TGZ"; do
+    if curl -fsSL --retry 2 "$url" -o /tmp/go.tgz && \
+       echo "$GO_SHA256  /tmp/go.tgz" | sha256sum -c --quiet - && \
+       tar -C /opt/go --strip-components=1 -xzf /tmp/go.tgz; then
+        break
+    fi
+    echo -e "${YEL}Не удалось скачать Go с $url, пробую зеркало...${NC}"
+done
+rm -f /tmp/go.tgz
+
+[ -x /opt/go/bin/go ] || { echo -e "${RED}❌ Не удалось развернуть Go тулчейн${NC}"; exit 1; }
+
+# Скачивание исходников tproxy-server
+curl -fsSL --retry 2 "https://github.com/telegramdesktop/tproxy-server/archive/refs/heads/master.tar.gz" \
+    | tar -xz -C /tmp/tproxy-source --strip-components=1 \
+    || { echo -e "${RED}❌ Ошибка скачивания исходников tproxy-server${NC}"; exit 1; }
+
+# Статическая компиляция
 cd /tmp/tproxy-source
-CGO_ENABLED=0 /opt/go/bin/go build -trimpath -ldflags="-s -w" -o /usr/local/bin/tproxy-server ./cmd/tproxy-server
+CGO_ENABLED=0 /opt/go/bin/go build -trimpath -ldflags="-s -w" -o /usr/local/bin/tproxy-server ./cmd/tproxy-server \
+    || { echo -e "${RED}❌ Ошибка сборки tproxy-server${NC}"; exit 1; }
+
 chmod +x /usr/local/bin/tproxy-server
+
+# Чистим временные файлы компиляции
 rm -rf /tmp/tproxy-source /opt/go
 cd /root
 
 # 3. Конфигурация tproxy-server
+echo -e "${GRN}[3/4] Настройка конфигурации tproxy-server...${NC}"
 mkdir -p /etc/tproxy-server
 
 # Токен подписи (строго 32 байта)
@@ -162,7 +193,6 @@ cat <<EOF > /etc/tproxy-server/config.json
 }
 EOF
 
-# Порт бэкенда изменен на 9000
 cat <<EOF > /etc/tproxy-server/profiles.json
 {
   "profiles": [
@@ -180,7 +210,7 @@ chmod 0400 /etc/tproxy-server/token.key
 chmod 0600 /etc/tproxy-server/profiles.json
 chown -R telemt:telemt /etc/tproxy-server
 
-# Служба tproxy-server (Wants вместо Requires)
+# Служба tproxy-server
 cat <<EOF > "/etc/systemd/system/tproxy-server.service"
 [Unit]
 Description=Telegram Web Proxy Relay
