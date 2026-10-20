@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 152 ${NC}"
+echo -e "${GRN}Версия: 153 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -456,9 +456,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         },
         "finalmask": {
           "quicParams": {
-            "congestion": "brutal",
-            "brutalUp": "100 mbps",
-            "brutalDown": "100 mbps"
+            "congestion": "bbr"
           }
         }
       },
@@ -830,9 +828,7 @@ HYSTERIA2='{
 	},
 	"finalmask": {
 		"quicParams": {
-			"congestion": "brutal",
-			"brutalUp": "100 mbps",
-			"brutalDown": "100 mbps"
+			"congestion": "bbr"
 		}
 	}
 }
