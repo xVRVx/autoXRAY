@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 146 - test ${NC}"
+echo -e "${GRN}Версия: 154 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -136,7 +136,7 @@ mkdir -p "$WEB_PATH"
 bash -c "$(curl -sL https://github.com/xVRVx/autoXRAY/raw/refs/heads/main/test/gen_page3.sh)" -- "$WEB_PATH"
 
 # Установка Xray
-bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.9.9
+bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.10.21
 
 # ==========================================
 # Блок ACME.SH (Установка и выпуск сертификата)
@@ -163,9 +163,25 @@ systemctl reload nginx
 
 mkdir -p /var/lib/xray/cert/
 
-echo -e "\n${YEL}Проверка и установка acme.sh...${NC}"
-curl -sL https://get.acme.sh | sh -s email=mail@$DOMAIN
 ACME_BIN="$HOME/.acme.sh/acme.sh"
+
+if [ ! -f "$ACME_BIN" ]; then
+    echo -e "${YEL}Установка acme.sh...${NC}"
+
+    # 1. Основной вариант: через GitHub raw
+    curl -fsSL --connect-timeout 10 https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh | sh -s -- --install-online -m mail@$DOMAIN
+
+    # 2. Фоллбек: через get.acme.sh
+    if [ ! -f "$ACME_BIN" ]; then
+        echo -e "${YEL}Попытка через get.acme.sh...${NC}"
+        curl -fsSL --connect-timeout 10 https://get.acme.sh | sh -s email=mail@$DOMAIN
+    fi
+fi
+
+if [ ! -f "$ACME_BIN" ]; then
+    echo -e "${RED}❌ Не удалось установить acme.sh!${NC}"
+    exit 1
+fi
 
 CERT_EXISTS=false
 if $ACME_BIN --list | grep -q "$DOMAIN"; then
@@ -193,9 +209,9 @@ if [ $RET -eq 0 ]; then
     $ACME_BIN --install-cert -d "$DOMAIN" --ecc \
       --fullchain-file /var/lib/xray/cert/fullchain.pem \
       --key-file /var/lib/xray/cert/privkey.pem \
-      --reloadcmd "chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl reload nginx; systemctl restart xray"
+      --reloadcmd "chmod 644 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl reload nginx; systemctl restart xray"
 
-    chmod 744 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
+    chmod 644 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
 
     echo -e "\n${GRN}========================================"
     echo    "✅  Сертификат успешно настроен и применен!"
@@ -272,19 +288,20 @@ server {
         try_files \$uri =404;
     }
 
-    # XHTTP endpoint (режим stream-up через gRPC-модуль Nginx с буферами 4M)
+    # XHTTP endpoint (режим stream-up через gRPC-модуль Nginx с буферами 512k)
     location /${path_xhttp} {
         client_max_body_size 0;
-        client_body_timeout 1h;
-        client_body_buffer_size 4m;
+        client_body_buffer_size 512k;
+        grpc_buffer_size 64k;
 
-        grpc_read_timeout 1h;
-        grpc_send_timeout 1h;
-        grpc_buffer_size 4m;
+        client_body_timeout 120s;
+        grpc_read_timeout 180s;
+        grpc_send_timeout 180s;
+        grpc_socket_keepalive on;
 
         grpc_set_header Host \$host;
         grpc_set_header X-Real-IP \$remote_addr;
-        grpc_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        grpc_set_header X-Forwarded-For \$remote_addr;
 
         grpc_pass grpc://127.0.0.1:3333;
     }
@@ -439,9 +456,7 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         },
         "finalmask": {
           "quicParams": {
-            "congestion": "brutal",
-            "brutalUp": "100 mbps",
-            "brutalDown": "100 mbps"
+            "congestion": "bbr"
           }
         }
       },
@@ -475,7 +490,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         },
         "security": "none",
         "sockopt": {
-          "acceptProxyProtocol": false
+          "acceptProxyProtocol": false,
+          "trustedXForwardedFor": [ "X-Real-IP" ]
         }
       },
       "sniffing": {
@@ -509,8 +525,11 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
     {
       "tag": "direct",
       "protocol": "freedom",
-      "settings": {
-        "domainStrategy": "ForceIPv4"
+      "settings": {},
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIPv4"
+        }
       }
     },
     {
@@ -633,6 +652,7 @@ print_config() {
           "ifconfig.me",
           "checkip.amazonaws.com",
           "pify.org",
+          "2ip.io",
           "domain:ru",
           "domain:su",
           "domain:xn--p1ai",
@@ -675,7 +695,7 @@ print_config() {
     },
     {
       "tag": "socks-sb",
-      "protocol": "socks",
+      "protocol": "mixed",
       "listen": "127.0.0.1",
       "port": 2080,
       "settings": {
@@ -721,7 +741,7 @@ print_config() {
 TPL
 }
 
-# --- Config 1: VLESS XHTTP TLS (Оптимальный для личного сервера: Stealth + High Upload)
+# --- Config 1: VLESS XHTTP TLS (Оптимальный для личного сервера: Stealth + High Upload + Буфер 20)
 OUT_XHTTP='{
   "tag": "proxy",
   "protocol": "vless",
@@ -740,8 +760,9 @@ OUT_XHTTP='{
       "extra": {
         "noGRPCHeader": false,
         "xPaddingBytes": "150-400",
-        "scMaxEachPostBytes": 3000000,
-        "scMinPostsIntervalMs": 0,
+        "scMaxEachPostBytes": 500000,
+        "scMinPostsIntervalMs": "5-15",
+        "scMaxBufferedPosts": 20,
         "scStreamUpServerSecs": "90-180",
         "xmux": {
           "maxConcurrency": "2-4",
@@ -807,9 +828,7 @@ HYSTERIA2='{
 	},
 	"finalmask": {
 		"quicParams": {
-			"congestion": "brutal",
-			"brutalUp": "100 mbps",
-			"brutalDown": "100 mbps"
+			"congestion": "bbr"
 		}
 	}
 }
@@ -832,7 +851,7 @@ echo -e "Перезапуск XRAY"
 # Формирование ссылок
 subPageLink="https://$DOMAIN/$path_subpage.json"
 
-linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F${path_xhttp}&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A3000000%2C%22scMinPostsIntervalMs%22%3A0%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-stream-up"
+linkTLS2="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&alpn=h2&type=xhttp&mode=stream-up&path=%2F${path_xhttp}&extra=%7B%22noGRPCHeader%22%3Afalse%2C%22xPaddingBytes%22%3A%22150-400%22%2C%22scMaxEachPostBytes%22%3A500000%2C%22scMinPostsIntervalMs%22%3A%225-15%22%2C%22scMaxBufferedPosts%22%3A20%2C%22scStreamUpServerSecs%22%3A%2290-180%22%2C%22xmux%22%3A%7B%22maxConcurrency%22%3A%222-4%22%2C%22cMaxReuseTimes%22%3A%22800-1500%22%2C%22hMaxReusableSecs%22%3A%22900-1200%22%7D%7D&sni=$DOMAIN&fp=$fpBro#vlessXHTTPtls-stream-up"
 linkTLS1="vless://${xray_uuid_vrv}@$DOMAIN:443?security=tls&type=tcp&headerType=&path=&host=&flow=xtls-rprx-vision&sni=$DOMAIN&fp=$fpBro&spx=%2F#vlessRAWtlsVision-autoXRAY"
 hy2="hy2://${xray_shortIds_vrv}@$DOMAIN:443/?sni=$DOMAIN&alpn=h3#Hysteria2"
 
