@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 152-Bridge ${NC}"
+echo -e "${GRN}Версия: 154-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -210,7 +210,7 @@ EOF
 ulimit -n 65535
 
 # Установка Xray
-bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.9.9
+bash -c "$(curl -sL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version v26.10.21
 
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
@@ -628,7 +628,6 @@ $OUTBOUNDS
       {
         "domain": [
           "geosite:category-ads",
-          "geosite:win-spy",
           "geosite:private"
         ],
         "outboundTag": "block"
@@ -709,7 +708,7 @@ print_config() {
     "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
-        "domain": [ "geosite:category-ads", "geosite:win-spy" ],
+        "domain": [ "geosite:category-ads" ],
         "outboundTag": "block"
       },
       {
