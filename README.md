@@ -38,12 +38,13 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 ## Выбор сервера (подбирал строго без [KYC](## "Know Your Customer — обязательная верификация личности (паспорт | телефон | карта)"))
 
 **EU VPS (самые стабильные DE)**
+- [XorekCloud](https://xorek.cloud/?from=28522) - DE/NL
 - [netgrid](https://netgrid.host/ru?from=5893) - от 3€. | DE/NL/CZ/PL/USA и др.
 - [hostoff](https://hostoff.net/vps?ref=CODE197DF457) - от 5€. Хороший канал. | DE/NL//PL
 - [notbad](https://my.notbad.cloud/?from=188) - от 4$, есть оплата рублями, хороший курс и канал. | DE/NL
 - [senko.digital](https://senko.digital/?ref=47670) - от 2€, есть днс-хостинг и домены для selfsteel, есть оплата СБП. | DE/NL/FI
 - [serv.host](https://serv.host/?from=44424) - от 360 руб./мес. | RU/DE/NL/FI и др.
-- [XorekCloud](https://xorek.cloud/?from=28522) - DE/NL
+
 
 Если брать NL-локацию, то, возможно, получится урвать ВПС без рекламы на ютубе.
 
