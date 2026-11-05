@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 157 ${NC}"
+echo -e "${GRN}Версия: 158 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -183,49 +183,31 @@ if [ ! -f "$ACME_BIN" ]; then
     exit 1
 fi
 
-CERT_EXISTS=false
-if $ACME_BIN --list | grep -q "$DOMAIN"; then
-    echo -e "${GRN}Сертификат для $DOMAIN уже существует в acme.sh.${NC}"
-    CERT_EXISTS=true
-fi
-
-if [ "$CERT_EXISTS" = false ]; then
+# Если сертификата физически нет в xray — выпускаем и устанавливаем
+if [ ! -s /var/lib/xray/cert/fullchain.pem ]; then
     $ACME_BIN --register-account -m mail@$DOMAIN --server zerossl
 
     echo -e "\n${YEL}Выпуск сертификата (сначала ZeroSSL, затем Let's Encrypt)...${NC}"
-    $ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server zerossl --keylength ec-256
-    RET=$?
-    
-    if [ $RET -ne 0 ]; then
-        echo -e "${YEL}ZeroSSL не ответил, пробуем через Let's Encrypt...${NC}"
-        $ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server letsencrypt --keylength ec-256
-        RET=$?
-    fi
-else
-    RET=0
-fi
+    $ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server zerossl --keylength ec-256 || \
+    $ACME_BIN --issue -d "$DOMAIN" -w /var/www/html --server letsencrypt --keylength ec-256
 
-if [ $RET -eq 0 ]; then
     $ACME_BIN --install-cert -d "$DOMAIN" --ecc \
       --fullchain-file /var/lib/xray/cert/fullchain.pem \
       --key-file /var/lib/xray/cert/privkey.pem \
       --reloadcmd "chmod 644 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl reload nginx; systemctl restart xray"
+fi
 
-    chmod 644 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
-
-    echo -e "\n${GRN}========================================"
-    echo    "✅  Сертификат успешно настроен и применен!"
-    echo    "✅  acme.sh настроил автообновление через cron"
-    echo    "========================================"
-    echo -e "${NC}"
-else
+# Жесткая проверка: файл появился и он не пустой?
+if [ ! -s /var/lib/xray/cert/fullchain.pem ]; then
     echo -e "\n${RED}========================================"
-    echo    "❌  ОШИБКА: не удалось выпустить сертификат через acme.sh"
-    echo    "========================================"
-    echo -e "${NC}"
+    echo    "❌ ОШИБКА: Сертификат не получен! Проверьте DNS-записи (A и AAAA)."
+    echo    "========================================${NC}"
     exit 1
 fi
-# ==========================================
+
+chmod 644 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem
+echo -e "${GRN}✅ Сертификат успешно настроен и применен!${NC}"
+# ========================================== #
 
 path_xhttp=$(openssl rand -base64 15 | tr -dc 'a-z0-9' | head -c 6)
 path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
