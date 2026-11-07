@@ -1,9 +1,3 @@
-<div align="center">
-
-<b>🇷🇺 Русский</b> · <a href="README_EN.md">🇬🇧 English</a>
-
-</div>
-
 ## 🛡️ autoXRAY - личный VPN-сервер на чистом ядре [Xray](https://github.com/XTLS/Xray-core) (за три шага).
 
 ### ✨ Что вы получите 
@@ -246,12 +240,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/bridgeT
 
 ---
 
-<div align="center">
+Скрипты будут дорабатываться до актуального состояния.
 
-### 📌 Поддержать автора
+**[Поддержать автора.](https://pay.trybit.com/pos/Weu1Y0fOhLho0nte)**
 
-[![Поддержать](https://img.shields.io/badge/%D0%9F%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B0%D1%82%D1%8C-e3b23c?style=for-the-badge&logo=youtube&label=donate)](https://pay.trybit.com/pos/Weu1Y0fOhLho0nte)
-
-⭐ Поставьте звезду репозиторию — это лучшая поддержка проекта.
-
-</div>
