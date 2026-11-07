@@ -69,7 +69,6 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 |:--|:--|
 | [CloudCore](https://cloudcore.ru/?affiliate_uuid=e9ad7432-7898-4de2-8606-38eb90e0c1a6) | от 100 ₽/мес |
 | [time-host](https://time-host.net/?from=47217) | от 140 ₽/мес |
-| [hosting-russia](https://hosting-russia.ru/?p=57731) | от 250 ₽/мес |
 
 > [!NOTE]
 > Промо-тарифы постоянно заканчиваются и, как правило, сильно урезаны по ресурсам.
