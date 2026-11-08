@@ -645,17 +645,19 @@ $OUTBOUNDS
           "domain:su",
           "domain:xn--p1ai",
           "geosite:category-ip-geo-detect",
+          "geosite:apple",
+          "geosite:apple-pki",
           "geosite:yandex",
           "geosite:vk",
           "geosite:category-ru"
         ],
-        "outboundTag": "block"
+        "outboundTag": "direct"
       },
       {
         "ip": [
           "geoip:ru"
         ],
-        "outboundTag": "block"
+        "outboundTag": "direct"
       },
 $ROUTING_RULES
       {
@@ -715,7 +717,7 @@ print_config() {
         "outboundTag": "direct"
       },
       {
-        "domain": [ "habr.com", "apkmirror.com" ],
+        "domain": [ "domain:habr.com", "domain:apkmirror.com" ],
         "outboundTag": "proxy"
       },
       {
