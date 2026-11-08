@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Цвета для вывода
+# Цвета для терминала
 GRN='\033[1;32m'
 RED='\033[1;31m'
 YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
-echo -e "${GRN}Версия: 02-caddyBridge ${NC}"
+echo -e "${GRN}Версия: 03-caddyBridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -46,26 +46,28 @@ net.ipv4.tcp_wmem=4096 65536 16777216
 EOF
 sysctl --system >/dev/null 2>&1
 
-# Остановка конфликтующих веб-серверов
+# Остановка конфликтующих веб-серверов перед установкой
 for srv in nginx apache2; do
-    if systemctl is-active --quiet $srv; then
-        echo -e "${YEL}Останавливаем и отключаем $srv (порты 80/443 нужны Caddy)...${NC}"
-        systemctl stop $srv
-        systemctl disable $srv
+    if systemctl is-active --quiet $srv 2>/dev/null; then
+        echo -e "${YEL}Останавливаем и отключаем $srv...${NC}"
+        systemctl stop $srv 2>/dev/null
+        systemctl disable $srv 2>/dev/null
     fi
 done
 
-# Установка Caddy из официального репозитория
-echo -e "${YEL}Установка Caddy и системных пакетов...${NC}"
-apt-get update && apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl gnupg2 jq dnsutils
+# Установка Caddy и зависимостей (socat и cron обязательны для acme.sh)
+echo -e "${YEL}Установка Caddy и системных утилит...${NC}"
+apt-get update && apt-get install -y debian-keyring debian-archive-keyring apt-transport-https \
+    curl gnupg2 jq dnsutils openssl socat cron psmisc
 
 curl -1sLF 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLF 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
 
 apt-get update
 apt-get install -y caddy
+systemctl enable --now cron
 
-# Проверка DNS
+# Проверка соответствия IP и DNS A-записи
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]' | head -n 1)
 
@@ -75,10 +77,11 @@ if [ -n "$DNS_IP" ] && [ "$LOCAL_IP" != "$DNS_IP" ]; then
     [[ "$choice" =~ ^[Yy]$ ]] || exit 1
 fi
 
-# Генерация сайта-маскировки
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
-echo -e "${YEL}Развертывание сайта маскировки...${NC}"
+
+# Генерация / обновление маскировочного сайта
+echo -e "${YEL}Подготовка сайта маскировки...${NC}"
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/xVRVx/autoXRAY/main/test/gen_page3.sh)" -- "$WEB_PATH" 2>/dev/null || {
     cat <<EOF > "$WEB_PATH/index.html"
 <!DOCTYPE html><html><head><title>Under Construction</title></head>
@@ -88,7 +91,194 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/xVRVx/autoXRAY/main/test
 EOF
 }
 
-declare -a CLIENT_LINKS
+# ================= ACME.SH ВЫПУСК СЕРТИФИКАТА =================
+CERT_DIR="/etc/caddy/cert"
+mkdir -p "$CERT_DIR"
+ACME_BIN="$HOME/.acme.sh/acme.sh"
+
+if [ ! -f "$ACME_BIN" ]; then
+    echo -e "${YEL}Установка acme.sh...${NC}"
+    curl -fsSL --connect-timeout 10 https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh | sh -s -- --install-online -m mail@$DOMAIN
+    if [ ! -f "$ACME_BIN" ]; then
+        curl -fsSL --connect-timeout 10 https://get.acme.sh | sh -s email=mail@$DOMAIN
+    fi
+fi
+
+if [ ! -f "$ACME_BIN" ]; then
+    echo -e "${RED}❌ Не удалось установить acme.sh!${NC}"
+    exit 1
+fi
+
+# Проверка существующего сертификата (чтобы не спамить запросами при перезапуске)
+NEED_CERT=true
+if [ -s "$CERT_DIR/fullchain.pem" ] && [ -s "$CERT_DIR/privkey.pem" ]; then
+    if openssl x509 -noout -ext subjectAltName -in "$CERT_DIR/fullchain.pem" 2>/dev/null | grep -q "$DOMAIN"; then
+        if openssl x509 -checkend 86400 -noout -in "$CERT_DIR/fullchain.pem" 2>/dev/null; then
+            echo -e "${GRN}✅ Найден действующий сертификат для $DOMAIN, перевыпуск не требуется.${NC}"
+            NEED_CERT=false
+        fi
+    fi
+fi
+
+if [ "$NEED_CERT" = true ]; then
+    echo -e "${YEL}Освобождаем порт 80 для работы acme.sh...${NC}"
+    systemctl stop caddy 2>/dev/null
+    command -v fuser >/dev/null && fuser -k 80/tcp 2>/dev/null
+
+    $ACME_BIN --register-account -m mail@$DOMAIN --server zerossl 2>/dev/null
+
+    echo -e "\n${YEL}Выпуск сертификата (сначала ZeroSSL, затем Let's Encrypt)...${NC}"
+    $ACME_BIN --issue -d "$DOMAIN" --standalone --server zerossl --keylength ec-256 \
+        --pre-hook "systemctl stop caddy 2>/dev/null || true" \
+        --post-hook "systemctl restart caddy 2>/dev/null || true" || \
+    $ACME_BIN --issue -d "$DOMAIN" --standalone --server letsencrypt --keylength ec-256 \
+        --pre-hook "systemctl stop caddy 2>/dev/null || true" \
+        --post-hook "systemctl restart caddy 2>/dev/null || true"
+
+    $ACME_BIN --install-cert -d "$DOMAIN" --ecc \
+        --fullchain-file "$CERT_DIR/fullchain.pem" \
+        --key-file "$CERT_DIR/privkey.pem" \
+        --reloadcmd "chmod 644 $CERT_DIR/*.pem; systemctl restart caddy 2>/dev/null || true"
+fi
+
+if [ ! -s "$CERT_DIR/fullchain.pem" ]; then
+    echo -e "\n${RED}========================================"
+    echo    "❌ ОШИБКА: Сертификат не получен! Проверьте DNS-записи (A и AAAA) и порты 80/443."
+    echo    "========================================${NC}"
+    exit 1
+fi
+
+chmod 644 "$CERT_DIR/fullchain.pem" "$CERT_DIR/privkey.pem"
+echo -e "${GRN}✅ Сертификат проверен и готов к использованию!${NC}"
+# =============================================================
+
+# Сохранение существующего пути при перезапуске скрипта
+EXISTING_JSON=$(ls "$WEB_PATH"/*.json 2>/dev/null | head -n 1)
+if [ -n "$EXISTING_JSON" ]; then
+    path_subpage=$(basename "$EXISTING_JSON" .json)
+    echo -e "${GRN}ℹ️ Обнаружена существующая подписка, путь сохранен: $path_subpage${NC}"
+else
+    path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
+fi
+
+# Шаблон клиентского JSON с локальным DNS и роутингом
+print_client_config() {
+  local PROXY_OUTBOUND="$1"
+  local REMARK="$2"
+
+  cat << TPL
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+      {
+        "address": "https+local://77.88.8.8/dns-query",
+        "domains": [
+          "geosite:category-ru",
+          "geosite:yandex",
+          "geosite:vk",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai"
+        ],
+        "skipFallback": true
+      },
+      "https://8.8.4.4/dns-query",
+      "https://8.8.8.8/dns-query",
+      "https://1.1.1.1/dns-query"
+    ],
+    "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "domainMatcher": "hybrid",
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "domain": [ "geosite:category-ads" ],
+        "outboundTag": "block"
+      },
+      {
+        "protocol": [ "bittorrent" ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [ "habr.com", "apkmirror.com" ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "geosite:private",
+          "domain:ifconfig.me",
+          "domain:checkip.amazonaws.com",
+          "domain:ipify.org",
+          "domain:2ip.io",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai",
+          "geosite:category-ip-geo-detect",
+          "geosite:apple",
+          "geosite:apple-pki",
+          "geosite:f-droid",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [ "geoip:ru", "geoip:private" ],
+        "outboundTag": "direct"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "settings": { "udp": true },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [ "http", "tls", "quic" ]
+      }
+    },
+    {
+      "tag": "socks-sb",
+      "protocol": "mixed",
+      "listen": "127.0.0.1",
+      "port": 2080,
+      "settings": { "udp": true },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [ "http", "tls", "quic" ]
+      }
+    },
+    {
+      "tag": "http-in",
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "port": 10809,
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [ "http", "tls", "quic" ]
+      }
+    }
+  ],
+  "outbounds": [
+$PROXY_OUTBOUND,
+    { "tag": "direct", "protocol": "freedom" },
+    { "tag": "block", "protocol": "blackhole" }
+  ],
+  "remarks": "$REMARK"
+}
+TPL
+}
+
+declare -a CLIENT_JSON_PROFILES
+declare -a CONFIGS_ARRAY
 declare -A SEEN_PATHS
 CADDY_HANDLERS=""
 
@@ -128,7 +318,6 @@ for (( i=0; i<COUNT; i++ )); do
 
     [[ "$node_path" == /* ]] || node_path="/$node_path"
 
-    # Если ссылок несколько и пути дублируются — изолируем префиксом
     bridge_path="$node_path"
     strip_prefix_directive=""
 
@@ -156,23 +345,113 @@ $strip_prefix_directive
 EOF
 )
 
+    if [ -n "$node_extra" ]; then
+        json_extra="$node_extra"
+    else
+        json_extra='{
+          "noGRPCHeader": false,
+          "xPaddingBytes": "150-400",
+          "scMaxEachPostBytes": 500000,
+          "scMinPostsIntervalMs": "5-15",
+          "scMaxBufferedPosts": 20,
+          "scStreamUpServerSecs": "90-180",
+          "xmux": {
+            "maxConcurrency": "2-4",
+            "cMaxReuseTimes": "800-1500",
+            "hMaxReusableSecs": "900-1200"
+          }
+        }'
+    fi
+
+    OUT_TLS_XHTTP=$(cat <<EOF
+    {
+      "mux": { "concurrency": -1, "enabled": false },
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext":[{
+          "address": "$DOMAIN",
+          "port": 443,
+          "users":[{ "id": "${node_uuid}", "encryption": "none" }]
+        }]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "$DOMAIN",
+          "alpn": [ "h2" ],
+          "fingerprint": "$node_fp"
+        },
+        "xhttpSettings": {
+          "mode": "${node_mode}",
+          "path": "${bridge_path}",
+          "extra": $json_extra
+        }
+      }
+    }
+EOF
+)
+
+    OUT_DIRECT_EU=$(cat <<EOF
+    {
+      "mux": { "concurrency": -1, "enabled": false },
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext":[{
+          "address": "${node_addr}",
+          "port": ${node_port},
+          "users":[{ "id": "${node_uuid}", "encryption": "none" }]
+        }]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "${node_sni}",
+          "alpn": [ "h2" ],
+          "fingerprint": "$node_fp"
+        },
+        "xhttpSettings": {
+          "mode": "${node_mode}",
+          "path": "${node_path}",
+          "extra": $json_extra
+        }
+      }
+    }
+EOF
+)
+
+    CLIENT_JSON_PROFILES+=( "$(print_client_config "$OUT_TLS_XHTTP" "🇷🇺 RU>EU xhttp | $node_name")" )
+    CLIENT_JSON_PROFILES+=( "$(print_client_config "$OUT_DIRECT_EU" "🇪🇺 EU dir | $node_name")" )
+
     client_extra_enc=""
     if [ -n "$node_extra" ]; then
         client_extra_enc="&extra=$(urlencode "$node_extra")"
     fi
 
     path_enc=$(urlencode "$bridge_path")
-    bridge_remark=$(urlencode "RU-Bridge | $node_name")
+    bridge_remark=$(urlencode "RU>EU_xhttp_$node_name")
 
-    client_link="vless://${node_uuid}@${DOMAIN}:443?security=tls&alpn=h2&type=xhttp&mode=${node_mode}&path=${path_enc}${client_extra_enc}&sni=${DOMAIN}&fp=${node_fp}#${bridge_remark}"
-    CLIENT_LINKS+=( "$node_name|$client_link" )
+    link_xhttp="vless://${node_uuid}@${DOMAIN}:443?security=tls&alpn=h2&type=xhttp&mode=${node_mode}&path=${path_enc}${client_extra_enc}&sni=${DOMAIN}&fp=${node_fp}#${bridge_remark}"
+    
+    CONFIGS_ARRAY+=( "XHTTP TLS stream-up (RU>EU $node_name)|$link_xhttp" )
+    CONFIGS_ARRAY+=( "Direct EU ($node_name)|${VLESS_URLS[$i]}" )
 done
+
+# Перезапись файла JSON подписки
+( IFS=$','; echo "[${CLIENT_JSON_PROFILES[*]}]" ) > "$WEB_PATH/${path_subpage}.json"
 
 # Генерация Caddyfile
 CADDYFILE="/etc/caddy/Caddyfile"
 cat <<EOF > "$CADDYFILE"
+http://$DOMAIN {
+    redir https://{host}{uri} permanent
+}
+
 $DOMAIN:443 {
-    tls admin@$DOMAIN
+    tls $CERT_DIR/fullchain.pem $CERT_DIR/privkey.pem
 
     route /api/v1/authenticate {
         @notPost not method POST
@@ -185,6 +464,18 @@ $DOMAIN:443 {
             Cache-Control "no-store, no-cache, must-revalidate"
         }
         respond \`{"success":false,"code":"ERR_INVALID_CREDENTIALS","message":"The identity or security key you provided is invalid.","request_id":"{http.request.uuid}"}\` 401
+    }
+
+    route /${path_subpage}.json {
+        header {
+            profile-title "base64:YXV0b1hSQVk="
+            routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY29tbW9uLmRvdC5kbnMueWFuZGV4Lm5ldC9kbnMtcXVlcnkiLCJEb21lc3RpY0ROU0lQIjoiNzcuODguOC44IiwiR2VvaXB1cmwiOiJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvZ2gvTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdEByZWxlYXNlL2dlb2lwLmRhdCIsIkdlb3NpdGV1cmwiOiJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvZ2gvTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdEByZWxlYXNlL2dlb2NpdGUuZGF0IiwiTGFzdFVwZGF0ZWQiOiIxNzc1MjA2MTA4IiwiRG5zSG9zdHMiOnt9LCJEaXJlY3RTaXRlcyI6WyJnZW9zaXRlOmNhdGVnb3J5LXJ1IiwiZ2Vvc2l0ZTpwcml2YXRlIl0sIkRpcmVjdElwIjpbImdlb2lwOnByaXZhdGUiLCJnZW9pcDpydSJdLCJQcm94eVNpdGVzIjpbXSwiUHJveHlJcCI6W10sIkJsb2NrU2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1hZHMiXSwiQmxvY2tJcCI6W10sIkRvbWFpblN0cmF0ZWd5IjoiSVBJZk5vbk1hdGNoIiwiRmFrZUROUyI6ImZhbHNlIiwiVXNlQ2h1bmtGaWxlcyI6ImZhbHNlIn0"
+            socks-auth-mode "auto"
+            http-auth-mode "auto"
+            routing-enable "0"
+        }
+        root * $WEB_PATH
+        file_server
     }
 $CADDY_HANDLERS
 
@@ -201,52 +492,93 @@ caddy validate --config "$CADDYFILE" || { echo -e "${RED}❌ Ошибка в Cad
 systemctl restart caddy
 systemctl enable caddy
 
-# Генерация страницы со ссылками
-path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
-PAGE_HTML="$WEB_PATH/${path_subpage}.html"
+subPageLink="https://$DOMAIN/${path_subpage}.json"
+configListLink="https://$DOMAIN/${path_subpage}.html"
 
+# Генерация HTML страницы
+PAGE_HTML="$WEB_PATH/${path_subpage}.html"
 cat <<'EOF' > "$PAGE_HTML"
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Bridge Configs</title>
+<meta name="robots" content="noindex,nofollow">
+<title>autoXRAY bridge configs</title>
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBCRkZGIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIxIDJsLTIgMm0tNy42MSA3LjYxYTUuNSA1LjUgMCAxIDEtNy43NzggNy43NzggNS41IDUuNSAwIDAgMSA3Ljc3Ny03Ljc3N3ptMCAwTDE1LjUgNy41bTAgMGwzIDNMMjIgN2wtMy0zbS0zLjUgMy41TDE5IDQiLz48L3N2Zz4='>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
 <style>
-body{font-family:monospace;background:#121212;color:#e0e0e0;padding:15px;max-width:900px;margin:0 auto}
-h2{color:#c3e88d;margin:20px 0 10px}
-.row{background:#1e1e1e;border:1px solid #333;border-radius:6px;padding:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
-.label{background:#2c2c2c;color:#82aaff;padding:6px 10px;border-radius:4px;font-weight:700;font-size:13px}
-.code{flex:1;white-space:nowrap;overflow-x:auto;padding:8px;background:#121212;border-radius:4px;color:#c3e88d;font-size:12px}
-.btn{background:#333;color:#e0e0e0;border:1px solid #555;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:700}
-.btn:hover{background:#c3e88d;color:#121212}
-.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);justify-content:center;align-items:center}
-.modal-content{background:#1e1e1e;padding:20px;border-radius:10px;border:1px solid #82aaff;text-align:center}
-#qrcode{background:#fff;padding:10px;border-radius:6px;margin-bottom:10px}
+body{font-family:monospace;background:#121212;color:#e0e0e0;padding:10px;max-width:900px;margin:0 auto}h2{color:#c3e88d;border-top:2px solid #333;padding-top:20px;margin:15px 0 10px;font-size:18px}.config-row{background:#1e1e1e;border:1px solid #333;border-radius:6px;padding:5px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}.config-label{background:#2c2c2c;color:#82aaff;padding:6px 10px;border-radius:4px;font-weight:700;font-size:13px;white-space:nowrap;min-width:140px;text-align:center}.config-code{flex:1;white-space:nowrap;overflow-x:auto;padding:8px;background:#121212;border-radius:4px;color:#c3e88d;font-size:12px;scrollbar-width:none}.config-code::-webkit-scrollbar{display:none}.btn-action{border:1px solid #555;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;transition:all .2s;height:32px;display:flex;align-items:center;justify-content:center}.copy-btn{background:#333;color:#e0e0e0;min-width:60px}.copy-btn:hover{background:#c3e88d;color:#121212;border-color:#c3e88d}.qr-btn{background:#333;color:#82aaff;border-color:#82aaff;min-width:40px}.qr-btn:hover{background:#82aaff;color:#121212}.btn-group{display:flex;gap:10px;margin:10px 0 20px}.btn{flex:1;background:#2c2c2c;color:#c3e88d;border:1px solid #c3e88d;padding:10px;text-align:center;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px}.btn:hover{background:#c3e88d;color:#121212}.btn.download{border-color:#82aaff;color:#82aaff}.btn.download:hover{background:#82aaff;color:#121212}.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:999;justify-content:center;align-items:center;backdrop-filter:blur(3px)}.modal-content{background:#1e1e1e;padding:20px;border-radius:10px;border:1px solid #82aaff;text-align:center}#qrcode{background:#fff;padding:10px;border-radius:6px;margin-bottom:10px}#qrcode canvas,#qrcode img{display:block;margin:0 auto}.qr-err{color:#c31e1e;font-size:13px;padding:10px;background:#fff;border-radius:4px;font-weight:700}.close-modal-btn{background:#c31e1e;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer}@media(max-width:600px){.config-label{width:100%;margin-bottom:2px}.config-code{min-width:100%;order:3}.btn-action{flex:1;order:2}}
 </style>
 <script>
-function copy(id,btn){navigator.clipboard.writeText(document.getElementById(id).innerText.trim()).then(()=>{let o=btn.innerText;btn.innerText="OK";setTimeout(()=>btn.innerText=o,1200)})}
-function qr(id){let t=document.getElementById(id).innerText.trim(),n=document.getElementById('qrcode');n.innerHTML="";let c=document.createElement("canvas");n.appendChild(c);QRCode.toCanvas(c,t,{width:256,margin:2});document.getElementById('modal').style.display='flex'}
-function closeM(){document.getElementById('modal').style.display='none'}
+function copyText(e,t){navigator.clipboard.writeText(document.getElementById(e).innerText.trim()).then(()=>{let o=t.innerText;t.innerText="OK",t.style.cssText="background:#c3e88d;color:#121212",setTimeout(()=>{t.innerText=o,t.style.cssText=""},1500)}).catch(e=>console.error(e))}
+function showQR(e){
+    let t=document.getElementById(e).innerText.trim(),o=document.getElementById("qrModal"),n=document.getElementById("qrcode");
+    n.innerHTML="";
+    if(e==='cAll'||t.length>1800){
+        n.innerHTML="<div class='qr-err'>❌ Слишком много данных для одного QR-кода.<br>Используйте кнопку Copy.</div>";
+        o.style.display="flex";
+        return;
+    }
+    let c=document.createElement("canvas");
+    n.appendChild(c);
+    QRCode.toCanvas(c,t,{width:256,margin:2,errorCorrectionLevel:'L'},function(err){
+        if(err){
+            console.error(err);
+            n.innerHTML="<div class='qr-err'>❌ Ошибка создания QR.<br>Скопируйте ссылку вручную.</div>";
+        }
+    });
+    o.style.display="flex";
+}
+function closeModal(){document.getElementById("qrModal").style.display="none"}
+window.onclick=function(e){e.target==document.getElementById("qrModal")&&closeModal()};
 </script>
 </head><body>
-<h2>🛡️ Caddy Bridge Конфиги</h2>
+EOF
+
+cat >> "$PAGE_HTML" <<EOF
+
+<h2>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h2>
+<div class="config-row">
+    <div class="config-label">Subscription</div>
+    <div class="config-code" id="subLink">$subPageLink</div>
+    <button class="btn-action copy-btn" onclick="copyText('subLink', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('subLink')">QR</button>
+</div>
+
+<h2>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h2>
+<div class="btn-group">
+    <a href="happ://add/$subPageLink" class="btn">⚡ Add to HAPP</a>
+    <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Download App</a>
+</div>
+<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включается, если вы пользовались сторонними сервисами.</p>
+
+<h2>➡️ Конфиги</h2>
 EOF
 
 idx=1
-for item in "${CLIENT_LINKS[@]}"; do
-    name="${item%%|*}"
+ALL_LINKS_TEXT=""
+for item in "${CONFIGS_ARRAY[@]}"; do
+    title="${item%%|*}"
     link="${item#*|}"
-    cat <<EOF >> "$PAGE_HTML"
-<div class="row">
-    <div class="label">$name</div>
-    <div class="code" id="c$idx">$link</div>
-    <button class="btn" onclick="copy('c$idx',this)">Copy</button>
-    <button class="btn" onclick="qr('c$idx')">QR</button>
+    
+    if [ -z "$ALL_LINKS_TEXT" ]; then ALL_LINKS_TEXT="$link"; else ALL_LINKS_TEXT="$ALL_LINKS_TEXT<br>$link"; fi
+    
+    cat >> "$PAGE_HTML" <<EOF
+<div class="config-row">
+    <div class="config-label">$title</div>
+    <div class="config-code" id="c$idx">$link</div>
+    <button class="btn-action copy-btn" onclick="copyText('c$idx', this)">Copy</button>
+    <button class="btn-action qr-btn" onclick="showQR('c$idx')">QR</button>
 </div>
 EOF
     ((idx++))
 done
 
-cat <<'EOF' >> "$PAGE_HTML"
-<div id="modal" class="modal" onclick="closeM()"><div class="modal-content" onclick="event.stopPropagation()"><div id="qrcode"></div><button class="btn" onclick="closeM()">Закрыть</button></div></div>
+cat >> "$PAGE_HTML" <<EOF
+<h2>💠 Все конфиги вместе</h2>
+<div class="config-row">
+    <div class="config-code" id="cAll" style="max-height:60px;white-space:pre-wrap;word-break:break-all">$ALL_LINKS_TEXT</div>
+    <button class="btn-action copy-btn" onclick="copyText('cAll', this)">Copy ALL</button>
+</div>
+
+<div id="qrModal" class="modal-overlay"><div class="modal-content"><div id="qrcode"></div><button class="close-modal-btn" onclick="closeModal()">Close</button></div></div>
 </body></html>
 EOF
 
@@ -256,13 +588,10 @@ systemctl is-active --quiet caddy && CADDY_STATUS="${GRN}RUNNING${NC}" || CADDY_
 echo -e "\n=============================================="
 echo -e "Статус Caddy: $CADDY_STATUS"
 echo -e "Сайт-маскировка: ${CYAN}https://$DOMAIN/${NC}"
-echo -e "Фейковый Auth API: ${CYAN}https://$DOMAIN/api/v1/authenticate${NC}"
-echo -e "Веб-страница с конфигами и QR: ${GRN}https://$DOMAIN/${path_subpage}.html${NC}"
+echo -e "Эндпоинт Auth API: ${CYAN}https://$DOMAIN/api/v1/authenticate${NC}"
+echo -e "JSON-подписка с роутингом (для HAPP/V2Ray): ${GRN}$subPageLink${NC}"
+echo -e "Веб-страница с конфигами и QR: ${GRN}$configListLink${NC}"
 echo -e "==============================================\n"
 
-echo -e "${YEL}Сгенерированные VLESS ссылки:${NC}"
-for item in "${CLIENT_LINKS[@]}"; do
-    name="${item%%|*}"
-    link="${item#*|}"
-    echo -e "\n${CYAN}[$name]${NC}\n$link"
-done
+echo -e "${YEL}Быстрое добавление в HAPP на этом устройстве:${NC}"
+echo -e "${CYAN}happ://add/$subPageLink${NC}\n"
