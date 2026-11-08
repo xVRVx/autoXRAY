@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
-echo -e "${GRN}Версия: 05-caddyBridge ${NC}"
+echo -e "${GRN}Версия: 02-caddyBridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -34,6 +34,29 @@ urlencode() {
     jq -rn --arg x "$1" '$x|@uri'
 }
 
+# 16 вариантов реалистичных ответов enterprise-авторизации
+AUTH_VARIANTS=(
+  "ERR_INVALID_CREDENTIALS|The username or password you entered is incorrect."
+  "ERR_INVALID_CREDENTIALS|The identity or security key you provided is invalid."
+  "ERR_BAD_PASSWORD|Incorrect password. Please verify your credentials and retry."
+  "ERR_KEY_MISMATCH|The security key provided does not match the account identity."
+  "ERR_CREDENTIAL_REJECTED|Credential verification rejected by the authentication authority."
+  "ERR_PASSWORD_MISMATCH|The password provided does not match the registered key."
+  "ERR_INCORRECT_KEY|Incorrect security credentials provided for this principal."
+  "ERR_USER_NOT_FOUND|Principal identity not found in directory services."
+  "ERR_IDENTITY_NOT_FOUND|No account found matching the provided identity."
+  "ERR_PRINCIPAL_MISSING|User principal does not exist in this organizational realm."
+  "ERR_ACCOUNT_NOT_FOUND|Account identifier not recognized by the identity provider."
+  "ERR_UNKNOWN_USER|Unrecognized user identity. Please verify your login."
+  "ERR_LOOKUP_FAILED|User lookup failed: Specified identity does not exist."
+  "ERR_AUTH_FAILED|Authentication failed: The provided credentials do not match."
+  "ERR_DIRECTORY_MISMATCH|Credentials could not be verified against the corporate directory."
+  "ERR_RECORDS_MISMATCH|The security credentials entered do not match our records."
+)
+RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
+AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
+AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
+
 # Оптимизация сети (BBR + буферы)
 cat <<EOF > /etc/sysctl.d/99-caddy-bridge.conf
 net.core.default_qdisc=fq
@@ -55,8 +78,8 @@ for srv in nginx apache2; do
     fi
 done
 
-# Установка Caddy и зависимостей
-echo -e "${YEL}Установка Caddy и системных утилит...${NC}"
+# Установка Caddy и системных зависимостей
+echo -e "${YEL}Установка Caddy и утилит...${NC}"
 apt-get update && apt-get install -y debian-keyring debian-archive-keyring apt-transport-https \
     curl gnupg2 jq dnsutils openssl socat cron psmisc
 
@@ -67,7 +90,7 @@ apt-get update
 apt-get install -y caddy
 systemctl enable --now cron
 
-# Проверка соответствия IP и DNS A-записи
+# Проверка IP и A-записи
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]' | head -n 1)
 
@@ -80,7 +103,6 @@ fi
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
 
-# Генерация сайта маскировки
 echo -e "${YEL}Подготовка сайта маскировки...${NC}"
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/xVRVx/autoXRAY/main/test/gen_page3.sh)" -- "$WEB_PATH" 2>/dev/null || {
     cat <<EOF > "$WEB_PATH/index.html"
@@ -109,7 +131,6 @@ if [ ! -f "$ACME_BIN" ]; then
     exit 1
 fi
 
-# Проверка существующего сертификата для безопасного перезапуска
 NEED_CERT=true
 if [ -s "$CERT_DIR/fullchain.pem" ] && [ -s "$CERT_DIR/privkey.pem" ]; then
     if openssl x509 -noout -ext subjectAltName -in "$CERT_DIR/fullchain.pem" 2>/dev/null | grep -q "$DOMAIN"; then
@@ -149,10 +170,10 @@ if [ ! -s "$CERT_DIR/fullchain.pem" ]; then
 fi
 
 chmod 644 "$CERT_DIR/fullchain.pem" "$CERT_DIR/privkey.pem"
-echo -e "${GRN}✅ Сертификат готов к использованию!${NC}"
+echo -e "${GRN}✅ Сертификат проверен и готов к использованию!${NC}"
 # =============================================================
 
-# Сохранение старого пути при перезапуске скрипта
+# Сохранение пути подписки при повторных запусках
 EXISTING_JSON=$(ls "$WEB_PATH"/*.json 2>/dev/null | head -n 1)
 if [ -n "$EXISTING_JSON" ]; then
     path_subpage=$(basename "$EXISTING_JSON" .json)
@@ -203,7 +224,7 @@ print_client_config() {
         "outboundTag": "direct"
       },
       {
-        "domain": [ "habr.com", "apkmirror.com" ],
+        "domain": [ "domain:habr.com", "domain:apkmirror.com" ],
         "outboundTag": "proxy"
       },
       {
@@ -439,7 +460,7 @@ EOF
     CONFIGS_ARRAY+=( "Direct EU ($node_name)|${VLESS_URLS[$i]}" )
 done
 
-# Сохранение файла JSON конфигурации
+# Сохранение клиентского JSON файла
 ( IFS=$','; echo "[${CLIENT_JSON_PROFILES[*]}]" ) > "$WEB_PATH/${path_subpage}.json"
 
 # Генерация Caddyfile
@@ -453,20 +474,25 @@ $DOMAIN:443 {
     tls $CERT_DIR/fullchain.pem $CERT_DIR/privkey.pem
     root * $WEB_PATH
 
-    route /api/v1/authenticate {
-        @notPost not method POST
-        respond @notPost 403
-
+    @authPost {
+        path /api/v1/authenticate*
+        method POST
+    }
+    handle @authPost {
         header {
-            Content-Type application/json
+            Content-Type "application/json"
             Set-Cookie "X-Auth-Token={http.request.uuid}; Path=/; HttpOnly; Secure; SameSite=Lax"
-            X-Content-Type-Options nosniff
+            X-Content-Type-Options "nosniff"
             Cache-Control "no-store, no-cache, must-revalidate"
         }
-        respond \`{"success":false,"code":"ERR_INVALID_CREDENTIALS","message":"The identity or security key you provided is invalid.","request_id":"{http.request.uuid}"}\` 401
+        respond \`{"success":false,"code":"$AUTH_CODE","message":"$AUTH_MSG","request_id":"{http.request.uuid}"}\` 401
     }
 
-    # Точный аналог Nginx блока для HAPP подписки и автомаршрутизации
+    @authOther path /api/v1/authenticate*
+    handle @authOther {
+        respond 403
+    }
+
     @happJson path /${path_subpage}.json
     handle @happJson {
         header {
@@ -482,7 +508,6 @@ $DOMAIN:443 {
     }
 $CADDY_HANDLERS
 
-    # Раздача сайта маскировки и HTML-страницы с ссылками
     handle {
         file_server
     }
@@ -592,6 +617,7 @@ echo -e "\n=============================================="
 echo -e "Статус Caddy: $CADDY_STATUS"
 echo -e "Сайт-маскировка: ${CYAN}https://$DOMAIN/${NC}"
 echo -e "Эндпоинт Auth API: ${CYAN}https://$DOMAIN/api/v1/authenticate${NC}"
+echo -e "Выбранный ответ маскировки: [${CYAN}$AUTH_CODE${NC}] $AUTH_MSG"
 echo -e "JSON-подписка с роутингом (для HAPP/V2Ray): ${GRN}$subPageLink${NC}"
 echo -e "Веб-страница с конфигами и QR: ${GRN}$configListLink${NC}"
 echo -e "=============================================="
