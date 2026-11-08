@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
-echo -e "${GRN}Версия: 02-caddyBridge ${NC}"
+echo -e "${GRN}Версия: 03-caddyBridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -78,10 +78,10 @@ for srv in nginx apache2; do
     fi
 done
 
-# Установка Caddy и системных зависимостей
+# Установка Caddy и системных зависимостей (включая qrencode для консоли)
 echo -e "${YEL}Установка Caddy и утилит...${NC}"
 apt-get update && apt-get install -y debian-keyring debian-archive-keyring apt-transport-https \
-    curl gnupg2 jq dnsutils openssl socat cron psmisc
+    curl gnupg2 jq dnsutils openssl socat cron psmisc qrencode
 
 curl -1sLF 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLF 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
@@ -102,6 +102,8 @@ fi
 
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
+# Удаляем любые старые HTML-файлы ради безопасности
+rm -f "$WEB_PATH"/*.html 2>/dev/null
 
 echo -e "${YEL}Подготовка сайта маскировки...${NC}"
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/xVRVx/autoXRAY/main/test/gen_page3.sh)" -- "$WEB_PATH" 2>/dev/null || {
@@ -460,10 +462,10 @@ EOF
     CONFIGS_ARRAY+=( "Direct EU ($node_name)|${VLESS_URLS[$i]}" )
 done
 
-# Сохранение клиентского JSON файла
+# Сохранение клиентского JSON файла подписки
 ( IFS=$','; echo "[${CLIENT_JSON_PROFILES[*]}]" ) > "$WEB_PATH/${path_subpage}.json"
 
-# Генерация Caddyfile
+# Генерация Caddyfile c log { output discard }
 CADDYFILE="/etc/caddy/Caddyfile"
 cat <<EOF > "$CADDYFILE"
 http://$DOMAIN {
@@ -471,6 +473,10 @@ http://$DOMAIN {
 }
 
 $DOMAIN:443 {
+    log {
+        output discard
+    }
+
     tls $CERT_DIR/fullchain.pem $CERT_DIR/privkey.pem
     root * $WEB_PATH
 
@@ -521,103 +527,33 @@ systemctl restart caddy
 systemctl enable caddy
 
 subPageLink="https://$DOMAIN/${path_subpage}.json"
-configListLink="https://$DOMAIN/${path_subpage}.html"
-
-# Генерация HTML страницы
-PAGE_HTML="$WEB_PATH/${path_subpage}.html"
-cat <<'EOF' > "$PAGE_HTML"
-<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="robots" content="noindex,nofollow">
-<title>autoXRAY bridge configs</title>
-<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBCRkZGIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIxIDJsLTIgMm0tNy42MSA3LjYxYTUuNSA1LjUgMCAxIDEtNy43NzggNy43NzggNS41IDUuNSAwIDAgMSA3Ljc3Ny03Ljc3N3ptMCAwTDE1LjUgNy41bTAgMGwzIDNMMjIgN2wtMy0zbS0zLjUgMy41TDE5IDQiLz48L3N2Zz4='>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
-<style>
-body{font-family:monospace;background:#121212;color:#e0e0e0;padding:10px;max-width:900px;margin:0 auto}h2{color:#c3e88d;border-top:2px solid #333;padding-top:20px;margin:15px 0 10px;font-size:18px}.config-row{background:#1e1e1e;border:1px solid #333;border-radius:6px;padding:5px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}.config-label{background:#2c2c2c;color:#82aaff;padding:6px 10px;border-radius:4px;font-weight:700;font-size:13px;white-space:nowrap;min-width:140px;text-align:center}.config-code{flex:1;white-space:nowrap;overflow-x:auto;padding:8px;background:#121212;border-radius:4px;color:#c3e88d;font-size:12px;scrollbar-width:none}.config-code::-webkit-scrollbar{display:none}.btn-action{border:1px solid #555;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;transition:all .2s;height:32px;display:flex;align-items:center;justify-content:center}.copy-btn{background:#333;color:#e0e0e0;min-width:60px}.copy-btn:hover{background:#c3e88d;color:#121212;border-color:#c3e88d}.qr-btn{background:#333;color:#82aaff;border-color:#82aaff;min-width:40px}.qr-btn:hover{background:#82aaff;color:#121212}.btn-group{display:flex;gap:10px;margin:10px 0 20px}.btn{flex:1;background:#2c2c2c;color:#c3e88d;border:1px solid #c3e88d;padding:10px;text-align:center;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px}.btn:hover{background:#c3e88d;color:#121212}.btn.download{border-color:#82aaff;color:#82aaff}.btn.download:hover{background:#82aaff;color:#121212}.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:999;justify-content:center;align-items:center;backdrop-filter:blur(3px)}.modal-content{background:#1e1e1e;padding:20px;border-radius:10px;border:1px solid #82aaff;text-align:center}#qrcode{background:#fff;padding:10px;border-radius:6px;margin-bottom:10px}#qrcode canvas,#qrcode img{display:block;margin:0 auto}.qr-err{color:#c31e1e;font-size:13px;padding:10px;background:#fff;border-radius:4px;font-weight:700}.close-modal-btn{background:#c31e1e;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer}@media(max-width:600px){.config-label{width:100%;margin-bottom:2px}.config-code{min-width:100%;order:3}.btn-action{flex:1;order:2}}
-</style>
-<script>
-function copyText(e,t){navigator.clipboard.writeText(document.getElementById(e).innerText.trim()).then(()=>{let o=t.innerText;t.innerText="OK",t.style.cssText="background:#c3e88d;color:#121212",setTimeout(()=>{t.innerText=o,t.style.cssText=""},1500)}).catch(e=>console.error(e))}
-function showQR(e){
-    let t=document.getElementById(e).innerText.trim(),o=document.getElementById("qrModal"),n=document.getElementById("qrcode");
-    n.innerHTML="";
-    if(e==='cAll'||t.length>1800){
-        n.innerHTML="<div class='qr-err'>❌ Слишком много данных для одного QR-кода.<br>Используйте кнопку Copy.</div>";
-        o.style.display="flex";
-        return;
-    }
-    let c=document.createElement("canvas");
-    n.appendChild(c);
-    QRCode.toCanvas(c,t,{width:256,margin:2,errorCorrectionLevel:'L'},function(err){
-        if(err){
-            console.error(err);
-            n.innerHTML="<div class='qr-err'>❌ Ошибка создания QR.<br>Скопируйте ссылку вручную.</div>";
-        }
-    });
-    o.style.display="flex";
-}
-function closeModal(){document.getElementById("qrModal").style.display="none"}
-window.onclick=function(e){e.target==document.getElementById("qrModal")&&closeModal()};
-</script>
-</head><body>
-EOF
-
-cat >> "$PAGE_HTML" <<EOF
-
-<h2>📂 Ссылка на подписку (готовый конфиг клиента с роутингом)</h2>
-<div class="config-row">
-    <div class="config-label">Subscription</div>
-    <div class="config-code" id="subLink">$subPageLink</div>
-    <button class="btn-action copy-btn" onclick="copyText('subLink', this)">Copy</button>
-    <button class="btn-action qr-btn" onclick="showQR('subLink')">QR</button>
-</div>
-
-<h2>📱 Приложение HAPP (Windows/Android/iOS/MAC/Linux)</h2>
-<div class="btn-group">
-    <a href="happ://add/$subPageLink" class="btn">⚡ Add to HAPP</a>
-    <a href="https://www.happ.su/main/ru" target="_blank" class="btn download">⬇️ Download App</a>
-</div>
-<p>Маршрутизацию нужно выключить, она тут встроенная. По умолчанию она выключена - включается, если вы пользовались сторонними сервисами.</p>
-
-<h2>➡️ Конфиги</h2>
-EOF
-
-idx=1
-ALL_LINKS_TEXT=""
-for item in "${CONFIGS_ARRAY[@]}"; do
-    title="${item%%|*}"
-    link="${item#*|}"
-    
-    if [ -z "$ALL_LINKS_TEXT" ]; then ALL_LINKS_TEXT="$link"; else ALL_LINKS_TEXT="$ALL_LINKS_TEXT<br>$link"; fi
-    
-    cat >> "$PAGE_HTML" <<EOF
-<div class="config-row">
-    <div class="config-label">$title</div>
-    <div class="config-code" id="c$idx">$link</div>
-    <button class="btn-action copy-btn" onclick="copyText('c$idx', this)">Copy</button>
-    <button class="btn-action qr-btn" onclick="showQR('c$idx')">QR</button>
-</div>
-EOF
-    ((idx++))
-done
-
-cat >> "$PAGE_HTML" <<EOF
-<h2>💠 Все конфиги вместе</h2>
-<div class="config-row">
-    <div class="config-code" id="cAll" style="max-height:60px;white-space:pre-wrap;word-break:break-all">$ALL_LINKS_TEXT</div>
-    <button class="btn-action copy-btn" onclick="copyText('cAll', this)">Copy ALL</button>
-</div>
-
-<div id="qrModal" class="modal-overlay"><div class="modal-content"><div id="qrcode"></div><button class="close-modal-btn" onclick="closeModal()">Close</button></div></div>
-</body></html>
-EOF
 
 sleep 2
 systemctl is-active --quiet caddy && CADDY_STATUS="${GRN}RUNNING${NC}" || CADDY_STATUS="${RED}FAILED${NC}"
 
 echo -e "\n=============================================="
-echo -e "Статус Caddy: $CADDY_STATUS"
-echo -e "Сайт-маскировка: ${CYAN}https://$DOMAIN/${NC}"
-echo -e "Эндпоинт Auth API: ${CYAN}https://$DOMAIN/api/v1/authenticate${NC}"
-echo -e "Выбранный ответ маскировки: [${CYAN}$AUTH_CODE${NC}] $AUTH_MSG"
-echo -e "JSON-подписка с роутингом (для HAPP/V2Ray): ${GRN}$subPageLink${NC}"
-echo -e "Веб-страница с конфигами и QR: ${GRN}$configListLink${NC}"
-echo -e "=============================================="
+echo -e "Статус Caddy: $CADDY_STATUS \n"
+echo -e "Ссылка на подписку: ${GRN}$subPageLink${NC}\n"
+
+echo -e "${YEL}QR-код подписки (отсканируйте прямо с экрана):${NC}\n"
+qrencode -t ANSIUTF8 "$subPageLink"
+
+echo -e "\n${CYAN}--- Прямые ссылки конфигураций (скопируйте при необходимости) ---${NC}"
+for item in "${CONFIGS_ARRAY[@]}"; do
+    title="${item%%|*}"
+    link="${item#*|}"
+    echo -e "${YEL}$title:${NC}"
+    echo -e "$link\n"
+done
+echo -e "==============================================\n"
+
+# ================= ПОЛНАЯ ЗАЧИСТКА СЛЕДОВ =================
+echo -e "${YEL}Заметаем следы: чистим историю команд bash...${NC}"
+
+# Удаляем аргументы запуска из текущей истории и файлов на диске
+history -c 2>/dev/null || true
+[ -f ~/.bash_history ] && > ~/.bash_history
+[ -f ~/.zsh_history ] && > ~/.zsh_history
+unset HISTFILE
+
+echo -e "${GRN}✅ Готово! История команд очищена.${NC}"
