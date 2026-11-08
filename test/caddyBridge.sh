@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
-echo -e "${GRN}Версия: 05-caddyBridge (Stealth Edition) ${NC}"
+echo -e "${GRN}Версия: 06-caddyBridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -546,14 +546,14 @@ echo -e "\n${CYAN}--- Ссылки конфигураций ---${NC}"
 for item in "${CONFIGS_ARRAY[@]}"; do
     title="${item%%|*}"
     link="${item#*|}"
-    echo -e "${YEL}$title:${NC}"
+    echo -e "${YEL}$title${NC}"
     echo -e "$link\n"
 done
 
-echo -e "${YEL}QR-код подписки (отсканируйте с экрана):${NC}\n"
+echo -e "${YEL}QR-код подписки (отсканируйте с экрана)${NC}\n"
 qrencode -t ANSIUTF8 "$subPageLink"
 
-echo -e "Ссылка на подписку Happ: ${GRN}$subPageLink${NC}\n"
+echo -e "\n\nСсылка на подписку (сохраните): ${GRN}$subPageLink${NC}\n"
 echo -e "==============================================\n"
 
 # Полная нейтрализация следов в сессии
@@ -563,5 +563,3 @@ history -c 2>/dev/null || true
 [ -f ~/.bash_history ] && > ~/.bash_history
 [ -f ~/.zsh_history ] && > ~/.zsh_history
 unset HISTFILE
-
-echo -e "${GRN}✅ Мост успешно запущен и полностью настроен под Happ!${NC}"
