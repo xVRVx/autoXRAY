@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
-echo -e "${GRN}Версия: 03-caddyBridge ${NC}"
+echo -e "${GRN}Версия: 05-caddyBridge (Stealth Edition) ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -78,7 +78,7 @@ for srv in nginx apache2; do
     fi
 done
 
-# Установка Caddy и системных зависимостей (включая qrencode для консоли)
+# Установка Caddy и системных зависимостей
 echo -e "${YEL}Установка Caddy и утилит...${NC}"
 apt-get update && apt-get install -y debian-keyring debian-archive-keyring apt-transport-https \
     curl gnupg2 jq dnsutils openssl socat cron psmisc qrencode
@@ -102,7 +102,6 @@ fi
 
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
-# Удаляем любые старые HTML-файлы ради безопасности
 rm -f "$WEB_PATH"/*.html 2>/dev/null
 
 echo -e "${YEL}Подготовка сайта маскировки...${NC}"
@@ -175,14 +174,7 @@ chmod 644 "$CERT_DIR/fullchain.pem" "$CERT_DIR/privkey.pem"
 echo -e "${GRN}✅ Сертификат проверен и готов к использованию!${NC}"
 # =============================================================
 
-# Сохранение пути подписки при повторных запусках
-EXISTING_JSON=$(ls "$WEB_PATH"/*.json 2>/dev/null | head -n 1)
-if [ -n "$EXISTING_JSON" ]; then
-    path_subpage=$(basename "$EXISTING_JSON" .json)
-    echo -e "${GRN}ℹ️ Сохранен действующий путь подписки: $path_subpage${NC}"
-else
-    path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
-fi
+path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
 print_client_config() {
   local PROXY_OUTBOUND="$1"
@@ -227,7 +219,7 @@ print_client_config() {
       },
       {
         "domain": [ "domain:habr.com", "domain:apkmirror.com" ],
-        "outboundTag": "proxy"
+        "outboundTag": "transit"
       },
       {
         "domain": [
@@ -351,9 +343,15 @@ for (( i=0; i<COUNT; i++ )); do
         SEEN_PATHS["$node_path"]=1
     fi
 
+    # Caddy маршрутизатор для ноды: принимает ТОЛЬКО метод POST
+    # Все прочие запросы (GET, HEAD) прозрачно пролетают мимо в сайт-заглушку
     CADDY_HANDLERS+=$(cat <<EOF
 
-    handle ${bridge_path}* {
+    @stream_${i} {
+        path ${bridge_path}*
+        method POST
+    }
+    handle @stream_${i} {
 $strip_prefix_directive
         reverse_proxy https://${node_addr}:${node_port} {
             header_up Host ${node_sni}
@@ -371,7 +369,7 @@ EOF
         json_extra="$node_extra"
     else
         json_extra='{
-          "noGRPCHeader": false,
+          "noGRPCHeader": true,
           "xPaddingBytes": "150-400",
           "scMaxEachPostBytes": 500000,
           "scMinPostsIntervalMs": "5-15",
@@ -388,7 +386,7 @@ EOF
     OUT_TLS_XHTTP=$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
-      "tag": "proxy",
+      "tag": "transit",
       "protocol": "vless",
       "settings": {
         "vnext":[{
@@ -418,7 +416,7 @@ EOF
     OUT_DIRECT_EU=$(cat <<EOF
     {
       "mux": { "concurrency": -1, "enabled": false },
-      "tag": "proxy",
+      "tag": "transit",
       "protocol": "vless",
       "settings": {
         "vnext":[{
@@ -445,8 +443,9 @@ EOF
 EOF
 )
 
-    CLIENT_JSON_PROFILES+=( "$(print_client_config "$OUT_TLS_XHTTP" "🇷🇺 RU>EU xhttp | $node_name")" )
-    CLIENT_JSON_PROFILES+=( "$(print_client_config "$OUT_DIRECT_EU" "🇪🇺 EU dir | $node_name")" )
+    # Оба профиля добавлены в подписку
+    CLIENT_JSON_PROFILES+=( "$(print_client_config "$OUT_TLS_XHTTP" "Relay Line-$((i + 1)) | $node_name")" )
+    CLIENT_JSON_PROFILES+=( "$(print_client_config "$OUT_DIRECT_EU" "Direct Line-$((i + 1)) | $node_name")" )
 
     client_extra_enc=""
     if [ -n "$node_extra" ]; then
@@ -454,22 +453,22 @@ EOF
     fi
 
     path_enc=$(urlencode "$bridge_path")
-    bridge_remark=$(urlencode "RU>EU_xhttp_$node_name")
+    bridge_remark=$(urlencode "Channel_${node_name}")
 
     link_xhttp="vless://${node_uuid}@${DOMAIN}:443?security=tls&alpn=h2&type=xhttp&mode=${node_mode}&path=${path_enc}${client_extra_enc}&sni=${DOMAIN}&fp=${node_fp}#${bridge_remark}"
     
-    CONFIGS_ARRAY+=( "XHTTP TLS stream-up (RU>EU $node_name)|$link_xhttp" )
-    CONFIGS_ARRAY+=( "Direct EU ($node_name)|${VLESS_URLS[$i]}" )
+    CONFIGS_ARRAY+=( "Relay Channel ($node_name)|$link_xhttp" )
+    CONFIGS_ARRAY+=( "Direct Channel ($node_name)|${VLESS_URLS[$i]}" )
 done
 
 # Сохранение клиентского JSON файла подписки
 ( IFS=$','; echo "[${CLIENT_JSON_PROFILES[*]}]" ) > "$WEB_PATH/${path_subpage}.json"
 
-# Генерация Caddyfile c log { output discard }
+# Генерация Caddyfile
 CADDYFILE="/etc/caddy/Caddyfile"
 cat <<EOF > "$CADDYFILE"
 http://$DOMAIN {
-    redir https://{host}{uri} permanent
+    redir https://{host}/ permanent
 }
 
 $DOMAIN:443 {
@@ -480,6 +479,13 @@ $DOMAIN:443 {
     tls $CERT_DIR/fullchain.pem $CERT_DIR/privkey.pem
     root * $WEB_PATH
 
+    # Перехват сбоев апстрима: вместо 502 ошибки отдаем чистый сайт-заглушку
+    handle_errors {
+        rewrite * /index.html
+        file_server
+    }
+
+    # Эндпоинт аутентификации сайта маскировки
     @authPost {
         path /api/v1/authenticate*
         method POST
@@ -499,21 +505,23 @@ $DOMAIN:443 {
         respond 403
     }
 
-    @happJson path /${path_subpage}.json
-    handle @happJson {
+    # Полный блок заголовков для приложения Happ
+    @subJson path /${path_subpage}.json
+    handle @subJson {
         header {
             profile-title "base64:YXV0b1hSQVk="
-            routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY29tbW9uLmRvdC5kbnMueWFuZGV4Lm5ldC9kbnMtcXVlcnkiLCJEb21lc3RpY0ROU0lQIjoiNzcuODguOC44IiwiR2VvaXB1cmwiOiJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvZ2gvTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdEByZWxlYXNlL2dlb2lwLmRhdCIsIkdlb3NpdGV1cmwiOiJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvZ2gvTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdEByZWxlYXNlL2dlb3NpdGUuZGF0IiwiTGFzdFVwZGF0ZWQiOiIxNzc1MjA2MTA4IiwiRG5zSG9zdHMiOnt9LCJEaXJlY3RTaXRlcyI6WyJnZW9zaXRlOmNhdGVnb3J5LXJ1IiwiZ2Vvc2l0ZTpwcml2YXRlIl0sIkRpcmVjdElwIjpbImdlb2lwOnByaXZhdGUiLCJnZW9pcDpydSJdLCJQcm94eVNpdGVzIjpbXSwiUHJveHlJcCI6W10sIkJsb2NrU2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1hZHMiXSwiQmxvY2tJcCI6W10sIkRvbWFpblN0cmF0ZWd5IjoiSVBJZk5vbk1hdGNoIiwiRmFrZUROUyI6ImZhbHNlIiwiVXNlQ2h1bmtGaWxlcyI6ImZhbHNlIn0"
+            routing "happ://routing/onadd/eyJOYW1lIjoiYXV0b1hSQVkiLCJHbG9iYWxQcm94eSI6InRydWUiLCJSb3V0ZU9yZGVyIjoiYmxvY2stcHJveHktZGlyZWN0IiwiUmVtb3RlRE5TVHlwZSI6IkRvSCIsIlJlbW90ZUROU0RvbWFpbiI6Imh0dHBzOi8vZG5zLmdvb2dsZS9kbnMtcXVlcnkiLCJSZW1vdGVETlNJUCI6IjguOC40LjQiLCJEb21lc3RpY0ROU1R5cGUiOiJEb0giLCJEb21lc3RpY0ROU0RvbWFpbiI6Imh0dHBzOi8vY29tbW9uLmRvdC5kbnMueWFuZGV4Lm5ldC9kbnMtcXVlcnkiLCJEb21lc3RpY0ROU0lQIjoiNzcuODguOC44IiwiR2VvaXB1cmwiOiJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvZ2gvTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdEByZWxlYXNlL2dlb2lwLmRhdCIsIkdlb3NpdGV1cmwiOiJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvZ2gvTG95YWxzb2xkaWVyL3YycmF5LXJ1bGVzLWRhdEByZWxlYXNlL2dlb2lpdGUuZGF0IiwiTGFzdFVwZGF0ZWQiOiIxNzc1MjA2MTA4IiwiRG5zSG9zdHMiOnt9LCJEaXJlY3RTaXRlcyI6WyJnZW9zaXRlOmNhdGVnb3J5LXJ1IiwiZ2Vvc2l0ZTpwcml2YXRlIl0sIkRpcmVjdElwIjpbImdlb2lwOnByaXZhdGUiLCJnZW9pcDpydSJdLCJQcm94eVNpdGVzIjpbXSwiUHJveHlJcCI6W10sIkJsb2NrU2l0ZXMiOlsiZ2Vvc2l0ZTpjYXRlZ29yeS1hZHMiXSwiQmxvY2tJcCI6W10sIkRvbWFpblN0cmF0ZWd5IjoiSVBJZk5vbk1hdGNoIiwiRmFrZUROUyI6ImZhbHNlIiwiVXNlQ2h1bmtGaWxlcyI6ImZhbHNlIn0"
             socks-auth-mode "auto"
             http-auth-mode "auto"
             routing-enable "0"
             Content-Type "application/json; charset=utf-8"
-            defer
+            Cache-Control "no-store, no-cache, private"
         }
         file_server
     }
 $CADDY_HANDLERS
 
+    # Запасной маршрутизатор (сайт маскировки)
     handle {
         file_server
     }
@@ -533,27 +541,27 @@ systemctl is-active --quiet caddy && CADDY_STATUS="${GRN}RUNNING${NC}" || CADDY_
 
 echo -e "\n=============================================="
 echo -e "Статус Caddy: $CADDY_STATUS \n"
-echo -e "Ссылка на подписку: ${GRN}$subPageLink${NC}\n"
 
-echo -e "${YEL}QR-код подписки (отсканируйте прямо с экрана):${NC}\n"
-qrencode -t ANSIUTF8 "$subPageLink"
-
-echo -e "\n${CYAN}--- Прямые ссылки конфигураций (скопируйте при необходимости) ---${NC}"
+echo -e "\n${CYAN}--- Ссылки конфигураций ---${NC}"
 for item in "${CONFIGS_ARRAY[@]}"; do
     title="${item%%|*}"
     link="${item#*|}"
     echo -e "${YEL}$title:${NC}"
     echo -e "$link\n"
 done
+
+echo -e "${YEL}QR-код подписки (отсканируйте с экрана):${NC}\n"
+qrencode -t ANSIUTF8 "$subPageLink"
+
+echo -e "Ссылка на подписку Happ: ${GRN}$subPageLink${NC}\n"
 echo -e "==============================================\n"
 
-# ================= ПОЛНАЯ ЗАЧИСТКА СЛЕДОВ =================
-echo -e "${YEL}Заметаем следы: чистим историю команд bash...${NC}"
-
-# Удаляем аргументы запуска из текущей истории и файлов на диске
+# Полная нейтрализация следов в сессии
+set +o history 2>/dev/null || true
+shopt -u histappend 2>/dev/null || true
 history -c 2>/dev/null || true
 [ -f ~/.bash_history ] && > ~/.bash_history
 [ -f ~/.zsh_history ] && > ~/.zsh_history
 unset HISTFILE
 
-echo -e "${GRN}✅ Готово! История команд очищена.${NC}"
+echo -e "${GRN}✅ Мост успешно запущен и полностью настроен под Happ!${NC}"
