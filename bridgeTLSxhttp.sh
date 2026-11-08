@@ -643,20 +643,17 @@ $OUTBOUNDS
           "domain:su",
           "domain:xn--p1ai",
           "geosite:category-ip-geo-detect",
-          "geosite:apple",
-          "geosite:apple-pki",
-          "geosite:f-droid",
           "geosite:yandex",
           "geosite:vk",
           "geosite:category-ru"
         ],
-        "outboundTag": "direct"
+        "outboundTag": "block"
       },
       {
         "ip": [
           "geoip:ru"
         ],
-        "outboundTag": "direct"
+        "outboundTag": "block"
       },
 $ROUTING_RULES
       {
