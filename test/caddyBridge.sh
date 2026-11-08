@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
-echo -e "${GRN}Версия: 03-caddyBridge ${NC}"
+echo -e "${GRN}Версия: 04-caddyBridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -115,74 +115,9 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/xVRVx/autoXRAY/main/test
 EOF
 }
 
-# ================= ACME.SH ВЫПУСК СЕРТИФИКАТА =================
-CERT_DIR="/etc/caddy/cert"
-mkdir -p "$CERT_DIR"
-ACME_BIN="$HOME/.acme.sh/acme.sh"
-
-if [ ! -f "$ACME_BIN" ]; then
-    echo -e "${YEL}Установка acme.sh...${NC}"
-    curl -fsSL --connect-timeout 10 https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh | sh -s -- --install-online -m mail@$DOMAIN
-    if [ ! -f "$ACME_BIN" ]; then
-        curl -fsSL --connect-timeout 10 https://get.acme.sh | sh -s email=mail@$DOMAIN
-    fi
-fi
-
-if [ ! -f "$ACME_BIN" ]; then
-    echo -e "${RED}❌ Не удалось установить acme.sh!${NC}"
-    exit 1
-fi
-
-NEED_CERT=true
-if [ -s "$CERT_DIR/fullchain.pem" ] && [ -s "$CERT_DIR/privkey.pem" ]; then
-    if openssl x509 -noout -ext subjectAltName -in "$CERT_DIR/fullchain.pem" 2>/dev/null | grep -q "$DOMAIN"; then
-        if openssl x509 -checkend 86400 -noout -in "$CERT_DIR/fullchain.pem" 2>/dev/null; then
-            echo -e "${GRN}✅ Найден действующий сертификат для $DOMAIN, перевыпуск не требуется.${NC}"
-            NEED_CERT=false
-        fi
-    fi
-fi
-
-if [ "$NEED_CERT" = true ]; then
-    echo -e "${YEL}Освобождаем порт 80 для работы acme.sh...${NC}"
-    systemctl stop caddy 2>/dev/null
-    command -v fuser >/dev/null && fuser -k 80/tcp 2>/dev/null
-
-    $ACME_BIN --register-account -m mail@$DOMAIN --server zerossl 2>/dev/null
-
-    echo -e "\n${YEL}Выпуск сертификата (ZeroSSL -> Let's Encrypt)...${NC}"
-    $ACME_BIN --issue -d "$DOMAIN" --standalone --server zerossl --keylength ec-256 \
-        --pre-hook "systemctl stop caddy 2>/dev/null || true" \
-        --post-hook "systemctl restart caddy 2>/dev/null || true" || \
-    $ACME_BIN --issue -d "$DOMAIN" --standalone --server letsencrypt --keylength ec-256 \
-        --pre-hook "systemctl stop caddy 2>/dev/null || true" \
-        --post-hook "systemctl restart caddy 2>/dev/null || true"
-
-    $ACME_BIN --install-cert -d "$DOMAIN" --ecc \
-        --fullchain-file "$CERT_DIR/fullchain.pem" \
-        --key-file "$CERT_DIR/privkey.pem" \
-        --reloadcmd "chmod 644 $CERT_DIR/*.pem; systemctl restart caddy 2>/dev/null || true"
-fi
-
-if [ ! -s "$CERT_DIR/fullchain.pem" ]; then
-    echo -e "\n${RED}========================================"
-    echo    "❌ ОШИБКА: Сертификат не получен! Проверьте DNS-записи (A/AAAA) и доступность 80 порта."
-    echo    "========================================${NC}"
-    exit 1
-fi
-
-chmod 644 "$CERT_DIR/fullchain.pem" "$CERT_DIR/privkey.pem"
-echo -e "${GRN}✅ Сертификат проверен и готов к использованию!${NC}"
-# =============================================================
-
-# Сохранение пути подписки при повторных запусках
-EXISTING_JSON=$(ls "$WEB_PATH"/*.json 2>/dev/null | head -n 1)
-if [ -n "$EXISTING_JSON" ]; then
-    path_subpage=$(basename "$EXISTING_JSON" .json)
-    echo -e "${GRN}ℹ️ Сохранен действующий путь подписки: $path_subpage${NC}"
-else
-    path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
-fi
+# Удаление старых файлов подписок и генерация нового уникального пути
+rm -f "$WEB_PATH"/*.json 2>/dev/null
+path_subpage=$(openssl rand -base64 15 | tr -dc 'A-Za-z0-9' | head -c 20)
 
 print_client_config() {
   local PROXY_OUTBOUND="$1"
@@ -477,7 +412,6 @@ $DOMAIN:443 {
         output discard
     }
 
-    tls $CERT_DIR/fullchain.pem $CERT_DIR/privkey.pem
     root * $WEB_PATH
 
     @authPost {
@@ -526,9 +460,31 @@ caddy validate --config "$CADDYFILE" || { echo -e "${RED}❌ Ошибка в Cad
 systemctl restart caddy
 systemctl enable caddy
 
+echo -e "${YEL}⏳ Ожидание выпуска TLS-сертификата от Caddy...${NC}"
+
+CERT_READY=false
+for i in {1..20}; do
+    if curl -sSI --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN" >/dev/null 2>&1; then
+        CERT_READY=true
+        break
+    fi
+    echo -n "."
+    sleep 2
+done
+echo ""
+
+if [ "$CERT_READY" = true ]; then
+    echo -e "${GRN}✅ Сертификат успешно получен и проверен!${NC}"
+else
+    echo -e "${RED}❌ Не удалось получить сертификат вовремя!${NC}"
+    echo -e "${YEL}Лог Caddy по выпуску сертификата:${NC}"
+    journalctl -u caddy --no-pager -n 25 | grep -iE 'tls|certificate|error|acme'
+    exit 1
+fi
+
 subPageLink="https://$DOMAIN/${path_subpage}.json"
 
-sleep 2
+sleep 1
 systemctl is-active --quiet caddy && CADDY_STATUS="${GRN}RUNNING${NC}" || CADDY_STATUS="${RED}FAILED${NC}"
 
 echo -e "\n=============================================="
@@ -547,10 +503,7 @@ qrencode -t ANSIUTF8 "$subPageLink"
 
 echo -e "\nСсылка на подписку (сохраните): ${GRN}$subPageLink${NC}\n"
 
-
-
 history -c 2>/dev/null || true
 [ -f ~/.bash_history ] && > ~/.bash_history
 [ -f ~/.zsh_history ] && > ~/.zsh_history
 unset HISTFILE
-
