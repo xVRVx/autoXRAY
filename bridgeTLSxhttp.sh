@@ -210,7 +210,7 @@ EOF
 ulimit -n 65535
 
 # Установка Xray
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install --version v26.10.31
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install --version v26.11.9
 
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"

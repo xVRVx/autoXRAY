@@ -136,7 +136,7 @@ mkdir -p "$WEB_PATH"
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/xVRVx/autoXRAY/main/test/gen_page3.sh)" -- "$WEB_PATH"
 
 # Установка Xray
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install --version v26.10.31
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install --version v26.11.9
 
 # ==========================================
 # Блок ACME.SH (Установка и выпуск сертификата)
@@ -561,14 +561,27 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
         "outboundTag": "block"
       },
       {
-        "outboundTag": "block",
         "domain": [
           "domain:ifconfig.me",
           "domain:checkip.amazonaws.com",
           "domain:ipify.org",
           "domain:2ip.io",
-          "geosite:category-ip-geo-detect"
-        ]
+          "geosite:category-ip-geo-detect",
+          "domain:vk.com",
+          "domain:vk.company",
+          "domain:mradx.net",
+          "domain:userapi.com",
+          "domain:vk-cdn.net",
+          "domain:vkuservideo.net",
+          "domain:vkuservideo.com",
+          "domain:ru",
+          "domain:su",
+          "domain:xn--p1ai",
+          "geosite:yandex",
+          "geosite:vk",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "block"
       }
     ]
   }
