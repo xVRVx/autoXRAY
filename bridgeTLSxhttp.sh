@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 162-Bridge ${NC}"
+echo -e "${GRN}Версия: 163-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -636,15 +636,20 @@ $OUTBOUNDS
       },
       {
         "domain": [
-          "domain:testipv6.net",
           "domain:ifconfig.me",
           "domain:checkip.amazonaws.com",
           "domain:ipify.org",
           "domain:2ip.io",
+          "geosite:category-ip-geo-detect"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "domain": [
+          "domain:testipv6.net",
           "domain:ru",
           "domain:su",
           "domain:xn--p1ai",
-          "geosite:category-ip-geo-detect",
           "geosite:apple",
           "geosite:apple-pki",
           "geosite:yandex",

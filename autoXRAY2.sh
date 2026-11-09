@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 162 ${NC}"
+echo -e "${GRN}Версия: 163 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -559,6 +559,13 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
           "geosite:private"
         ],
         "outboundTag": "block"
+      },
+      {
+        "domain": [
+          "domain:habr.com",
+          "geosite:canva"
+        ],
+        "outboundTag": "direct"
       },
       {
         "domain": [
