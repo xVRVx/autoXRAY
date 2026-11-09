@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 163-Bridge ${NC}"
+echo -e "${GRN}Версия: 162-Bridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -144,8 +144,8 @@ if [ "$LOCAL_IP" != "$DNS_IP" ]; then
 fi
 
 # === ВОПРОСЫ ПОЛЬЗОВАТЕЛЮ ===
-read -p "$(echo -e "\n${YEL}Устанавливать Web Proxy для Telegram? (y/n, по умолчанию y): ${NC}")" choice_mtp
-choice_mtp=${choice_mtp:-y}
+read -p "$(echo -e "\n${YEL}Устанавливать Web Proxy для Telegram? (y/n, по умолчанию n): ${NC}")" choice_mtp
+choice_mtp=${choice_mtp:-n}
 if [[ "$choice_mtp" =~ ^[Yy]$ ]]; then
     INSTALL_MTP=true
     NGINX_web_proxy='    # web proxy
