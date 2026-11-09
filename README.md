@@ -165,8 +165,13 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/autoXRA
 
 **2)** На RU-VPS ставим скрипт моста (нужен именно `vless XHTTP TLS`):
 
+Тут два варианта теперь есть, первый с ядром xray на борту:
 ```bash
 bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/bridgeTLSxhttp.sh)" -- поддомен2.вашДОМЕН.com "vless://вашКонфигXHTTP"
+```
+Второй (там где установка ВПН запрещена - чисто перенаправление трафика xhttp на caddy, гипервизор не увидит никаких подозрительных процессов и бинарников):
+```bash
+bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/caddyBridge.sh)" -- поддомен2.вашДОМЕН.com "vless://вашКонфигXHTTP"
 ```
 
 Итоговая цепочка:
@@ -177,9 +182,8 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/bridgeT
 
 Можно использовать несколько XHTTP-конфигов — все они будут добавлены в мост:
 
-```bash
-bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/bridgeTLSxhttp.sh)" -- поддомен2.Домен.Ком "vless://xhttp1" "vless://xhttp2" "vless://xhttp3"
-```
+-- поддомен2.Домен.Ком "vless://xhttp1" "vless://xhttp2" "vless://xhttp3"
+
 
 ---
 
@@ -189,6 +193,10 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/bridgeT
 
 - сменить порт SSH со стандартного `22` на другой и/или сделать вход по ключу;
 - настроить файрвол и оставить открытыми: ваш SSH-порт, `80` (ACME), `443` (всё остальное).
+- использовать клиентский конфиг - он оставляет RU трафик в вашей сети, а EU отправляет дальше в ваш VPS.
+- лучше всего настраивать раздельное туннелирование приложений на андройде и использовать отдельный браузер для VPN на ПК
+- не устанавливать нативные RU приложения на ПК (Я.Браузер, МАКС, Алиса) т.к. там нет виртуализации и они будут шпионить за вами и вашими соединениями
+- если нужен МАКС по работе - используйте веб версию и отдельный браузер только для него, например, оперу
 
 ### Ручная настройка Xray
 
