@@ -227,7 +227,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/caddyBr
 | `/etc/tproxy-server/config.json` | Конфиг tproxy-сервера |
 | `/etc/tproxy-server/profiles.json` | Профили прокси |
 
-При установке скрипт спросит, нужен ли web proxy — отвечайте `y` (по умолчанию), если он вам нужен.
+При установке скрипт спросит, нужен ли web proxy — отвечайте `y`, если он вам нужен.
 
 ---
 
