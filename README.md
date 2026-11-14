@@ -251,5 +251,7 @@ bash -c "$(curl -L https://raw.githubusercontent.com/xVRVx/autoXRAY/main/caddyBr
 
 Скрипты будут дорабатываться до актуального состояния.
 
-**[Поддержать автора.](https://pay.trybit.com/pos/Weu1Y0fOhLho0nte)**
+**Поддержать автора.**
+
+USDT TRC20: TGSCTXBHXZLiJneTskmCY3TCezQnJ1wNEp
 
