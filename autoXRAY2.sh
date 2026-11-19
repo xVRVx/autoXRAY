@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 162 ${NC}"
+echo -e "${GRN}Версия: 163 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -40,6 +40,17 @@ echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 
 
 apt-get update
 apt-get install -y nginx
+
+# Drop-in для автоперезапуска Nginx и очистки сокета при аварийном завершении (OOM/SIGKILL)
+mkdir -p /etc/systemd/system/nginx.service.d
+cat <<'EOF' > /etc/systemd/system/nginx.service.d/override.conf
+[Service]
+Restart=on-failure
+RestartSec=3
+ExecStartPre=-/bin/rm -f /dev/shm/nginx.sock
+EOF
+systemctl daemon-reload
+
 systemctl enable --now nginx
 systemctl enable --now cron
 
@@ -272,7 +283,8 @@ server {
         try_files \$uri =404;
     }
 
-    # XHTTP endpoint (режим stream-up через gRPC-модуль Nginx с буферами 512k)
+    # XHTTP endpoint (режим stream-up через gRPC)
+    # при малом числе юзеров и RTT >80мс можно поднять до 1m для увеличения скорости upload
     location /${path_xhttp} {
         client_max_body_size 0;
         client_body_buffer_size 512k;

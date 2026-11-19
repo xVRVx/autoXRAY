@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
-echo -e "${GRN}Версия: 04-caddyBridge ${NC}"
+echo -e "${GRN}Версия: 05-caddyBridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -88,6 +88,21 @@ curl -1sLF 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /
 
 apt-get update
 apt-get install -y caddy
+
+# Drop-in для автоперезапуска Caddy и ограничения аппетита Go по памяти (~55% от RAM)
+TOTAL_RAM_MB=$(free -m | awk '/^Mem:/ {print $2}')
+CADDY_MEM_MB=$(( TOTAL_RAM_MB * 55 / 100 ))
+[ "$CADDY_MEM_MB" -lt 256 ] && CADDY_MEM_MB=256
+
+mkdir -p /etc/systemd/system/caddy.service.d
+cat <<EOF > /etc/systemd/system/caddy.service.d/override.conf
+[Service]
+Restart=on-failure
+RestartSec=3
+Environment="GOMEMLIMIT=${CADDY_MEM_MB}MiB"
+EOF
+systemctl daemon-reload
+
 systemctl enable --now cron
 
 # Проверка IP и A-записи
@@ -295,6 +310,7 @@ $strip_prefix_directive
             transport http {
                 tls
                 tls_server_name ${node_sni}
+                compression off
             }
             flush_interval -1
         }
