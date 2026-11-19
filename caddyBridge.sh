@@ -57,7 +57,7 @@ RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
 AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
 AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
-# Лимиты файловых дескрипторов (PAM + Systemd)
+# Лимиты файловых дескрипторов (PAM + Systemd) и ограничение Journald
 cat <<EOF > /etc/security/limits.d/99-caddy-bridge.conf
 *       soft    nofile  1048576
 *       hard    nofile  1048576
@@ -72,6 +72,15 @@ DefaultLimitNOFILE=1048576
 DefaultLimitNPROC=512000
 EOF
 systemctl daemon-reexec
+
+mkdir -p /etc/systemd/journald.conf.d
+cat <<EOF > /etc/systemd/journald.conf.d/99-limit.conf
+[Journal]
+Storage=volatile
+RuntimeMaxUse=20M
+EOF
+systemctl restart systemd-journald
+rm -rf /var/log/journal/*
 
 # Оптимизация сети (BBR, буферы, очереди и пул портов)
 cat <<EOF > /etc/sysctl.d/99-caddy-bridge.conf
@@ -111,7 +120,7 @@ curl -1sLF 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmo
 curl -1sLF 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
 
 apt-get update
-apt-get install -y caddy
+apt-get install -y caddy || { echo -e "${RED}❌ Ошибка установки Caddy!${NC}"; exit 1; }
 
 # Drop-in для автоперезапуска Caddy, лимита сокетов и ограничения памяти Go
 # Оставляем резерв ~220 МБ под ОС и буферы ядра, но не более 80% от всей RAM
@@ -446,9 +455,16 @@ done
 # Сохранение клиентского JSON файла подписки
 ( IFS=$','; echo "[${CLIENT_JSON_PROFILES[*]}]" ) > "$WEB_PATH/${path_subpage}.json"
 
-# Генерация Caddyfile c log { output discard }
+# Генерация Caddyfile (без спама reverse_proxy и access-логов, но с сохранением ошибок ACME/TLS)
 CADDYFILE="/etc/caddy/Caddyfile"
 cat <<EOF > "$CADDYFILE"
+{
+    log {
+        exclude http.handlers.reverse_proxy
+        level ERROR
+    }
+}
+
 http://$DOMAIN {
     redir https://{host} permanent
 }

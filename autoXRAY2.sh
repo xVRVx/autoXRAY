@@ -1,4 +1,5 @@
 #!/bin/bash
+set -o pipefail
 
 # Цвета для вывода
 GRN='\033[1;32m'
@@ -7,7 +8,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 163 ${NC}"
+echo -e "${GRN}Версия: 164 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -24,13 +25,102 @@ if [ -z "$DOMAIN" ]; then
     exit 1
 fi
 
+export DEBIAN_FRONTEND=noninteractive
+
+# === НАСТРОЙКА SWAP ===
+CURRENT_SWAP_MB=$(free -m | awk '/^Swap:/ {print $2}')
+if [ "${CURRENT_SWAP_MB:-0}" -eq 0 ]; then
+    TOTAL_RAM_MB=$(free -m | awk '/^Mem:/ {print $2}')
+    if [ "$TOTAL_RAM_MB" -gt 2048 ]; then
+        SWAP_MB=4096
+    else
+        SWAP_MB=2048
+    fi
+
+    if ! fallocate -l "${SWAP_MB}M" /swapfile 2>/dev/null; then
+        dd if=/dev/zero of=/swapfile bs=1M count="$SWAP_MB" status=none
+    fi
+    chmod 600 /swapfile
+    mkswap /swapfile >/dev/null 2>&1
+
+    if ! swapon /swapfile 2>/dev/null; then
+        rm -f /swapfile
+        dd if=/dev/zero of=/swapfile bs=1M count="$SWAP_MB" status=none
+        chmod 600 /swapfile
+        mkswap /swapfile >/dev/null 2>&1
+        swapon /swapfile 2>/dev/null || true
+    fi
+
+    if swapon --show | grep -q "/swapfile"; then
+        grep -q "^/swapfile " /etc/fstab || echo "/swapfile none swap sw 0 0" >> /etc/fstab
+        echo -e "${GRN}✅ Swap файл создан и активирован: ${SWAP_MB} МБ${NC}"
+    else
+        rm -f /swapfile
+        echo -e "${YEL}⚠️ Не удалось включить Swap (возможно, ограничение контейнера LXC/OpenVZ).${NC}"
+    fi
+fi
+
+# === ЛИМИТЫ (PAM + SYSTEMD + JOURNALD) ===
+cat <<EOF > /etc/security/limits.d/99-autoXRAY.conf
+*       soft    nofile  1048576
+*       hard    nofile  1048576
+root    soft    nofile  1048576
+root    hard    nofile  1048576
+EOF
+ulimit -n 65535
+
+mkdir -p /etc/systemd/system.conf.d
+cat <<EOF > /etc/systemd/system.conf.d/99-limits.conf
+[Manager]
+DefaultLimitNOFILE=1048576
+DefaultLimitNPROC=512000
+EOF
+systemctl daemon-reexec
+
+mkdir -p /etc/systemd/journald.conf.d
+cat <<EOF > /etc/systemd/journald.conf.d/99-limit.conf
+[Journal]
+Storage=volatile
+RuntimeMaxUse=20M
+EOF
+systemctl restart systemd-journald
+rm -rf /var/log/journal/*
+
+# === SYSCTL (BBR, БУФЕРЫ, ОЧЕРЕДИ И ПОРТЫ) ===
+cat <<EOF > /etc/sysctl.d/999-autoXRAY.conf
+net.core.default_qdisc=fq
+net.ipv4.tcp_congestion_control=bbr
+net.ipv4.tcp_mtu_probing=1
+net.core.somaxconn=65535
+net.core.netdev_max_backlog=16384
+net.ipv4.tcp_max_syn_backlog=65535
+net.ipv4.tcp_syncookies=1
+net.ipv4.ip_local_port_range=10000 65535
+net.ipv4.ip_local_reserved_ports=10443,40000
+net.core.rmem_max=16777216
+net.core.wmem_max=16777216
+net.ipv4.tcp_rmem=4096 87380 16777216
+net.ipv4.tcp_wmem=4096 65536 16777216
+net.ipv4.tcp_tw_reuse=1
+net.ipv4.tcp_fin_timeout=15
+fs.file-max=2097152
+vm.swappiness=10
+EOF
+sysctl --system >/dev/null 2>&1
+echo -e "${GRN}✅ BBR, TCP-буферы, лимиты (NOFILE=1048576) и Journald (RAM 20M) настроены${NC}"
+
+# === УСТАНОВКА NGINX ===
 KEYRING_PKG=$([ "$ID" = "ubuntu" ] && echo "ubuntu-keyring" || echo "debian-archive-keyring")
 
 echo -e "${YEL}Подготовка официального репозитория Nginx для $ID ($VERSION_CODENAME)...${NC}"
 apt-get update && apt-get install -y curl gnupg2 ca-certificates lsb-release $KEYRING_PKG jq dnsutils openssl wget tar socat cron gettext-base
 
 # Добавление ключа и репозитория nginx.org
-curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor --yes -o /usr/share/keyrings/nginx-archive-keyring.gpg
+if ! curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor --yes \
+    | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null; then
+    echo -e "${RED}❌ Ошибка загрузки GPG-ключа Nginx!${NC}"
+    exit 1
+fi
 
 echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/$ID $VERSION_CODENAME nginx" \
     | tee /etc/apt/sources.list.d/nginx.list >/dev/null
@@ -39,14 +129,21 @@ echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 
     | tee /etc/apt/preferences.d/99nginx >/dev/null
 
 apt-get update
-apt-get install -y nginx
+apt-get install -y nginx || { echo -e "${RED}❌ Ошибка установки Nginx!${NC}"; exit 1; }
 
-# Drop-in для автоперезапуска Nginx и очистки сокета при аварийном завершении (OOM/SIGKILL)
+# Тюнинг воркеров в /etc/nginx/nginx.conf
+sed -i 's/worker_connections.*/worker_connections 16384;/' /etc/nginx/nginx.conf
+if ! grep -q "worker_rlimit_nofile" /etc/nginx/nginx.conf; then
+    sed -i '/worker_processes/a worker_rlimit_nofile 65535;' /etc/nginx/nginx.conf
+fi
+
+# Drop-in для автоперезапуска Nginx, лимита дескрипторов и очистки сокета при аварийном завершении (OOM/SIGKILL)
 mkdir -p /etc/systemd/system/nginx.service.d
 cat <<'EOF' > /etc/systemd/system/nginx.service.d/override.conf
 [Service]
 Restart=on-failure
 RestartSec=3
+LimitNOFILE=1048576
 ExecStartPre=-/bin/rm -f /dev/shm/nginx.sock
 EOF
 systemctl daemon-reload
@@ -60,7 +157,7 @@ DNS_IP=$(dig +short "$DOMAIN" | grep '^[0-9]' | head -n 1)
 if [ "$LOCAL_IP" != "$DNS_IP" ]; then
     echo -e "${RED}❌ Внимание: IP-адрес ($LOCAL_IP) не совпадает с A-записью $DOMAIN ($DNS_IP).${NC}"
     echo -e "${YEL}Правильно укажите одну A-запись для вашего домена в ДНС - $LOCAL_IP ${NC}"
-    
+
 	read -p "Продолжить на ваш страх и риск? (y/N):" choice
 
 	if [[ ! "$choice" =~ ^[Yy]$ ]]; then
@@ -117,37 +214,54 @@ case $fp_choice in
 esac
 # ============================
 
-# Включаем BBR, MTU Probing и расширенные TCP-буферы ядра
-cat <<EOF > /etc/sysctl.d/999-autoXRAY.conf
-net.core.default_qdisc=fq
-net.ipv4.tcp_congestion_control=bbr
-net.ipv4.tcp_mtu_probing=1
-net.core.rmem_max=16777216
-net.core.wmem_max=16777216
-net.ipv4.tcp_rmem=4096 87380 16777216
-net.ipv4.tcp_wmem=4096 65536 16777216
-EOF
-sysctl --system >/dev/null 2>&1
-echo -e "${GRN}BBR, TCP буферы и MTU Probing активированы${NC}"
-
-cat <<EOF > /etc/security/limits.d/99-autoXRAY.conf
-*       soft    nofile  1048576
-*       hard    nofile  1048576
-root    soft    nofile  1048576
-root    hard    nofile  1048576
-EOF
-ulimit -n 65535
-echo -e "${GRN}Лимиты применены. Текущий ulimit -n: $(ulimit -n) ${NC}"
-
-# Создание директории сайта
+# Создание директории сайта и очистка старых файлов
 WEB_PATH="/var/www/$DOMAIN"
 mkdir -p "$WEB_PATH"
+rm -f "$WEB_PATH"/*.html "$WEB_PATH"/*.json 2>/dev/null
 
 # Генерируем сайт маскировку
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/xVRVx/autoXRAY/main/test/gen_page3.sh)" -- "$WEB_PATH"
 
 # Установка Xray
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install --version v26.11.9
+if ! bash -c "$(curl -fsSL https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install --version v26.11.9; then
+    echo -e "${RED}❌ Ошибка установки Xray!${NC}"
+    exit 1
+fi
+
+# Drop-in для Xray: автоперезапуск, лимит дескрипторов и GOMEMLIMIT
+TOTAL_RAM_MB=$(free -m | awk '/^Mem:/ {print $2}')
+if [ "$INSTALL_MTP" = true ]; then
+    XRAY_RESERVE=340
+    XRAY_PCT=70
+else
+    XRAY_RESERVE=260
+    XRAY_PCT=75
+fi
+
+BY_RESERVE=$(( TOTAL_RAM_MB - XRAY_RESERVE ))
+BY_PERCENT=$(( TOTAL_RAM_MB * XRAY_PCT / 100 ))
+
+XRAY_MEM_MB=$BY_RESERVE
+[ "$BY_PERCENT" -lt "$XRAY_MEM_MB" ] && XRAY_MEM_MB=$BY_PERCENT
+[ "$XRAY_MEM_MB" -lt 256 ] && XRAY_MEM_MB=256
+
+mkdir -p /etc/systemd/system/xray.service.d
+cat <<EOF > /etc/systemd/system/xray.service.d/override.conf
+[Service]
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=1048576
+Environment="GOMEMLIMIT=${XRAY_MEM_MB}MiB"
+EOF
+systemctl daemon-reload
+
+# Проверка активности IPv6 для корректной работы ACME HTTP-01 на порту 80
+IPV6_LISTEN_DEFAULT=""
+IPV6_LISTEN=""
+if [ -f /proc/net/if_inet6 ] && [ "$(cat /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null)" != "1" ]; then
+    IPV6_LISTEN_DEFAULT="listen [::]:80 default_server;"
+    IPV6_LISTEN="listen [::]:80;"
+fi
 
 # ==========================================
 # Блок ACME.SH (Установка и выпуск сертификата)
@@ -158,6 +272,7 @@ mkdir -p /var/www/html
 cat <<EOF > "$CONFIG_PATH"
 server {
 	listen 80 default_server;
+	${IPV6_LISTEN_DEFAULT}
 	server_name _;
 
 	location /.well-known/acme-challenge/ {
@@ -170,7 +285,7 @@ server {
 	}
 }
 EOF
-systemctl reload nginx
+nginx -t && systemctl reload nginx
 
 mkdir -p /var/lib/xray/cert/
 
@@ -316,7 +431,7 @@ server {
 
         return 401 '{"success":false,"code":"$AUTH_CODE","message":"$AUTH_MSG","request_id":"\$request_id"}';
     }
-	
+
 $NGINX_web_proxy
 
     location ~ /\.ht {
@@ -326,6 +441,7 @@ $NGINX_web_proxy
 
 server {
     listen 80;
+    ${IPV6_LISTEN}
     server_name $DOMAIN;
 
     location /.well-known/acme-challenge/ {
@@ -338,7 +454,7 @@ server {
 }
 EOF
 
-systemctl restart nginx
+nginx -t && systemctl restart nginx || { echo -e "${RED}❌ Ошибка в конфигурации Nginx!${NC}"; exit 1; }
 echo -e "${GRN}✅ Конфигурация nginx обновлена.${NC}"
 
 SCRIPT_DIR=/usr/local/etc/xray
@@ -358,8 +474,8 @@ cat << 'EOF' | envsubst > "$SCRIPT_DIR/config.json"
 {
   "log": {
     "dnsLog": false,
-    "access": "/var/log/xray/access.log",
-    "error": "/var/log/xray/error.log",
+    "access": "none",
+    "error": "none",
     "loglevel": "none"
   },
   "dns": {
@@ -1012,7 +1128,7 @@ else
 fi
 
 if systemctl is-active --quiet xray; then
-    echo -e "XRAY: ${GRN}RUNNING${NC}"
+    echo -e "XRAY: ${GRN}RUNNING${NC} (GOMEMLIMIT: ${XRAY_MEM_MB}MiB)"
 else
     echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"
 fi
