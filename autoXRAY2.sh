@@ -1128,7 +1128,7 @@ else
 fi
 
 if systemctl is-active --quiet xray; then
-    echo -e "XRAY: ${GRN}RUNNING${NC} (GOMEMLIMIT: ${XRAY_MEM_MB}MiB)"
+    echo -e "XRAY: ${GRN}RUNNING${NC}"
 else
     echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"
 fi

@@ -1224,7 +1224,7 @@ if [ "$INSTALL_MTP" = true ]; then
     if systemctl is-active --quiet tproxy-server; then echo -e "WebProxy: ${GRN}RUNNING${NC}"; else echo -e "WebProxy: ${RED}STOPPED/ERROR${NC}"; fi
 fi
 if systemctl is-active --quiet nginx; then echo -e "Nginx: ${GRN}RUNNING${NC}" ; else echo -e "Nginx: ${RED}STOPPED/ERROR${NC}"; fi
-if systemctl is-active --quiet xray; then echo -e "XRAY: ${GRN}RUNNING${NC} (GOMEMLIMIT: ${XRAY_MEM_MB}MiB)"; else echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"; fi
+if systemctl is-active --quiet xray; then echo -e "XRAY: ${GRN}RUNNING${NC}"; else echo -e "XRAY: ${RED}STOPPED/ERROR${NC}"; fi
 
 echo -e "\n"
 if [ "$INSTALL_MTP" = true ]; then
