@@ -7,7 +7,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
-echo -e "${GRN}Версия: 05-caddyBridge ${NC}"
+echo -e "${GRN}Версия: 06-caddyBridge ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -57,15 +57,39 @@ RAND_AUTH=${AUTH_VARIANTS[$RANDOM % ${#AUTH_VARIANTS[@]}]}
 AUTH_CODE=$(echo "$RAND_AUTH" | cut -d'|' -f1)
 AUTH_MSG=$(echo "$RAND_AUTH" | cut -d'|' -f2)
 
-# Оптимизация сети (BBR + буферы)
+# Лимиты файловых дескрипторов (PAM + Systemd)
+cat <<EOF > /etc/security/limits.d/99-caddy-bridge.conf
+*       soft    nofile  1048576
+*       hard    nofile  1048576
+root    soft    nofile  1048576
+root    hard    nofile  1048576
+EOF
+
+mkdir -p /etc/systemd/system.conf.d
+cat <<EOF > /etc/systemd/system.conf.d/99-limits.conf
+[Manager]
+DefaultLimitNOFILE=1048576
+DefaultLimitNPROC=512000
+EOF
+systemctl daemon-reexec
+
+# Оптимизация сети (BBR, буферы, очереди и пул портов)
 cat <<EOF > /etc/sysctl.d/99-caddy-bridge.conf
 net.core.default_qdisc=fq
 net.ipv4.tcp_congestion_control=bbr
 net.ipv4.tcp_mtu_probing=1
+net.core.somaxconn=65535
+net.core.netdev_max_backlog=16384
+net.ipv4.tcp_max_syn_backlog=65535
+net.ipv4.tcp_syncookies=1
+net.ipv4.ip_local_port_range=10000 65535
 net.core.rmem_max=16777216
 net.core.wmem_max=16777216
 net.ipv4.tcp_rmem=4096 87380 16777216
 net.ipv4.tcp_wmem=4096 65536 16777216
+net.ipv4.tcp_tw_reuse=1
+net.ipv4.tcp_fin_timeout=15
+fs.file-max=2097152
 EOF
 sysctl --system >/dev/null 2>&1
 
@@ -89,9 +113,14 @@ curl -1sLF 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /
 apt-get update
 apt-get install -y caddy
 
-# Drop-in для автоперезапуска Caddy и ограничения аппетита Go по памяти (~55% от RAM)
+# Drop-in для автоперезапуска Caddy, лимита сокетов и ограничения памяти Go
+# Оставляем резерв ~220 МБ под ОС и буферы ядра, но не более 80% от всей RAM
 TOTAL_RAM_MB=$(free -m | awk '/^Mem:/ {print $2}')
-CADDY_MEM_MB=$(( TOTAL_RAM_MB * 55 / 100 ))
+BY_RESERVE=$(( TOTAL_RAM_MB - 220 ))
+BY_PERCENT=$(( TOTAL_RAM_MB * 80 / 100 ))
+
+CADDY_MEM_MB=$BY_RESERVE
+[ "$BY_PERCENT" -lt "$CADDY_MEM_MB" ] && CADDY_MEM_MB=$BY_PERCENT
 [ "$CADDY_MEM_MB" -lt 256 ] && CADDY_MEM_MB=256
 
 mkdir -p /etc/systemd/system/caddy.service.d
@@ -99,6 +128,7 @@ cat <<EOF > /etc/systemd/system/caddy.service.d/override.conf
 [Service]
 Restart=on-failure
 RestartSec=3
+LimitNOFILE=1048576
 Environment="GOMEMLIMIT=${CADDY_MEM_MB}MiB"
 EOF
 systemctl daemon-reload
@@ -504,7 +534,7 @@ sleep 1
 systemctl is-active --quiet caddy && CADDY_STATUS="${GRN}RUNNING${NC}" || CADDY_STATUS="${RED}FAILED${NC}"
 
 echo -e "\n=============================================="
-echo -e "Статус Caddy: $CADDY_STATUS \n"
+echo -e "Статус Caddy: $CADDY_STATUS (GOMEMLIMIT: ${CADDY_MEM_MB}MiB)\n"
 
 echo -e "\n${CYAN}--- Прямые ссылки конфигураций (скопируйте при необходимости) ---${NC}"
 for item in "${CONFIGS_ARRAY[@]}"; do
