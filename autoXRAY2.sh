@@ -8,7 +8,7 @@ YEL='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
-echo -e "${GRN}Версия: 164 ${NC}"
+echo -e "${GRN}Версия: 165 ${NC}"
 sleep 1
 
 [[ $EUID -eq 0 ]] || { echo -e "${RED}❌ Скрипту нужны root права!${NC}"; exit 1; }
@@ -289,6 +289,7 @@ nginx -t && systemctl reload nginx
 
 mkdir -p /var/lib/xray/cert/
 
+export HOME=/root
 ACME_BIN="$HOME/.acme.sh/acme.sh"
 
 if [ ! -f "$ACME_BIN" ]; then
@@ -309,8 +310,28 @@ if [ ! -f "$ACME_BIN" ]; then
     exit 1
 fi
 
-# Если сертификата физически нет в xray — выпускаем и устанавливаем
-if [ ! -s /var/lib/xray/cert/fullchain.pem ]; then
+if [ -s /var/lib/xray/cert/fullchain.pem ] && { \
+   ! openssl x509 -in /var/lib/xray/cert/fullchain.pem -noout -checkhost "$DOMAIN" >/dev/null 2>&1 || \
+   ! openssl x509 -in /var/lib/xray/cert/fullchain.pem -noout -checkend 604800 >/dev/null 2>&1; \
+}; then
+    echo -e "${YEL}⚠️ Старый сертификат не подходит для $DOMAIN или скоро истекает — удаляем для перевыпуска...${NC}"
+    rm -f /var/lib/xray/cert/fullchain.pem /var/lib/xray/cert/privkey.pem
+fi
+
+# Если сертификата или ключа нет — вычищаем старые домены из acme.sh и выпускаем новый
+if [ ! -s /var/lib/xray/cert/fullchain.pem ] || [ ! -s /var/lib/xray/cert/privkey.pem ]; then
+    for old_conf in "$HOME/.acme.sh"/*/*.conf; do
+        [ -f "$old_conf" ] || continue
+        grep -q "^Le_Domain=" "$old_conf" || continue
+        old_dom=$(grep -m1 "^Le_Domain=" "$old_conf" | cut -d'=' -f2 | tr -d "'\"")
+        if [ -n "$old_dom" ] && [ "$old_dom" != "$DOMAIN" ]; then
+            echo -e "${YEL}🧹 Удаляем старый домен $old_dom из acme.sh...${NC}"
+            "$ACME_BIN" --remove -d "$old_dom" --ecc >/dev/null 2>&1 || true
+            "$ACME_BIN" --remove -d "$old_dom" >/dev/null 2>&1 || true
+            rm -rf "$HOME/.acme.sh/${old_dom}_ecc" "$HOME/.acme.sh/${old_dom}"
+        fi
+    done
+
     $ACME_BIN --register-account -m mail@$DOMAIN --server zerossl
 
     echo -e "\n${YEL}Выпуск сертификата (сначала ZeroSSL, затем Let's Encrypt)...${NC}"
@@ -323,8 +344,8 @@ if [ ! -s /var/lib/xray/cert/fullchain.pem ]; then
       --reloadcmd "chmod 644 /var/lib/xray/cert/privkey.pem /var/lib/xray/cert/fullchain.pem; systemctl reload nginx; systemctl restart xray"
 fi
 
-# Жесткая проверка: файл появился и он не пустой?
-if [ ! -s /var/lib/xray/cert/fullchain.pem ]; then
+# Жесткая проверка: оба файла появились и не пустые?
+if [ ! -s /var/lib/xray/cert/fullchain.pem ] || [ ! -s /var/lib/xray/cert/privkey.pem ]; then
     echo -e "\n${RED}========================================"
     echo    "❌ ОШИБКА: Сертификат не получен! Проверьте DNS-записи (A и AAAA)."
     echo    "========================================${NC}"
