@@ -137,7 +137,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 **🔹 Удаляем nginx & acme**
 
 ```bash
-systemctl disable nginx; systemctl stop nginx; apt remove nginx -y; ~/.acme.sh/acme.sh --uninstall 2>/dev/null; rm -rf /root/.acme.sh /var/lib/xray
+systemctl disable nginx; systemctl stop nginx xray 2>/dev/null; apt remove nginx -y; ~/.acme.sh/acme.sh --uninstall 2>/dev/null; rm -rf /root/.acme.sh /var/lib/xray
 ```
 
 **🔹 Удаляем Xray**
